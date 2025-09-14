@@ -40,9 +40,5 @@ else
   echo "Aviso: não foi possível semear admin/admin (extensões indisponíveis)"
 fi
 
-# Drop privileges to www-data if running as root
-if [ "$(id -u)" = "0" ]; then
-  exec gosu www-data:www-data apache2-foreground
-else
-  exec apache2-foreground
-fi
+# Inicia o Apache em primeiro plano
+exec apache2-foreground
