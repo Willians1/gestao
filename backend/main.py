@@ -76,6 +76,85 @@ def ensure_indexes():
 
 ensure_indexes()
 
+# Garante permissões padrão do sistema (IDs fixos usados no frontend)
+def ensure_system_permissions():
+    DEFAULT_PERMISSIONS = [
+        # Sistema
+        {"id": 1001, "nome": "Dashboard", "categoria": "Sistema"},
+        {"id": 1002, "nome": "Relatórios", "categoria": "Sistema"},
+        {"id": 1003, "nome": "Análises", "categoria": "Sistema"},
+        {"id": 1004, "nome": "Administração do Sistema", "categoria": "Sistema"},
+        {"id": 1005, "nome": "Backup", "categoria": "Sistema"},
+        # Cadastros - Usuários
+        {"id": 1101, "nome": "Usuários", "categoria": "Cadastros"},
+        {"id": 1102, "nome": "Usuários - Alterar", "categoria": "Cadastros"},
+        {"id": 1103, "nome": "Usuários - Excluir", "categoria": "Cadastros"},
+        {"id": 1104, "nome": "Usuários - Criar", "categoria": "Cadastros"},
+        # Cadastros - Clientes
+        {"id": 1201, "nome": "Clientes", "categoria": "Cadastros"},
+        {"id": 1202, "nome": "Clientes - Alterar", "categoria": "Cadastros"},
+        {"id": 1203, "nome": "Clientes - Excluir", "categoria": "Cadastros"},
+        {"id": 1204, "nome": "Clientes - Criar/Importar", "categoria": "Cadastros"},
+        # Cadastros - Fornecedores
+        {"id": 1301, "nome": "Fornecedores", "categoria": "Cadastros"},
+        {"id": 1302, "nome": "Fornecedores - Alterar", "categoria": "Cadastros"},
+        {"id": 1303, "nome": "Fornecedores - Excluir", "categoria": "Cadastros"},
+        {"id": 1304, "nome": "Fornecedores - Criar/Importar", "categoria": "Cadastros"},
+        # Obras - Contratos
+        {"id": 1401, "nome": "Contratos", "categoria": "Obras"},
+        {"id": 1402, "nome": "Contratos - Alterar", "categoria": "Obras"},
+        {"id": 1403, "nome": "Contratos - Excluir", "categoria": "Obras"},
+        {"id": 1404, "nome": "Contratos - Criar/Importar", "categoria": "Obras"},
+        # Obras - Orçamento
+        {"id": 1501, "nome": "Orçamento de Obra", "categoria": "Obras"},
+        {"id": 1502, "nome": "Orçamento - Alterar", "categoria": "Obras"},
+        {"id": 1503, "nome": "Orçamento - Excluir", "categoria": "Obras"},
+        {"id": 1504, "nome": "Orçamento - Criar/Importar", "categoria": "Obras"},
+        # Financeiro - Despesas
+        {"id": 1601, "nome": "Despesas", "categoria": "Financeiro"},
+        {"id": 1602, "nome": "Despesas - Alterar", "categoria": "Financeiro"},
+        {"id": 1603, "nome": "Despesas - Excluir", "categoria": "Financeiro"},
+        {"id": 1604, "nome": "Despesas - Criar/Importar", "categoria": "Financeiro"},
+        # Materiais
+        {"id": 1701, "nome": "Valor Materiais", "categoria": "Materiais"},
+        {"id": 1702, "nome": "Valor Materiais - Alterar", "categoria": "Materiais"},
+        {"id": 1703, "nome": "Valor Materiais - Excluir", "categoria": "Materiais"},
+        {"id": 1704, "nome": "Valor Materiais - Criar/Importar", "categoria": "Materiais"},
+        # Relatórios
+        {"id": 1801, "nome": "Resumo Mensal", "categoria": "Relatórios"},
+        {"id": 1802, "nome": "Resumo Mensal - Alterar", "categoria": "Relatórios"},
+        {"id": 1803, "nome": "Resumo Mensal - Excluir", "categoria": "Relatórios"},
+        {"id": 1804, "nome": "Resumo Mensal - Criar/Importar", "categoria": "Relatórios"},
+        # Lojas
+        {"id": 1901, "nome": "Acesso a Todas as Lojas", "categoria": "Lojas"},
+        {"id": 1902, "nome": "Acesso a Loja Individual", "categoria": "Lojas"},
+        {"id": 1903, "nome": "Gerenciar Lojas", "categoria": "Lojas"},
+    ]
+    db = SessionLocal()
+    try:
+        for p in DEFAULT_PERMISSIONS:
+            existing = db.query(PermissaoSistema).filter(PermissaoSistema.id == p["id"]).first()
+            if not existing:
+                db.add(PermissaoSistema(id=p["id"], nome=p["nome"], categoria=p["categoria"], ativo=True))
+            else:
+                # Mantém IDs fixos e atualiza nome/categoria se mudarem
+                changed = False
+                if existing.nome != p["nome"]:
+                    existing.nome = p["nome"]; changed = True
+                if existing.categoria != p["categoria"]:
+                    existing.categoria = p["categoria"]; changed = True
+                if existing.ativo is False:
+                    existing.ativo = True; changed = True
+                if changed:
+                    db.add(existing)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+ensure_system_permissions()
+
 app = FastAPI()
 
 # Registro de início da aplicação para cálculo de uptime

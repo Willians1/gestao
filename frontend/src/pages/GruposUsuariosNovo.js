@@ -136,9 +136,10 @@ export default function GruposUsuarios() {
     
     // Buscar permissões do grupo
     try {
-      const permissoesResponse = await fetch(`${API}/grupos/${grupo.id}/permissoes/`);
-      const permissoesDoGrupo = await permissoesResponse.json();
-      const permissoesIds = permissoesDoGrupo.map(p => p.id.toString());
+  const permissoesResponse = await fetch(`${API}/grupos/${grupo.id}/permissoes/`);
+  const dataPerms = await permissoesResponse.json();
+  const lista = Array.isArray(dataPerms) ? dataPerms : (Array.isArray(dataPerms?.permissoes) ? dataPerms.permissoes : []);
+  const permissoesIds = lista.map(p => (p.id ?? p).toString());
       
       setForm({
         id: grupo.id,
