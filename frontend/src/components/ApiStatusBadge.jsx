@@ -1,4 +1,5 @@
 import React from 'react';
+import { Tooltip } from '@mui/material';
 import useApiHealth from '../hooks/useApiHealth';
 import { API_BASE } from '../api';
 
@@ -28,20 +29,32 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
     }
   };
 
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      {badge()}
-      {!compact && (
-        <div style={{ opacity: 0.8 }}>
-          <small>{API_BASE}</small>
-          {h.lastCheck && (
-            <div><small style={{ opacity: 0.8 }}>Último check: {h.lastCheck.toLocaleString()}</small></div>
-          )}
-          {h.message && (
-            <div><small style={{ color: '#b91c1c' }}>{h.message}</small></div>
-          )}
-        </div>
-      )}
+  const details = (
+    <div>
+      <div><strong>Status:</strong> {h.status}</div>
+      {h.latencyMs != null && (<div><strong>Latência:</strong> {h.latencyMs} ms</div>)}
+      <div><strong>API:</strong> {API_BASE}</div>
+      {h.lastCheck && (<div><strong>Último check:</strong> {h.lastCheck.toLocaleString()}</div>)}
+      {h.message && (<div style={{ color: '#b91c1c' }}><strong>Obs:</strong> {h.message}</div>)}
     </div>
+  );
+
+  return (
+    <Tooltip title={details} arrow disableInteractive>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'default' }}>
+        {badge()}
+        {!compact && (
+          <div style={{ opacity: 0.8 }}>
+            <small>{API_BASE}</small>
+            {h.lastCheck && (
+              <div><small style={{ opacity: 0.8 }}>Último check: {h.lastCheck.toLocaleString()}</small></div>
+            )}
+            {h.message && (
+              <div><small style={{ color: '#b91c1c' }}>{h.message}</small></div>
+            )}
+          </div>
+        )}
+      </div>
+    </Tooltip>
   );
 }

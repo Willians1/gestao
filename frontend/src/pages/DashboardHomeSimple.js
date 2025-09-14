@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import ApiStatusBadge from '../components/ApiStatusBadge';
 import {
   Box,
   Grid,
@@ -324,7 +325,10 @@ export default function DashboardHome() {
             <Typography variant="h4" sx={{ fontWeight: 700 }}>Dashboard</Typography>
             <Typography variant="subtitle1" color="text.secondary">Bem-vindo, {user?.nome}!</Typography>
           </Box>
-          <Button variant="outlined" color="error" onClick={logout}>Sair</Button>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <ApiStatusBadge compact />
+            <Button variant="outlined" color="error" onClick={logout}>Sair</Button>
+          </Box>
         </Box>
 
         <Grid container spacing={{ xs: 2, sm: 3, md: 3 }} alignItems="stretch" justifyContent="center">
