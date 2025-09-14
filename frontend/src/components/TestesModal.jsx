@@ -48,6 +48,19 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
       1: 'PEREQUE',
       2: 'COTIA',
       3: 'GUARUJA',
+      4: 'PERUIBE',
+      5: 'PRAIA GRANDE',
+      6: 'SANTOS',
+      7: 'PIRAJUSSARA',
+      8: 'ITANHAÉM',
+      9: 'MBOI',
+      10: 'MONGAGUA',
+      11: 'MORUMBI',
+      12: 'REGISTRO',
+      13: 'ENSEADA',
+      14: 'BERTIOGA',
+      15: 'BARUERI',
+      16: 'CAMPO LIMPO',
     };
     const base = map[Number(id)] || 'LOJA';
     const suf = String(id || '').toString().padStart(2, '0');
