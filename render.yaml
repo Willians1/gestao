@@ -22,9 +22,6 @@ services:
     autoDeploy: true
     dockerfilePath: ./php/Dockerfile
     dockerContext: ./php
-    envVars:
-      - key: PHP_DB_PATH
-        value: /app/gestao_obras.db
 
   - type: web
     name: gestao-frontend
