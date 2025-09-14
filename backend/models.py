@@ -14,7 +14,8 @@ class Usuario(Base):
     email = Column(String, nullable=True)
     nivel_acesso = Column(String, nullable=False, default='visualizacao')  # admin, manutencao, visualizacao
     ativo = Column(Boolean, default=True)
-    # grupo_id = Column(Integer, ForeignKey("grupos_usuarios.id"), nullable=True)
+    # Associação opcional a um grupo de usuários
+    grupo_id = Column(Integer, ForeignKey("grupos_usuarios.id"), nullable=True)
     # permissoes = Column(Text, nullable=True)  # JSON string com permissões específicas
     # Colunas de auditoria removidas temporariamente para compatibilidade
     # criado_em = Column(DateTime, default=datetime.utcnow)

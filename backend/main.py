@@ -62,6 +62,14 @@ def ensure_indexes():
     try:
         with engine.connect() as conn:
             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username)"))
+            # Adiciona coluna grupo_id se não existir (SQLite permite ADD COLUMN)
+            try:
+                res = conn.execute(text("PRAGMA table_info(usuarios)"))
+                cols = [row[1] for row in res.fetchall()]
+                if "grupo_id" not in cols:
+                    conn.execute(text("ALTER TABLE usuarios ADD COLUMN grupo_id INTEGER"))
+            except Exception:
+                pass
     except Exception:
         # Se falhar (ex.: permissão ou DB read-only), segue sem interromper o app
         pass
@@ -764,7 +772,7 @@ class UsuarioSchema(BaseModel):
     email: str | None = None
     nivel_acesso: str = 'visualizacao'  # admin, willians, manutencao, visualizacao
     ativo: bool = True
-    # grupo_id: int | None = None
+    grupo_id: int | None = None
     # permissoes: list[str] | None = None  # Lista de permissões específicas
     model_config = ConfigDict(from_attributes=True)
 
@@ -775,7 +783,7 @@ class UsuarioCreateSchema(BaseModel):
     email: str | None = None
     nivel_acesso: str = 'visualizacao'  # admin, willians, manutencao, visualizacao
     ativo: bool = True
-    # grupo_id: int | None = None
+    grupo_id: int | None = None
     # permissoes: list[str] | None = None  # Lista de permissões específicas
 
 class UsuarioUpdateSchema(BaseModel):
@@ -785,7 +793,7 @@ class UsuarioUpdateSchema(BaseModel):
     email: str | None = None
     nivel_acesso: str = 'visualizacao'  # admin, willians, manutencao, visualizacao
     ativo: bool = True
-    # grupo_id: int | None = None
+    grupo_id: int | None = None
 
 # Grupos de Usuários
 class GrupoUsuarioSchema(BaseModel):
@@ -858,7 +866,7 @@ def criar_usuario(usuario: UsuarioCreateSchema, db: Session = Depends(get_db)):
         hashed_password=Usuario.hash_password(usuario.password),
         nivel_acesso=usuario.nivel_acesso,
         ativo=usuario.ativo,
-        # grupo_id=usuario.grupo_id,
+        grupo_id=usuario.grupo_id,
     )
     db.add(novo)
     db.commit()
@@ -878,7 +886,7 @@ def editar_usuario(usuario_id: int, usuario: UsuarioUpdateSchema, db: Session = 
         db_usuario.hashed_password = Usuario.hash_password(usuario.password)
     db_usuario.nivel_acesso = usuario.nivel_acesso
     db_usuario.ativo = usuario.ativo
-    # db_usuario.grupo_id = usuario.grupo_id
+    db_usuario.grupo_id = usuario.grupo_id
     db.commit()
     db.refresh(db_usuario)
     return db_usuario
@@ -891,6 +899,24 @@ def deletar_usuario(usuario_id: int, db: Session = Depends(get_db)):
     db.delete(db_usuario)
     db.commit()
     return {"ok": True}
+
+# Auxiliares de usuários por grupo
+@app.get("/grupos/{grupo_id}/usuarios", response_model=List[UsuarioSchema])
+def listar_usuarios_por_grupo(grupo_id: int, db: Session = Depends(get_db)):
+    return db.query(Usuario).filter(Usuario.grupo_id == grupo_id).all()
+
+class SetGrupoSchema(BaseModel):
+    grupo_id: int | None = None
+
+@app.post("/usuarios/{usuario_id}/set-grupo", response_model=UsuarioSchema)
+def set_grupo_usuario(usuario_id: int, payload: SetGrupoSchema, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    user.grupo_id = payload.grupo_id
+    db.commit()
+    db.refresh(user)
+    return user
 
 # Login
 class LoginRequest(BaseModel):

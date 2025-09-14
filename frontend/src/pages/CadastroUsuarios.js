@@ -37,6 +37,7 @@ const NIVEL_OPTIONS = [
 export default function CadastroUsuarios() {
 	const { token } = useAuth();
 	const [rows, setRows] = useState([]);
+	const [grupos, setGrupos] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
@@ -47,7 +48,7 @@ export default function CadastroUsuarios() {
 
 	// Dialog de novo usuário
 	const [openNew, setOpenNew] = useState(false);
-	const [newData, setNewData] = useState({ username: '', nome: '', email: '', password: '', confirm: '', nivel_acesso: 'visualizacao', ativo: true });
+	const [newData, setNewData] = useState({ username: '', nome: '', email: '', password: '', confirm: '', nivel_acesso: 'visualizacao', ativo: true, grupo_id: null });
 
 	const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }), [token]);
 
@@ -55,10 +56,17 @@ export default function CadastroUsuarios() {
 		setLoading(true);
 		setError('');
 		try {
-			const res = await fetch(`${API_BASE}/usuarios/`);
+			const [res, resGrupos] = await Promise.all([
+				fetch(`${API_BASE}/usuarios/`),
+				fetch(`${API_BASE}/grupos/`)
+			]);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = await res.json();
 			setRows(Array.isArray(data) ? data : []);
+			if (resGrupos.ok) {
+				const gs = await resGrupos.json();
+				setGrupos(Array.isArray(gs) ? gs : []);
+			}
 		} catch (e) {
 			setError(e.message || 'Falha ao carregar usuários');
 		} finally {
@@ -87,6 +95,7 @@ export default function CadastroUsuarios() {
 			email: editDraft.email || null,
 			nivel_acesso: editDraft.nivel_acesso || 'visualizacao',
 			ativo: !!editDraft.ativo,
+			grupo_id: editDraft.grupo_id ?? null,
 			...(editDraft.password ? { password: editDraft.password } : {}),
 		};
 		try {
@@ -106,12 +115,12 @@ export default function CadastroUsuarios() {
 	};
 
 	const openNewDialog = () => {
-		setNewData({ username: '', nome: '', email: '', password: '', confirm: '', nivel_acesso: 'visualizacao', ativo: true });
+		setNewData({ username: '', nome: '', email: '', password: '', confirm: '', nivel_acesso: 'visualizacao', ativo: true, grupo_id: null });
 		setOpenNew(true);
 	};
 
 	const createUser = async () => {
-		const { username, nome, email, password, confirm, nivel_acesso, ativo } = newData;
+		const { username, nome, email, password, confirm, nivel_acesso, ativo, grupo_id } = newData;
 		if (!username || !nome || !password || !confirm) {
 			setSnack({ open: true, message: 'Preencha os campos obrigatórios', severity: 'warning' });
 			return;
@@ -120,7 +129,7 @@ export default function CadastroUsuarios() {
 			setSnack({ open: true, message: 'Senhas não conferem', severity: 'warning' });
 			return;
 		}
-		const payload = { username, password, nome, email: email || null, nivel_acesso, ativo: !!ativo };
+		const payload = { username, password, nome, email: email || null, nivel_acesso, ativo: !!ativo, grupo_id: grupo_id ?? null };
 		try {
 			const res = await fetch(`${API_BASE}/usuarios/`, { method: 'POST', headers, body: JSON.stringify(payload) });
 			if (!res.ok) {
@@ -156,6 +165,7 @@ export default function CadastroUsuarios() {
 			const ws = wb.Sheets[wb.SheetNames[0]];
 			const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
 			// Espera colunas: username, nome, email, nivel_acesso, password, ativo
+			// Opcionalmente: grupo_id ou grupo (nome)
 			let created = 0, failed = 0;
 			for (const row of json) {
 				const payload = {
@@ -166,6 +176,19 @@ export default function CadastroUsuarios() {
 					password: String(row.password || '').trim(),
 					ativo: String(row.ativo || '1').toString().trim().toLowerCase() !== '0',
 				};
+				// Mapear grupo opcional
+				let gid = null;
+				if (row.grupo_id !== undefined && row.grupo_id !== null && row.grupo_id !== '') {
+					const parsed = Number(row.grupo_id);
+					if (!Number.isNaN(parsed)) gid = parsed;
+				} else if (row.grupo || row.grupo_nome) {
+					const nomeGrupo = String(row.grupo || row.grupo_nome || '').trim().toLowerCase();
+					const g = grupos.find(x => String(x.nome || '').trim().toLowerCase() === nomeGrupo);
+					if (g) gid = g.id;
+				}
+				if (gid !== null) {
+					payload.grupo_id = gid;
+				}
 				if (!payload.username || !payload.nome || !payload.password) { failed++; continue; }
 				try {
 					const res = await fetch(`${API_BASE}/usuarios/`, { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -212,6 +235,7 @@ export default function CadastroUsuarios() {
 							<TableCell>Usuário</TableCell>
 							<TableCell>Nome</TableCell>
 							<TableCell>Email</TableCell>
+								<TableCell>Grupo</TableCell>
 							<TableCell>Nível</TableCell>
 							<TableCell>Ativo</TableCell>
 							<TableCell align="right">Ações</TableCell>
@@ -235,6 +259,23 @@ export default function CadastroUsuarios() {
 									{editRowId === r.id ? (
 										<TextField size="small" value={editDraft.email || ''} onChange={(e) => setEditDraft(d => ({ ...d, email: e.target.value }))} />
 									) : (r.email || '')}
+								</TableCell>
+								<TableCell>
+									{editRowId === r.id ? (
+										<TextField size="small" select value={editDraft.grupo_id ?? ''} onChange={(e) => setEditDraft(d => ({ ...d, grupo_id: e.target.value ? Number(e.target.value) : null }))}>
+											<MenuItem value="">
+												<em>Sem grupo</em>
+											</MenuItem>
+											{grupos.map(g => (
+												<MenuItem key={g.id} value={g.id}>{g.nome}</MenuItem>
+											))}
+										</TextField>
+									) : (
+										(() => {
+											const g = grupos.find(x => x.id === r.grupo_id);
+											return g ? g.nome : '-';
+										})()
+									)}
 								</TableCell>
 								<TableCell>
 									{editRowId === r.id ? (
@@ -270,9 +311,9 @@ export default function CadastroUsuarios() {
 								</TableCell>
 							</TableRow>
 						))}
-						{!rows.length && !loading && (
+							{!rows.length && !loading && (
 							<TableRow>
-								<TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>Nenhum usuário encontrado</TableCell>
+									<TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>Nenhum usuário encontrado</TableCell>
 							</TableRow>
 						)}
 					</TableBody>
@@ -292,6 +333,10 @@ export default function CadastroUsuarios() {
 						<TextField select label="Nível de acesso" value={newData.nivel_acesso} onChange={(e) => setNewData(d => ({ ...d, nivel_acesso: e.target.value }))}>
 							{NIVEL_OPTIONS.map(o => (<MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>))}
 						</TextField>
+							<TextField select label="Grupo" value={newData.grupo_id ?? ''} onChange={(e) => setNewData(d => ({ ...d, grupo_id: e.target.value ? Number(e.target.value) : null }))}>
+								<MenuItem value=""><em>Sem grupo</em></MenuItem>
+								{grupos.map(g => (<MenuItem key={g.id} value={g.id}>{g.nome}</MenuItem>))}
+							</TextField>
 					</Stack>
 				</DialogContent>
 				<DialogActions>
