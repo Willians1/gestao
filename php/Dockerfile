@@ -7,7 +7,8 @@ COPY . /app
 
 # Instala dependências de build e habilita extensões necessárias (PDO SQLite e SQLite3)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libsqlite3-dev \
+    && apt-get install -y --no-install-recommends libsqlite3-dev $PHPIZE_DEPS \
+    && docker-php-ext-configure pdo_sqlite --with-pdo-sqlite \
     && docker-php-ext-install pdo_sqlite sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
