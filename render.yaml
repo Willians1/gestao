@@ -21,7 +21,7 @@ services:
     region: oregon
     autoDeploy: true
     dockerfilePath: ./php/Dockerfile
-    buildContext: ./php
+    dockerContext: ./php
     envVars:
       - key: PHP_DB_PATH
         value: /app/gestao_obras.db
