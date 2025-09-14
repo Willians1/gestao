@@ -41,6 +41,7 @@ import {
   NavigateNext
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE } from '../api';
 
 export default function TestesLoja() {
   const [testes, setTestes] = useState([]);
@@ -104,7 +105,7 @@ export default function TestesLoja() {
           // tentar buscar do backend apenas esse teste
           (async () => {
             try {
-              const res = await fetch(`http://localhost:8000/testes-loja/${id}`);
+              const res = await fetch(`${API_BASE}/testes-loja/${id}`);
               if (res.ok) {
                 const data = await res.json();
                 setTesteDetalhes(data);
@@ -120,7 +121,7 @@ export default function TestesLoja() {
 
   const carregarTestes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/testes-loja/');
+  const response = await fetch(`${API_BASE}/testes-loja/`);
       if (response.ok) {
         const data = await response.json();
         setTestes(data);
@@ -132,7 +133,7 @@ export default function TestesLoja() {
 
   const carregarClientes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/clientes/');
+  const response = await fetch(`${API_BASE}/clientes/`);
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -172,8 +173,8 @@ export default function TestesLoja() {
       }
 
       const url = editandoTeste 
-        ? `http://localhost:8000/testes-loja/${editandoTeste.id}` 
-        : 'http://localhost:8000/testes-loja/';
+        ? `${API_BASE}/testes-loja/${editandoTeste.id}` 
+        : `${API_BASE}/testes-loja/`;
       const method = editandoTeste ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -321,7 +322,7 @@ export default function TestesLoja() {
   const deletarTeste = async (testeId) => {
     if (window.confirm('Tem certeza que deseja deletar este teste?')) {
       try {
-        const response = await fetch(`http://localhost:8000/testes-loja/${testeId}`, {
+  const response = await fetch(`${API_BASE}/testes-loja/${testeId}`, {
           method: 'DELETE'
         });
 
@@ -526,10 +527,10 @@ export default function TestesLoja() {
                   {teste.foto && (
                     <Box sx={{ mt: 2, mb: 2 }}>
                       <Avatar
-                        src={`http://localhost:8000/uploads/testes-loja/${teste.foto}`}
+                        src={`${API_BASE}/uploads/testes-loja/${teste.foto}`}
                         sx={{ width: 60, height: 60, mx: 'auto', cursor: 'pointer' }}
                         variant="rounded"
-                        onClick={() => handleImageClick(`http://localhost:8000/uploads/testes-loja/${teste.foto}`)}
+                        onClick={() => handleImageClick(`${API_BASE}/uploads/testes-loja/${teste.foto}`)}
                       />
                     </Box>
                   )}
@@ -832,7 +833,7 @@ export default function TestesLoja() {
                           cursor: 'pointer'
                         }}>
                           <img
-                            src={`http://localhost:8000/uploads/testes-loja/${testeDetalhes.foto}`}
+                            src={`${API_BASE}/uploads/testes-loja/${testeDetalhes.foto}`}
                             alt="Foto do teste"
                             style={{
                               width: '100%',
@@ -841,7 +842,7 @@ export default function TestesLoja() {
                               objectFit: 'contain',
                               display: 'block'
                             }}
-                            onClick={() => handleImageClick(`http://localhost:8000/uploads/testes-loja/${testeDetalhes.foto}`)}
+                            onClick={() => handleImageClick(`${API_BASE}/uploads/testes-loja/${testeDetalhes.foto}`)}
                           />
                         </Box>
                       </Box>
@@ -885,7 +886,7 @@ export default function TestesLoja() {
                             }}
                           >
                             <source 
-                              src={`http://localhost:8000/uploads/testes-loja/${testeDetalhes.video}`} 
+                              src={`${API_BASE}/uploads/testes-loja/${testeDetalhes.video}`} 
                               type="video/mp4" 
                             />
                             Seu navegador não suporta o elemento de vídeo.

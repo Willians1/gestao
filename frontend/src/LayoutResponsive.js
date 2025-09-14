@@ -119,7 +119,7 @@ export default function Layout({ children }) {
 
   const handleDownloadBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/download');
+  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -141,7 +141,7 @@ export default function Layout({ children }) {
 
   const handleCreateInternalBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/create', {
+  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/create`, {
         method: 'POST'
       });
       if (response.ok) {

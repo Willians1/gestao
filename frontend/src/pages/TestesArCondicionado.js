@@ -41,6 +41,7 @@ import {
   NavigateNext
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../api';
 
 export default function TestesArCondicionado() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function TestesArCondicionado() {
 
   const carregarTestes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/testes-ar-condicionado/');
+  const response = await fetch(`${API_BASE}/testes-ar-condicionado/`);
       if (response.ok) {
         const data = await response.json();
         setTestes(data);
@@ -101,7 +102,7 @@ export default function TestesArCondicionado() {
 
   const carregarClientes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/clientes/');
+  const response = await fetch(`${API_BASE}/clientes/`);
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -141,8 +142,8 @@ export default function TestesArCondicionado() {
       }
 
       const url = editandoTeste 
-        ? `http://localhost:8000/testes-ar-condicionado/${editandoTeste.id}` 
-        : 'http://localhost:8000/testes-ar-condicionado/';
+        ? `${API_BASE}/testes-ar-condicionado/${editandoTeste.id}` 
+        : `${API_BASE}/testes-ar-condicionado/`;
       const method = editandoTeste ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -290,7 +291,7 @@ export default function TestesArCondicionado() {
   const deletarTeste = async (testeId) => {
     if (window.confirm('Tem certeza que deseja deletar este teste?')) {
       try {
-        const response = await fetch(`http://localhost:8000/testes-ar-condicionado/${testeId}`, {
+  const response = await fetch(`${API_BASE}/testes-ar-condicionado/${testeId}`, {
           method: 'DELETE'
         });
 
@@ -495,10 +496,10 @@ export default function TestesArCondicionado() {
                   {teste.foto && (
                     <Box sx={{ mt: 2, mb: 2 }}>
                       <Avatar
-                        src={`http://localhost:8000/uploads/testes-ar-condicionado/${teste.foto}`}
+                        src={`${API_BASE}/uploads/testes-ar-condicionado/${teste.foto}`}
                         sx={{ width: 60, height: 60, mx: 'auto', cursor: 'pointer' }}
                         variant="rounded"
-                        onClick={() => handleImageClick(`http://localhost:8000/uploads/testes-ar-condicionado/${teste.foto}`)}
+                        onClick={() => handleImageClick(`${API_BASE}/uploads/testes-ar-condicionado/${teste.foto}`)}
                       />
                     </Box>
                   )}
@@ -801,7 +802,7 @@ export default function TestesArCondicionado() {
                           cursor: 'pointer'
                         }}>
                           <img
-                            src={`http://localhost:8000/uploads/testes-ar-condicionado/${testeDetalhes.foto}`}
+                            src={`${API_BASE}/uploads/testes-ar-condicionado/${testeDetalhes.foto}`}
                             alt="Foto do teste"
                             style={{
                               width: '100%',
@@ -810,7 +811,7 @@ export default function TestesArCondicionado() {
                               objectFit: 'contain',
                               display: 'block'
                             }}
-                            onClick={() => handleImageClick(`http://localhost:8000/uploads/testes-ar-condicionado/${testeDetalhes.foto}`)}
+                            onClick={() => handleImageClick(`${API_BASE}/uploads/testes-ar-condicionado/${testeDetalhes.foto}`)}
                           />
                         </Box>
                       </Box>
@@ -854,7 +855,7 @@ export default function TestesArCondicionado() {
                             }}
                           >
                             <source 
-                              src={`http://localhost:8000/uploads/testes-ar-condicionado/${testeDetalhes.video}`} 
+                              src={`${API_BASE}/uploads/testes-ar-condicionado/${testeDetalhes.video}`} 
                               type="video/mp4" 
                             />
                             Seu navegador não suporta o elemento de vídeo.

@@ -38,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { API_BASE } from './api';
 
 const drawerWidth = 280;
 
@@ -126,7 +127,7 @@ export default function Layout({ children }) {
 
   const handleDownloadBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/download');
+      const response = await fetch(`${API_BASE}/backup/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -148,7 +149,7 @@ export default function Layout({ children }) {
 
   const handleCreateInternalBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/create', {
+      const response = await fetch(`${API_BASE}/backup/create`, {
         method: 'POST'
       });
       if (response.ok) {

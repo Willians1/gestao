@@ -78,6 +78,9 @@ export default function DashboardPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [mobileOpen, setMobileOpen] = useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  // Opcional: usar helper centralizado quando disponível
+  // import { API_BASE } from './api';
+  // const API = API_BASE;
   // Testes de Loja (Gerador/AR) + Clientes
   const [clientes, setClientes] = useState([]);
   const [testesList, setTestesList] = useState([]); // Gerador
@@ -237,7 +240,7 @@ export default function DashboardPage() {
 
   const handleDownloadBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/download');
+  const response = await fetch(`${API}/backup/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -259,7 +262,7 @@ export default function DashboardPage() {
 
   const handleCreateInternalBackup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/backup/create', {
+  const response = await fetch(`${API}/backup/create`, {
         method: 'POST'
       });
       if (response.ok) {

@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { API_BASE } from '../api';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -81,7 +82,7 @@ function Despesas() {
   const loadDespesas = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/despesas');
+  const response = await fetch(`${API_BASE}/despesas`);
       if (response.ok) {
         const data = await response.json();
         setDespesas(data);
@@ -114,7 +115,7 @@ function Despesas() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch('http://localhost:8000/despesas', {
+  const response = await fetch(`${API_BASE}/despesas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +190,7 @@ function Despesas() {
         throw new Error('Erro de conexão');
       };
 
-      xhr.open('POST', 'http://localhost:8000/despesas/upload-excel');
+  xhr.open('POST', `${API_BASE}/despesas/upload-excel`);
       xhr.send(formData);
     } catch (e) {
       console.error(e);

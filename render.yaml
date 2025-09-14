@@ -11,7 +11,7 @@ services:
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
       - key: ALLOW_ORIGINS
-        value: http://localhost:3000,http://localhost:3001,http://localhost:3005
+        value: http://localhost:3000,http://localhost:3001,http://localhost:3005,https://gestao-frontend.onrender.com
     healthCheckPath: /healthz
 
   - type: web
@@ -25,3 +25,12 @@ services:
     envVars:
       - key: PHP_DB_PATH
         value: /app/gestao_obras.db
+
+  - type: web
+    name: gestao-frontend
+    runtime: static
+    staticPublishPath: ./frontend/build
+    buildCommand: cd frontend && npm ci && npm run build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://gestao-backend-lbab.onrender.com

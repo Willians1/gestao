@@ -1,15 +1,16 @@
 import React from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
+import { API_BASE } from '../api';
 
 export default function Admin() {
   const theme = useTheme();
   
   const handleDownloadBackup = () => {
-    window.open('http://localhost:8000/admin/backup', '_blank');
+    window.open(`${API_BASE}/admin/backup`, '_blank');
   };
 
   const handleDownloadSource = () => {
-    window.open('http://localhost:8000/admin/download-source', '_blank');
+    window.open(`${API_BASE}/admin/download-source`, '_blank');
   };
 
   return (
