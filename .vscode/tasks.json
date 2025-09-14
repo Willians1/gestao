@@ -1,0 +1,40 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Instalar backend (venv)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; pip install -r backend/requirements.txt",
+			"group": "build"
+		},
+		{
+			"label": "Backend: uvicorn (venv)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python -m uvicorn backend.main:app --reload",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Frontend: start (porta 3005)",
+			"type": "shell",
+			"command": "cd frontend; $env:PORT=3000; npm start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Frontend: start",
+			"type": "shell",
+			"command": "cd frontend; npm start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "dev: all",
+			"dependsOn": [
+				"Backend: uvicorn (venv)",
+				"Frontend: start (porta 3005)"
+			],
+			"dependsOrder": "parallel"
+		}
+	]
+}

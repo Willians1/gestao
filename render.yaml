@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: gestao-backend
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        value: secret-key-thors-gestor-2025
+      - key: ALLOW_ORIGINS
+        value: http://localhost:3000,http://localhost:3001,http://localhost:3005
+    healthCheckPath: /healthz
+
+  - type: web
+    name: gestao-php
+    runtime: docker
+    plan: free
+    region: oregon
+    autoDeploy: true
+    dockerfilePath: ./php/Dockerfile
+    buildContext: ./php
+    envVars:
+      - key: PHP_DB_PATH
+        value: /app/gestao_obras.db

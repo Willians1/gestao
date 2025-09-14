@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+backend/.venv/
+*.log
+
+# Node/React
+node_modules/
+frontend/node_modules/
+dist/
+build/
+frontend/build/
+.parcel-cache/
+
+# Uploads e backups
+uploads/
+backend/backups/
+uploads__restore/
+
+# Bancos SQLite (locais de dev)
+gestao_obras.db
+backend/gestao_obras.db
+frontend/gestao_obras.db
+php/gestao_obras.db
+
+# Misc
+.DS_Store
+Thumbs.db
