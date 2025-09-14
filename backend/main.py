@@ -70,10 +70,33 @@ ensure_indexes()
 
 app = FastAPI()
 
+# Registro de início da aplicação para cálculo de uptime
+APP_START_TIME_UTC = datetime.datetime.utcnow()
+
+def _get_build_meta():
+    """Coleta metadados de build a partir de variáveis de ambiente.
+
+    Compatível com Render (RENDER_GIT_COMMIT) e variáveis genéricas.
+    """
+    return {
+        "version": os.getenv("APP_VERSION"),
+        "commit_sha": os.getenv("RENDER_GIT_COMMIT") or os.getenv("COMMIT_SHA") or os.getenv("GIT_COMMIT"),
+        "build_time": os.getenv("BUILD_TIME"),  # ISO 8601 recomendado
+    }
+
 # Health check super-rápido (sem tocar no banco)
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    meta = _get_build_meta()
+    # Cálculo de uptime em segundos (desde o start do processo)
+    uptime_seconds = (datetime.datetime.utcnow() - APP_START_TIME_UTC).total_seconds()
+    return {
+        "status": "ok",
+        "version": meta.get("version"),
+        "commit_sha": meta.get("commit_sha"),
+        "build_time": meta.get("build_time"),
+        "uptime_seconds": int(uptime_seconds),
+    }
 
 # CORS
 origins_env = os.getenv(

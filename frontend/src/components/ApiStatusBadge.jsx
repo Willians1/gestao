@@ -34,6 +34,16 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
       <div><strong>Status:</strong> {h.status}</div>
       {h.latencyMs != null && (<div><strong>Latência:</strong> {h.latencyMs} ms</div>)}
       <div><strong>API:</strong> {API_BASE}</div>
+      {h.version && (<div><strong>Versão:</strong> {h.version}</div>)}
+      {h.commit_sha && (
+        <div>
+          <strong>Commit:</strong> <span style={{ fontFamily: 'monospace' }}>{String(h.commit_sha).slice(0, 7)}</span>
+        </div>
+      )}
+      {h.build_time && (<div><strong>Build:</strong> {h.build_time}</div>)}
+      {typeof h.uptime_seconds === 'number' && (
+        <div><strong>Uptime:</strong> {Math.floor(h.uptime_seconds / 3600)}h {Math.floor((h.uptime_seconds % 3600) / 60)}m</div>
+      )}
       {h.lastCheck && (<div><strong>Último check:</strong> {h.lastCheck.toLocaleString()}</div>)}
       {h.message && (<div style={{ color: '#b91c1c' }}><strong>Obs:</strong> {h.message}</div>)}
     </div>

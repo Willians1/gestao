@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { API_BASE } from '../api';
 
 export default function useApiHealth({ intervalMs = 30000 } = {}) {
-  const [state, setState] = useState({ status: 'checking', latencyMs: null, message: '', lastCheck: null });
+  const [state, setState] = useState({ 
+    status: 'checking', 
+    latencyMs: null, 
+    message: '', 
+    lastCheck: null,
+    version: null,
+    commit_sha: null,
+    build_time: null,
+    uptime_seconds: null,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -14,11 +23,34 @@ export default function useApiHealth({ intervalMs = 30000 } = {}) {
         const latency = Math.round(performance.now() - start);
         if (!mounted) return;
         const base = { latencyMs: latency, lastCheck: new Date(), message: '' };
-        if (res.ok) setState({ status: 'ok', ...base });
-        else setState({ status: 'degraded', ...base, message: `HTTP ${res.status}` });
+        if (res.ok) {
+          let info = {};
+          try {
+            info = await res.json();
+          } catch (_) {}
+          setState({ 
+            status: 'ok', 
+            ...base,
+            version: info?.version ?? null,
+            commit_sha: info?.commit_sha ?? null,
+            build_time: info?.build_time ?? null,
+            uptime_seconds: typeof info?.uptime_seconds === 'number' ? info.uptime_seconds : null,
+          });
+        } else {
+          setState({ status: 'degraded', ...base, message: `HTTP ${res.status}` });
+        }
       } catch (e) {
         if (!mounted) return;
-        setState({ status: 'offline', latencyMs: null, lastCheck: new Date(), message: e?.message || 'Falha ao conectar' });
+        setState({ 
+          status: 'offline', 
+          latencyMs: null, 
+          lastCheck: new Date(), 
+          message: e?.message || 'Falha ao conectar',
+          version: null,
+          commit_sha: null,
+          build_time: null,
+          uptime_seconds: null,
+        });
       }
     };
     check();
