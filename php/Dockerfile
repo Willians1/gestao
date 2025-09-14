@@ -26,4 +26,6 @@ RUN echo '#!/bin/sh' > /entrypoint.sh \
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "/entrypoint.sh && php -S 0.0.0.0:10000 -t /app"]
+# Usa a porta definida pela plataforma em $PORT; fallback para 10000 local
+ENV PORT=10000
+CMD ["sh", "-c", "/entrypoint.sh && php -S 0.0.0.0:${PORT:-10000} -t /app"]
