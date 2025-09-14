@@ -25,7 +25,8 @@ import {
 	FormGroup,
 	FormControlLabel,
 	Checkbox,
-	Divider
+	Divider,
+	Grid
 } from '@mui/material';
 import { Add, Delete, Edit, Save, Close, Security } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
@@ -61,16 +62,17 @@ export default function CadastroUsuarios() {
 	const [permGroup, setPermGroup] = useState(null); // detalhes do grupo
 	const [permChecked, setPermChecked] = useState(new Set());
 
-	// Mapa das páginas x IDs base de permissão (leitura/acesso)
-	const PAGE_FLAGS = [
-		{ id: 1101, label: 'Usuários', route: '/cadastro-usuarios' },
-		{ id: 1201, label: 'Clientes', route: '/clientes' },
-		{ id: 1301, label: 'Fornecedores', route: '/fornecedores' },
-		{ id: 1401, label: 'Contratos', route: '/contratos' },
-		{ id: 1501, label: 'Orçamento de Obra', route: '/orcamento-obra' },
-		{ id: 1601, label: 'Despesas', route: '/despesas' },
-		{ id: 1701, label: 'Valor Materiais', route: '/valor-materiais' },
-		{ id: 1801, label: 'Resumo Mensal', route: '/resumo-mensal' },
+	// Mapa das páginas x IDs de permissões (base/ler, criar, editar, excluir)
+	// Padrão: base (xx01), editar (xx02), excluir (xx03), criar (xx04)
+	const PAGE_PERMS = [
+		{ base: 1101, label: 'Usuários', route: '/cadastro-usuarios', create: 1104, update: 1102, del: 1103 },
+		{ base: 1201, label: 'Clientes', route: '/clientes', create: 1204, update: 1202, del: 1203 },
+		{ base: 1301, label: 'Fornecedores', route: '/fornecedores', create: 1304, update: 1302, del: 1303 },
+		{ base: 1401, label: 'Contratos', route: '/contratos', create: 1404, update: 1402, del: 1403 },
+		{ base: 1501, label: 'Orçamento de Obra', route: '/orcamento-obra', create: 1504, update: 1502, del: 1503 },
+		{ base: 1601, label: 'Despesas', route: '/despesas', create: 1604, update: 1602, del: 1603 },
+		{ base: 1701, label: 'Valor Materiais', route: '/valor-materiais', create: 1704, update: 1702, del: 1703 },
+		{ base: 1801, label: 'Resumo Mensal', route: '/resumo-mensal', create: 1804, update: 1802, del: 1803 },
 	];
 
 	const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }), [token]);
@@ -116,7 +118,7 @@ export default function CadastroUsuarios() {
 			let g = null;
 			if (resGroup.ok) g = await resGroup.json();
 			setPermGroup(g);
-			let currentIds = new Set();
+				let currentIds = new Set();
 			if (resPerms.ok) {
 				const data = await resPerms.json();
 				const ids = (data?.permissoes || []).map(p => p.id);
@@ -124,12 +126,20 @@ export default function CadastroUsuarios() {
 			}
 			// Se nível admin, tudo marcado
 			const isAdminLevel = String(user.nivel_acesso || '').toLowerCase() === 'admin' || String(user.nivel_acesso || '').toLowerCase() === 'willians';
-			if (isAdminLevel) {
-				setPermChecked(new Set(PAGE_FLAGS.map(p => p.id)));
-			} else {
-				const baseChecked = new Set(PAGE_FLAGS.filter(p => currentIds.has(p.id)).map(p => p.id));
-				setPermChecked(baseChecked);
-			}
+				if (isAdminLevel) {
+					const allIds = new Set();
+					PAGE_PERMS.forEach(p => { allIds.add(p.base); allIds.add(p.create); allIds.add(p.update); allIds.add(p.del); });
+					setPermChecked(allIds);
+				} else {
+					const checked = new Set();
+					PAGE_PERMS.forEach(p => {
+						if (currentIds.has(p.base)) checked.add(p.base);
+						if (currentIds.has(p.create)) checked.add(p.create);
+						if (currentIds.has(p.update)) checked.add(p.update);
+						if (currentIds.has(p.del)) checked.add(p.del);
+					});
+					setPermChecked(checked);
+				}
 		} catch (e) {
 			setSnack({ open: true, message: 'Falha ao carregar permissões', severity: 'error' });
 		} finally {
@@ -465,18 +475,33 @@ export default function CadastroUsuarios() {
 					{permLoading ? (
 						<Typography>Carregando permissões…</Typography>
 					) : (
-						<FormGroup>
-							{PAGE_FLAGS.map(p => {
-								const isAdminLevel = permUser && (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians');
-								return (
-									<FormControlLabel
-										key={p.id}
-										control={<Checkbox checked={permChecked.has(p.id)} onChange={() => toggleFlag(p.id)} disabled={isAdminLevel} />}
-										label={p.label}
-									/>
-								);
-							})}
-						</FormGroup>
+						<Box>
+							<Table size="small">
+								<TableHead>
+									<TableRow>
+										<TableCell>Página</TableCell>
+										<TableCell align="center">Ver</TableCell>
+										<TableCell align="center">Criar</TableCell>
+										<TableCell align="center">Editar</TableCell>
+										<TableCell align="center">Excluir</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{PAGE_PERMS.map(p => {
+										const isAdminLevel = permUser && (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians');
+										return (
+											<TableRow key={p.base} hover>
+												<TableCell>{p.label}</TableCell>
+												<TableCell align="center"><Checkbox checked={permChecked.has(p.base)} onChange={() => toggleFlag(p.base)} disabled={isAdminLevel} /></TableCell>
+												<TableCell align="center"><Checkbox checked={permChecked.has(p.create)} onChange={() => toggleFlag(p.create)} disabled={isAdminLevel} /></TableCell>
+												<TableCell align="center"><Checkbox checked={permChecked.has(p.update)} onChange={() => toggleFlag(p.update)} disabled={isAdminLevel} /></TableCell>
+												<TableCell align="center"><Checkbox checked={permChecked.has(p.del)} onChange={() => toggleFlag(p.del)} disabled={isAdminLevel} /></TableCell>
+											</TableRow>
+										);
+									})}
+								</TableBody>
+							</Table>
+						</Box>
 					)}
 					<Divider sx={{ mt: 1 }} />
 					{permGroup && (
