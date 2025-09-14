@@ -288,7 +288,7 @@ export default function DashboardHome() {
     { title: 'Clientes', description: 'Cadastro e gestão de clientes', icon: People, color: theme.palette.secondary.main, path: '/clientes', permission: '/clientes' },
     { title: 'Financeiro', description: 'Controle financeiro e despesas', icon: AttachMoney, color: theme.palette.success.main, path: '/financeiro', permission: '/financeiro' },
     { title: 'Testes de Loja', description: 'Agendamentos e registros de testes', icon: Storefront, color: theme.palette.primary.light, path: '/testes-loja-menu', permission: '/testes-loja-menu' },
-  { title: 'Administrador', description: 'Administração do sistema', icon: ExitToApp, color: theme.palette.grey[600], path: '/admin', permission: '/admin', adminOnly: true }
+  { title: 'Administrador', description: 'Administração do sistema', icon: ExitToApp, color: theme.palette.grey[600], path: '/cadastro-usuarios', permission: '/admin', adminOnly: true }
   ];
 
   const filteredCards = allDashboardCards.filter(card => {
