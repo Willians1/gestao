@@ -76,7 +76,17 @@ def healthz():
     return {"status": "ok"}
 
 # CORS
-origins_env = os.getenv("ALLOW_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3005")
+origins_env = os.getenv(
+    "ALLOW_ORIGINS",
+    ",".join([
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3005",
+        # Hosts de frontend em produção
+        "https://gestao-frontend.onrender.com",
+        "https://gestao-frontend-ttgd.onrender.com",
+    ]),
+)
 allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
