@@ -30,6 +30,7 @@ import Despesas from './pages/Despesas';
 import Fornecedores from './pages/Fornecedores';
 import ResumoMensal from './pages/ResumoMensal';
 import ValorMateriais from './pages/ValorMateriais';
+import CadastroUsuarios from './pages/CadastroUsuarios';
 
 // Componente Login inline para evitar problemas de import
 function Login() {
@@ -188,6 +189,11 @@ function App() {
               <Route path="/valor-materiais" element={
                 <ProtectedRoute page="/valor-materiais">
                   <ValorMateriais />
+                </ProtectedRoute>
+              } />
+              <Route path="/cadastro-usuarios" element={
+                <ProtectedRoute page="/admin">
+                  <CadastroUsuarios />
                 </ProtectedRoute>
               } />
               <Route path="/financeiro" element={
