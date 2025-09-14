@@ -383,6 +383,14 @@ export default function DashboardHome() {
                       {loadingBackup && <CircularProgress size={22} />}
                       {!loadingBackup && (
                         <Stack spacing={1} sx={{ alignItems: 'center' }}>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={(e) => { e.stopPropagation(); navigate('/cadastro-usuarios'); }}
+                            sx={{ alignSelf: 'stretch' }}
+                          >
+                            Acessar Cadastro de Usuários
+                          </Button>
                           {backupError && (
                             <Alert severity="error" sx={{ width: '100%' }}>{backupError}</Alert>
                           )}
