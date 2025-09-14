@@ -1,12 +1,10 @@
 FROM php:8.2-apache
 
-FROM php:8.2-apache
-
 # Instala dependências necessárias e extensões
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        libsqlite3-0 libsqlite3-dev sqlite3 gosu \
+        libsqlite3-0 libsqlite3-dev sqlite3 \
         ca-certificates curl; \
     rm -rf /var/lib/apt/lists/*
 
