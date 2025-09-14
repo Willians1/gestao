@@ -5,13 +5,18 @@ services:
     plan: free
     region: oregon
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    startCommand: >-
+      bash -lc 'export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
+      export COMMIT_SHA=${RENDER_GIT_COMMIT:-${COMMIT_SHA:-}};
+      uvicorn backend.main:app --host 0.0.0.0 --port $PORT'
     autoDeploy: true
     envVars:
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
       - key: ALLOW_ORIGINS
         value: http://localhost:3000,http://localhost:3001,http://localhost:3005,https://gestao-frontend.onrender.com,https://gestao-frontend-ttgd.onrender.com
+      - key: APP_VERSION
+        value: 1.0.0
     healthCheckPath: /healthz
 
   - type: web
