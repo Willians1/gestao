@@ -102,7 +102,12 @@ export default function CadastroUsuarios() {
 		}
 	};
 
-	useEffect(() => { fetchUsers(); }, []);
+	// Carrega usuários apenas quando houver token para evitar 401 na primeira renderização
+	useEffect(() => {
+		if (token) {
+			fetchUsers();
+		}
+	}, [token]);
 
 	const openPermissionsDialog = async (user) => {
 		if (!user.grupo_id) {
