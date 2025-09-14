@@ -43,9 +43,22 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
     return candidates[0];
   };
 
+  const defaultLojaName = (id) => {
+    const map = {
+      1: 'PEREQUE',
+      2: 'COTIA',
+      3: 'GUARUJA',
+    };
+    const base = map[Number(id)] || 'LOJA';
+    const suf = String(id || '').toString().padStart(2, '0');
+    return `${base} LOJA ${suf}`;
+  };
+
   const getClienteNomeById = (id) => {
     const c = clientes.find((x) => Number(x.id) === Number(id));
-    return c ? c.nome : `PEREQUE LOJA ${String(id || '').toString().padStart(2, '0')}`;
+    const suf = String(id || '').toString().padStart(2, '0');
+    if (c && c.nome) return `${String(c.nome).toUpperCase()} LOJA ${suf}`;
+    return defaultLojaName(id);
   };
 
   const fetchBothTestes = React.useCallback(async () => {
@@ -136,7 +149,9 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
               const rows = Array.from({ length: 16 }).map((_, i) => {
                 const idx = i + 1;
                 const clienteObj = clientes.find(c => Number(c.id) === idx);
-                const lojaName = clienteObj ? clienteObj.nome : `PEREQUE LOJA ${String(idx).padStart(2, '0')}`;
+                const lojaName = clienteObj && clienteObj.nome
+                  ? `${String(clienteObj.nome).toUpperCase()} LOJA ${String(idx).padStart(2, '0')}`
+                  : defaultLojaName(idx);
                 const gerCandidate = getLatestBy(testesList, t => Number(t.cliente_id) === idx);
                 const arCandidate = getLatestBy(testesArList, t => Number(t.cliente_id) === idx);
                 const gerDays = gerCandidate ? daysSince(gerCandidate.data_teste || gerCandidate.data || gerCandidate.created_at) : null;

@@ -357,8 +357,12 @@ export default function TestesLoja() {
   };
 
   const getClienteNome = (clienteId) => {
-    const cliente = clientes.find(c => c.id === clienteId);
-    return cliente ? cliente.nome : `Cliente ${clienteId}`;
+    const cliente = clientes.find(c => Number(c.id) === Number(clienteId));
+    const suf = String(clienteId || '').toString().padStart(2, '0');
+    if (cliente && cliente.nome) return `${String(cliente.nome).toUpperCase()} LOJA ${suf}`;
+    const map = { 1: 'PEREQUE', 2: 'COTIA', 3: 'GUARUJA' };
+    const base = map[Number(clienteId)] || 'LOJA';
+    return `${base} LOJA ${suf}`;
   };
 
   return (
