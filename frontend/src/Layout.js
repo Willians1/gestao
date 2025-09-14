@@ -39,6 +39,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { API_BASE } from './api';
+import ApiStatusBadge from './components/ApiStatusBadge';
 
 const drawerWidth = 280;
 
@@ -322,6 +323,10 @@ export default function Layout({ children }) {
                 Gestão de Obras
               </Typography>
             </Box>
+              {/* Status da API na AppBar */}
+              <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
+                <ApiStatusBadge compact={true} />
+              </Box>
           </Toolbar>
         </AppBar>
 
