@@ -4,10 +4,11 @@ FROM php:8.2-apache
 WORKDIR /var/www/html
 COPY . /var/www/html
 
-# Instala somente libs de runtime do SQLite e habilita rewrite (sem compilar extensões)
+# Instala dependências para compilar pdo_sqlite e a CLI sqlite3 (fallback); habilita rewrite
 RUN set -eux; \
   apt-get update; \
-  apt-get install -y --no-install-recommends libsqlite3-0; \
+  apt-get install -y --no-install-recommends libsqlite3-dev sqlite3 $PHPIZE_DEPS; \
+  docker-php-ext-install pdo_sqlite; \
   a2enmod rewrite; \
   rm -rf /var/lib/apt/lists/*
 
