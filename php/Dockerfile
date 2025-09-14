@@ -5,6 +5,9 @@ WORKDIR /app
 # Copia os arquivos PHP
 COPY . /app
 
+# Habilita extensões necessárias (PDO SQLite e SQLite3)
+RUN docker-php-ext-install pdo_sqlite sqlite3
+
 # Ajusta config.php para usar caminho do container
 ENV PHP_DB_PATH=/app/gestao_obras.db
 
