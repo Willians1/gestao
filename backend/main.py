@@ -1044,6 +1044,25 @@ def get_current_user_info(current_user: Usuario = Depends(get_current_user)):
         is_admin=(current_user.nivel_acesso.lower() in ["admin", "willians"])
     )
 
+@app.get("/me/permissoes")
+def get_my_permissions(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Retorna permissões efetivas do usuário (via grupo)."""
+    if not current_user.grupo_id:
+        return {"grupo_id": None, "permissoes": []}
+    # relacionamentos: PermissaoGrupo(grupo_id, permissao_id) → PermissaoSistema
+    links = db.query(PermissaoGrupo).filter(PermissaoGrupo.grupo_id == current_user.grupo_id).all()
+    ids = [lk.permissao_id for lk in links]
+    if not ids:
+        return {"grupo_id": current_user.grupo_id, "permissoes": []}
+    perms = db.query(PermissaoSistema).filter(PermissaoSistema.id.in_(ids)).all()
+    return {
+        "grupo_id": current_user.grupo_id,
+        "permissoes": [
+            {"id": p.id, "nome": p.nome, "categoria": p.categoria, "ativo": p.ativo}
+            for p in perms
+        ]
+    }
+
 # Grupos de Usuários
 @app.get("/grupos/", response_model=List[GrupoUsuarioSchema])
 def list_grupos(db: Session = Depends(get_db)):

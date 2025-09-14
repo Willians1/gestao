@@ -3,8 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, page, requiredPermission = 'read' }) => {
+  const { isAuthenticated, loading, hasPermission } = useAuth();
 
   if (loading) {
     return (
@@ -28,6 +28,15 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Checagem opcional de permissão de página/ação
+  if (page && !hasPermission(page, requiredPermission)) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+        <Typography variant="body1" color="text.secondary">Acesso negado</Typography>
+      </Box>
+    );
   }
 
   return children;
