@@ -194,10 +194,11 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
 
               if (testesSortOverdue) filtered.sort((a, b) => b.maxDays - a.maxDays);
 
-              return filtered.map(r => (
-                <ListItem key={r.lojaName} divider sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box sx={{ flex: 1 }}>
+              return filtered.map((r, idx) => (
+                <ListItem key={`${r.lojaName}-${idx}`} divider sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ListItemText primary={r.lojaName} />
+                    <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(`/clientes?id=${String(idx + 1)}`); }}>Abrir cliente</Button>
                   </Box>
                   <Box sx={{ width: 150, textAlign: 'center' }}>
                     {r.gerCandidate ? (
@@ -261,6 +262,11 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
           )}
         </DialogContent>
         <DialogActions>
+          {selectedTest && selectedTest.cliente_id && (
+            <Button onClick={() => { setOpenTestDetail(false); onClose(); navigate(`/clientes?id=${String(selectedTest.cliente_id)}`); }} color="primary" variant="outlined">
+              Abrir cliente
+            </Button>
+          )}
           <Button onClick={() => {
             // navegar para a página de testes e abrir o teste selecionado via query params
             setOpenTestDetail(false);
