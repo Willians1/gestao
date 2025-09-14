@@ -51,6 +51,10 @@ URLs:
 - Importar Excel em todas as páginas, visualizar dados na DataGrid (busca + edição inline)
 - Importar Excel em todas as páginas; visualização em planilha AG Grid (edição inline, copiar/colar, exportar CSV)
 - Armazenamento de arquivos importados no banco de dados e listagem com link para download
+- Autenticação com JWT (login) e controle de acesso baseado em grupos/permissões
+  - IDs fixos por página/ação (ex.: Usuários 1101=ver, 1102=editar, 1103=excluir, 1104=criar; Clientes 1201..1204 etc.)
+  - Backend aplica enforcement por endpoint (POST/PUT/DELETE exigem permissões específicas)
+  - Frontend oculta/desabilita botões conforme permissões do usuário logado
 
 ## Endpoints de Upload
 
@@ -62,8 +66,23 @@ Entidades usadas nas páginas: `cadastro_usuarios`, `clientes`, `contratos`, `de
 
 ## Observações
 
-- CORS configurado para `http://localhost:3000`, `3001` e `3002`.
+- CORS configurado para `http://localhost:3000`, `3001` e `3005` (dev) e domínios Render.
 - O frontend usa `REACT_APP_API_URL` definido em `frontend/.env` (padrão: `http://localhost:8000`).
+- Login de teste: usuário `admin`, senha `admin`. Este usuário possui nível que libera todas as permissões.
+
+## Permissões (resumo)
+
+- Páginas mapeadas e seus IDs base (leitura):
+  - Usuários: 1101 (editar: 1102, excluir: 1103, criar: 1104)
+  - Clientes: 1201 (editar: 1202, excluir: 1203, criar: 1204)
+  - Fornecedores: 1301 (editar: 1302, excluir: 1303, criar: 1304)
+  - Contratos: 1401 (editar: 1402, excluir: 1403, criar: 1404)
+  - Orçamento de Obra: 1501 (editar: 1502, excluir: 1503, criar: 1504)
+  - Despesas: 1601 (editar: 1602, excluir: 1603, criar: 1604)
+  - Valor Materiais: 1701 (editar: 1702, excluir: 1703, criar: 1704)
+  - Resumo Mensal: 1801 (editar: 1802, excluir: 1803, criar: 1804)
+
+No backend, endpoints GET exigem ao menos o ID base (leitura). Endpoints POST/PUT/DELETE exigem os IDs específicos de criar/editar/excluir. Usuários com nível `Admin` ou `Willians` têm acesso total.
 
 ## Próximos passos (sugestões)
 

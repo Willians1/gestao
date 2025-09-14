@@ -5,10 +5,16 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Clientes() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/clientes', 'read');
+  const canCreate = hasPermission('/clientes', 'create');
+  const canUpdate = hasPermission('/clientes', 'update');
+  const canDelete = hasPermission('/clientes', 'delete');
   const [rows, setRows] = React.useState([]);
   const [filteredRows, setFilteredRows] = React.useState([]);
   const [page, setPage] = React.useState(0);
@@ -27,7 +33,9 @@ export default function Clientes() {
   const loadPersisted = async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`${API}/clientes/`);
+      const resp = await fetch(`${API}/clientes/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       if (!resp.ok) return;
       const data = await resp.json();
       if (!data) return;
@@ -84,7 +92,7 @@ export default function Clientes() {
     try {
       const resp = await fetch(`${API}/clientes/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(form)
       });
       if (!resp.ok) {
@@ -113,7 +121,7 @@ export default function Clientes() {
     try {
       const resp = await fetch(`${API}/clientes/${selectedCliente.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(editForm)
       });
       if (!resp.ok) {
@@ -138,7 +146,8 @@ export default function Clientes() {
     setSaving(true);
     try {
       const resp = await fetch(`${API}/clientes/${selectedCliente.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (!resp.ok) {
         const error = await resp.text();
@@ -257,6 +266,7 @@ export default function Clientes() {
             />
           </Box>
           <Box sx={{ flex: 1 }} />
+          {canCreate && (
           <Button 
             variant="contained" 
             color="primary" 
@@ -269,6 +279,7 @@ export default function Clientes() {
           >
             {window.innerWidth < 600 ? 'Novo Cliente' : 'Criar novo cliente'}
           </Button>
+          )}
         </Box>
         
         {/* Chips de filtro responsivos */}
@@ -355,7 +366,7 @@ export default function Clientes() {
                 }}>
                   Endereço
                 </TableCell>
-                <TableCell sx={{ 
+                  <TableCell sx={{ 
                   fontWeight: 700,
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   minWidth: 80
@@ -418,7 +429,7 @@ export default function Clientes() {
                       {row.endereco || ''}
                     </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: { xs: 1, sm: 1.5 } }}>
                     <Button 
                       size={window.innerWidth < 600 ? 'small' : 'medium'}
                       variant="text" 
@@ -520,12 +531,16 @@ export default function Clientes() {
             <Button onClick={() => setSelectedCliente(null)} disabled={saving}>
               Fechar
             </Button>
-            <Button variant="outlined" color="primary" onClick={() => openEditDialog(selectedCliente)} disabled={saving}>
-              Editar
-            </Button>
-            <Button variant="outlined" color="error" onClick={handleDeleteCliente} disabled={saving}>
-              {saving ? 'Deletando...' : 'Deletar'}
-            </Button>
+            {canUpdate && (
+              <Button variant="outlined" color="primary" onClick={() => openEditDialog(selectedCliente)} disabled={saving}>
+                Editar
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="outlined" color="error" onClick={handleDeleteCliente} disabled={saving}>
+                {saving ? 'Deletando...' : 'Deletar'}
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
 

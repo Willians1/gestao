@@ -5,12 +5,15 @@ import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useMediaQuery } from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Fornecedores() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+  const { token, hasPermission } = useAuth();
+  const canCreate = hasPermission('/fornecedores', 'create');
   const [rows, setRows] = React.useState([]);
   const [selectedFornecedor, setSelectedFornecedor] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -23,7 +26,7 @@ export default function Fornecedores() {
 
   const loadPersisted = async () => {
     try {
-      const resp = await fetch(`${API}/fornecedores/`);
+      const resp = await fetch(`${API}/fornecedores/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (!resp.ok) return;
       const data = await resp.json();
       if (!data) return;
@@ -104,6 +107,7 @@ export default function Fornecedores() {
             >
               Filtrar
             </Button>
+            {canCreate && (
             <Button 
               variant="contained" 
               color="primary" 
@@ -116,6 +120,7 @@ export default function Fornecedores() {
             >
               {isMobile ? "Novo" : "Criar novo fornecedor"}
             </Button>
+            )}
           </Box>
         </Box>
         

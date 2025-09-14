@@ -32,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { API_BASE } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -45,6 +46,11 @@ function Despesas() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/despesas', 'read');
+  const canCreate = hasPermission('/despesas', 'create');
+  const canUpdate = hasPermission('/despesas', 'update');
+  const canDelete = hasPermission('/despesas', 'delete');
   
   // Estados principais
   const [despesas, setDespesas] = React.useState([]);
@@ -82,7 +88,7 @@ function Despesas() {
   const loadDespesas = async () => {
     setLoading(true);
     try {
-  const response = await fetch(`${API_BASE}/despesas`);
+  const response = await fetch(`${API_BASE}/despesas`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (response.ok) {
         const data = await response.json();
         setDespesas(data);
@@ -119,6 +125,7 @@ function Despesas() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify(formData),
       });

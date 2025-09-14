@@ -576,6 +576,46 @@ def require_maintenance_or_admin(current_user: Usuario = Depends(get_current_use
         )
     return current_user
 
+# --- Permissões por ação (CRUD) ---
+# Convenção usada no sistema:
+# base (xx01) = leitura/listagem, editar (xx02), excluir (xx03), criar/importar (xx04)
+ACTION_OFFSETS = {
+    "read": 0,    # xx01
+    "update": 1,  # xx02
+    "delete": 2,  # xx03
+    "create": 3,  # xx04
+}
+
+def _collect_permission_ids_for_user(db: Session, user: Usuario) -> set[int]:
+    # Admin e Willians têm acesso total
+    if str(user.nivel_acesso or '').lower() in {"admin", "willians"}:
+        # retornar um set grande não é necessário; o require_permission trata admin separadamente
+        return set()
+    if not user.grupo_id:
+        return set()
+    # Buscar permissões do grupo
+    links = db.query(PermissaoGrupo).filter(PermissaoGrupo.grupo_id == user.grupo_id).all()
+    return {lk.permissao_id for lk in links}
+
+def _permission_required(base_id: int, action: str):
+    def dependency(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+        # Admin e Willians sempre passam
+        if str(current_user.nivel_acesso or '').lower() in {"admin", "willians"}:
+            return current_user
+        ids = _collect_permission_ids_for_user(db, current_user)
+        # Sempre aceitar se tiver a base (leitura) para qualquer ação de leitura; para outras, exigir o id específico
+        offset = ACTION_OFFSETS.get(action, 0)
+        required = base_id + offset
+        # A permissão base (xx01) concede leitura
+        if action == "read":
+            if (base_id in ids) or (required in ids):
+                return current_user
+        else:
+            if (required in ids):
+                return current_user
+        raise HTTPException(status_code=403, detail="Permissão negada: ação não autorizada")
+    return dependency
+
 # --- Schemas ---
 class ClienteCreateSchema(BaseModel):
     nome: str
@@ -931,11 +971,11 @@ class LojaCreateSchema(BaseModel):
 # --- CRUD Endpoints ---
 
 @app.get("/usuarios/", response_model=List[UsuarioSchema])
-def listar_usuarios(db: Session = Depends(get_db)):
+def listar_usuarios(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "read"))):
     return db.query(Usuario).all()
 
 @app.post("/usuarios/", response_model=UsuarioSchema)
-def criar_usuario(usuario: UsuarioCreateSchema, db: Session = Depends(get_db)):
+def criar_usuario(usuario: UsuarioCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "create"))):
     if db.query(Usuario).filter(Usuario.username == usuario.username).first():
         raise HTTPException(status_code=400, detail="Usuário já existe")
     novo = Usuario(
@@ -953,7 +993,7 @@ def criar_usuario(usuario: UsuarioCreateSchema, db: Session = Depends(get_db)):
     return novo
 
 @app.put("/usuarios/{usuario_id}", response_model=UsuarioSchema)
-def editar_usuario(usuario_id: int, usuario: UsuarioUpdateSchema, db: Session = Depends(get_db)):
+def editar_usuario(usuario_id: int, usuario: UsuarioUpdateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "update"))):
     db_usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not db_usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -971,7 +1011,7 @@ def editar_usuario(usuario_id: int, usuario: UsuarioUpdateSchema, db: Session = 
     return db_usuario
 
 @app.delete("/usuarios/{usuario_id}")
-def deletar_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def deletar_usuario(usuario_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "delete"))):
     db_usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not db_usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -981,14 +1021,14 @@ def deletar_usuario(usuario_id: int, db: Session = Depends(get_db)):
 
 # Auxiliares de usuários por grupo
 @app.get("/grupos/{grupo_id}/usuarios", response_model=List[UsuarioSchema])
-def listar_usuarios_por_grupo(grupo_id: int, db: Session = Depends(get_db)):
+def listar_usuarios_por_grupo(grupo_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "read"))):
     return db.query(Usuario).filter(Usuario.grupo_id == grupo_id).all()
 
 class SetGrupoSchema(BaseModel):
     grupo_id: int | None = None
 
 @app.post("/usuarios/{usuario_id}/set-grupo", response_model=UsuarioSchema)
-def set_grupo_usuario(usuario_id: int, payload: SetGrupoSchema, db: Session = Depends(get_db)):
+def set_grupo_usuario(usuario_id: int, payload: SetGrupoSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "update"))):
     user = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -1065,11 +1105,11 @@ def get_my_permissions(current_user: Usuario = Depends(get_current_user), db: Se
 
 # Grupos de Usuários
 @app.get("/grupos/", response_model=List[GrupoUsuarioSchema])
-def list_grupos(db: Session = Depends(get_db)):
+def list_grupos(db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     return db.query(GrupoUsuario).all()
 
 @app.post("/grupos/", response_model=GrupoUsuarioSchema)
-def create_grupo(grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db)):
+def create_grupo(grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     db_grupo = GrupoUsuario(
         nome=grupo.nome,
         descricao=grupo.descricao,
@@ -1114,14 +1154,14 @@ def create_grupo(grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db))
     return db_grupo
 
 @app.get("/grupos/{grupo_id}", response_model=GrupoUsuarioSchema)
-def get_grupo(grupo_id: int, db: Session = Depends(get_db)):
+def get_grupo(grupo_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     grupo = db.query(GrupoUsuario).filter(GrupoUsuario.id == grupo_id).first()
     if not grupo:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
     return grupo
 
 @app.put("/grupos/{grupo_id}", response_model=GrupoUsuarioSchema)
-def update_grupo(grupo_id: int, grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db)):
+def update_grupo(grupo_id: int, grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     db_grupo = db.query(GrupoUsuario).filter(GrupoUsuario.id == grupo_id).first()
     if not db_grupo:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
@@ -1156,7 +1196,7 @@ def update_grupo(grupo_id: int, grupo: GrupoUsuarioCreateSchema, db: Session = D
     return db_grupo
 
 @app.delete("/grupos/{grupo_id}")
-def delete_grupo(grupo_id: int, db: Session = Depends(get_db)):
+def delete_grupo(grupo_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     db_grupo = db.query(GrupoUsuario).filter(GrupoUsuario.id == grupo_id).first()
     if not db_grupo:
         raise HTTPException(status_code=404, detail="Grupo não encontrado")
@@ -1166,12 +1206,12 @@ def delete_grupo(grupo_id: int, db: Session = Depends(get_db)):
 
 # Permissões
 @app.get("/permissoes/", response_model=List[PermissaoSistemaSchema])
-def list_permissoes(db: Session = Depends(get_db)):
+def list_permissoes(db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     return db.query(PermissaoSistema).all()
 
 # Permissões de Grupo
 @app.get("/grupos/{grupo_id}/permissoes/")
-def get_grupo_permissoes(grupo_id: int, db: Session = Depends(get_db)):
+def get_grupo_permissoes(grupo_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(require_admin)):
     # Verificar se o grupo existe
     db_grupo = db.query(GrupoUsuario).filter(GrupoUsuario.id == grupo_id).first()
     if not db_grupo:
@@ -1211,11 +1251,11 @@ def create_loja(loja: LojaCreateSchema, db: Session = Depends(get_db)):
 
 # Finalizando o arquivo main.py com endpoints de clientes e outras entidades
 @app.get("/clientes/", response_model=List[ClienteSchema])
-def listar_clientes(db: Session = Depends(get_db)):
+def listar_clientes(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "read"))):
     return db.query(Cliente).all()
 
 @app.post("/clientes/", response_model=ClienteSchema)
-def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db)):
+def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "create"))):
     novo = Cliente(**cliente.dict())
     db.add(novo)
     db.commit()
@@ -1224,15 +1264,15 @@ def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db)):
 
 # Despesas
 @app.get("/despesas/", response_model=List[DespesaSchema])
-def listar_despesas(db: Session = Depends(get_db)):
+def listar_despesas(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1601, "read"))):
     return db.query(Despesa).all()
 
 @app.get("/despesas", response_model=List[DespesaSchema])
-def listar_despesas_alt(db: Session = Depends(get_db)):
+def listar_despesas_alt(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1601, "read"))):
     return db.query(Despesa).all()
 
 @app.post("/despesas/", response_model=DespesaSchema)
-def criar_despesa(despesa: DespesaSchema, db: Session = Depends(get_db)):
+def criar_despesa(despesa: DespesaSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1601, "create"))):
     novo = Despesa(**despesa.dict(exclude_unset=True))
     db.add(novo)
     db.commit()
@@ -1240,7 +1280,7 @@ def criar_despesa(despesa: DespesaSchema, db: Session = Depends(get_db)):
     return novo
 
 @app.put("/despesas/{despesa_id}", response_model=DespesaSchema)
-def atualizar_despesa(despesa_id: int, despesa: DespesaSchema, db: Session = Depends(get_db)):
+def atualizar_despesa(despesa_id: int, despesa: DespesaSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1601, "update"))):
     db_despesa = db.query(Despesa).filter(Despesa.id == despesa_id).first()
     if not db_despesa:
         raise HTTPException(status_code=404, detail="Despesa não encontrada")
@@ -1254,7 +1294,7 @@ def atualizar_despesa(despesa_id: int, despesa: DespesaSchema, db: Session = Dep
     return db_despesa
 
 @app.delete("/despesas/{despesa_id}")
-def deletar_despesa(despesa_id: int, db: Session = Depends(get_db)):
+def deletar_despesa(despesa_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1601, "delete"))):
     db_despesa = db.query(Despesa).filter(Despesa.id == despesa_id).first()
     if not db_despesa:
         raise HTTPException(status_code=404, detail="Despesa não encontrada")
@@ -1264,11 +1304,11 @@ def deletar_despesa(despesa_id: int, db: Session = Depends(get_db)):
 
 # Resumo Mensal
 @app.get("/resumo_mensal/", response_model=List[ResumoMensalSchema])
-def listar_resumo_mensal(db: Session = Depends(get_db)):
+def listar_resumo_mensal(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1801, "read"))):
     return db.query(ResumoMensal).all()
 
 @app.post("/resumo_mensal/", response_model=ResumoMensalSchema)
-def criar_resumo_mensal(resumo: ResumoMensalSchema, db: Session = Depends(get_db)):
+def criar_resumo_mensal(resumo: ResumoMensalSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1801, "create"))):
     novo = ResumoMensal(**resumo.dict(exclude_unset=True))
     db.add(novo)
     db.commit()
@@ -1276,7 +1316,7 @@ def criar_resumo_mensal(resumo: ResumoMensalSchema, db: Session = Depends(get_db
     return novo
 
 @app.put("/resumo_mensal/{resumo_id}", response_model=ResumoMensalSchema)
-def atualizar_resumo_mensal(resumo_id: int, resumo: ResumoMensalSchema, db: Session = Depends(get_db)):
+def atualizar_resumo_mensal(resumo_id: int, resumo: ResumoMensalSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1801, "update"))):
     db_resumo = db.query(ResumoMensal).filter(ResumoMensal.id == resumo_id).first()
     if not db_resumo:
         raise HTTPException(status_code=404, detail="Resumo mensal não encontrado")
@@ -1290,7 +1330,7 @@ def atualizar_resumo_mensal(resumo_id: int, resumo: ResumoMensalSchema, db: Sess
     return db_resumo
 
 @app.delete("/resumo_mensal/{resumo_id}")
-def deletar_resumo_mensal(resumo_id: int, db: Session = Depends(get_db)):
+def deletar_resumo_mensal(resumo_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1801, "delete"))):
     db_resumo = db.query(ResumoMensal).filter(ResumoMensal.id == resumo_id).first()
     if not db_resumo:
         raise HTTPException(status_code=404, detail="Resumo mensal não encontrado")
@@ -1300,11 +1340,11 @@ def deletar_resumo_mensal(resumo_id: int, db: Session = Depends(get_db)):
 
 # Fornecedores
 @app.get("/fornecedores/", response_model=List[FornecedorSchema])
-def listar_fornecedores(db: Session = Depends(get_db)):
+def listar_fornecedores(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1301, "read"))):
     return db.query(Fornecedor).all()
 
 @app.post("/fornecedores/", response_model=FornecedorSchema)
-def criar_fornecedor(fornecedor: FornecedorSchema, db: Session = Depends(get_db)):
+def criar_fornecedor(fornecedor: FornecedorSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1301, "create"))):
     novo = Fornecedor(**fornecedor.dict(exclude_unset=True))
     db.add(novo)
     db.commit()
@@ -1313,11 +1353,11 @@ def criar_fornecedor(fornecedor: FornecedorSchema, db: Session = Depends(get_db)
 
 # Orçamento de Obra
 @app.get("/orcamento_obra/", response_model=List[OrcamentoObraSchema])
-def listar_orcamento_obra(db: Session = Depends(get_db)):
+def listar_orcamento_obra(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1501, "read"))):
     return db.query(OrcamentoObra).all()
 
 @app.post("/orcamento_obra/", response_model=OrcamentoObraSchema)
-def criar_orcamento_obra(orcamento: OrcamentoObraSchema, db: Session = Depends(get_db)):
+def criar_orcamento_obra(orcamento: OrcamentoObraSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1501, "create"))):
     novo = OrcamentoObra(**orcamento.dict(exclude_unset=True))
     db.add(novo)
     db.commit()
@@ -1326,11 +1366,11 @@ def criar_orcamento_obra(orcamento: OrcamentoObraSchema, db: Session = Depends(g
 
 # Contratos
 @app.get("/contratos/", response_model=List[ContratoSchema])
-def listar_contratos(db: Session = Depends(get_db)):
+def listar_contratos(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1401, "read"))):
     return db.query(Contrato).all()
 
 @app.post("/contratos/", response_model=ContratoSchema)
-def criar_contrato(contrato: ContratoSchema, db: Session = Depends(get_db)):
+def criar_contrato(contrato: ContratoSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1401, "create"))):
     novo = Contrato(**contrato.dict(exclude_unset=True))
     db.add(novo)
     db.commit()
@@ -1339,11 +1379,11 @@ def criar_contrato(contrato: ContratoSchema, db: Session = Depends(get_db)):
 
 # Valor de Materiais
 @app.get("/valor_materiais/", response_model=List[ValorMaterialSchema])
-def listar_valor_materiais(db: Session = Depends(get_db)):
+def listar_valor_materiais(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1701, "read"))):
     return db.query(ValorMaterial).all()
 
 @app.post("/valor_materiais/", response_model=ValorMaterialSchema)
-def criar_valor_material(material: ValorMaterialSchema, db: Session = Depends(get_db)):
+def criar_valor_material(material: ValorMaterialSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1701, "create"))):
     novo = ValorMaterial(**material.dict(exclude_unset=True))
     db.add(novo)
     db.commit()

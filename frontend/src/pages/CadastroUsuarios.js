@@ -40,7 +40,10 @@ const NIVEL_OPTIONS = [
 ];
 
 export default function CadastroUsuarios() {
-	const { token } = useAuth();
+	const { token, hasPermission } = useAuth();
+	const canCreate = hasPermission('/cadastro-usuarios', 'create');
+	const canUpdate = hasPermission('/cadastro-usuarios', 'update');
+	const canDelete = hasPermission('/cadastro-usuarios', 'delete');
 	const [rows, setRows] = useState([]);
 	const [grupos, setGrupos] = useState([]);
 	const [loading, setLoading] = useState(false);
@@ -82,8 +85,8 @@ export default function CadastroUsuarios() {
 		setError('');
 		try {
 			const [res, resGrupos] = await Promise.all([
-				fetch(`${API_BASE}/usuarios/`),
-				fetch(`${API_BASE}/grupos/`)
+				fetch(`${API_BASE}/usuarios/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+				fetch(`${API_BASE}/grupos/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
 			]);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = await res.json();
@@ -112,8 +115,8 @@ export default function CadastroUsuarios() {
 		try {
 			// Buscar detalhes do grupo e suas permissões atuais
 			const [resGroup, resPerms] = await Promise.all([
-				fetch(`${API_BASE}/grupos/${user.grupo_id}`),
-				fetch(`${API_BASE}/grupos/${user.grupo_id}/permissoes/`)
+				fetch(`${API_BASE}/grupos/${user.grupo_id}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+				fetch(`${API_BASE}/grupos/${user.grupo_id}/permissoes/`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
 			]);
 			let g = null;
 			if (resGroup.ok) g = await resGroup.json();
@@ -328,7 +331,7 @@ export default function CadastroUsuarios() {
 					<Typography variant="body2" color="text.secondary">Gerencie usuários do sistema (mesma base de login admin/admin)</Typography>
 				</Box>
 				<Stack direction="row" spacing={1}>
-					<Button variant="contained" startIcon={<Add />} onClick={openNewDialog}>Novo</Button>
+					{canCreate && (<Button variant="contained" startIcon={<Add />} onClick={openNewDialog}>Novo</Button>)}
 					<Button variant="outlined" component="label">
 						Importar Excel
 						<input hidden type="file" accept=".xlsx,.xls" onChange={(e) => { const f = e.target.files?.[0]; if (f) importExcel(f); e.target.value = ''; }} />
@@ -419,8 +422,8 @@ export default function CadastroUsuarios() {
 									) : (
 										<Stack direction="row" spacing={1} justifyContent="flex-end">
 											<IconButton onClick={() => openPermissionsDialog(r)} title="Permissões"><Security /></IconButton>
-											<IconButton onClick={() => startEdit(r)} title="Editar"><Edit /></IconButton>
-											<IconButton color="error" onClick={() => deleteUser(r.id)} title="Remover"><Delete /></IconButton>
+											{canUpdate && (<IconButton onClick={() => startEdit(r)} title="Editar"><Edit /></IconButton>)}
+											{canDelete && (<IconButton color="error" onClick={() => deleteUser(r.id)} title="Remover"><Delete /></IconButton>)}
 										</Stack>
 									)}
 								</TableCell>
