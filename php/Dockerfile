@@ -6,7 +6,7 @@ FROM php:8.2-apache
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        libsqlite3-0 sqlite3 gosu \
+        libsqlite3-0 libsqlite3-dev sqlite3 gosu \
         ca-certificates curl; \
     rm -rf /var/lib/apt/lists/*
 
