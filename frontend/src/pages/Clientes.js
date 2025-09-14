@@ -366,7 +366,7 @@ export default function Clientes() {
                 }}>
                   Endereço
                 </TableCell>
-                  <TableCell sx={{ 
+                <TableCell sx={{ 
                   fontWeight: 700,
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   minWidth: 80

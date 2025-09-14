@@ -3,10 +3,16 @@ import { Box, Button, Paper, Typography, Chip, Stack, Table, TableBody, TableCel
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function OrcamentoObra() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/orcamento-obra', 'read');
+  const canCreate = hasPermission('/orcamento-obra', 'create');
+  const canUpdate = hasPermission('/orcamento-obra', 'update');
+  const canDelete = hasPermission('/orcamento-obra', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedOrcamento, setSelectedOrcamento] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -20,7 +26,9 @@ export default function OrcamentoObra() {
 
   const loadPersisted = async () => {
     try {
-      const resp = await fetch(`${API}/orcamento_obra/`);
+      const resp = await fetch(`${API}/orcamento_obra/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) return;
       const data = await resp.json();
       if (!data) return;
@@ -31,7 +39,9 @@ export default function OrcamentoObra() {
 
   const loadClientes = async () => {
     try {
-      const response = await fetch(`${API}/clientes/`);
+      const response = await fetch(`${API}/clientes/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -58,7 +68,9 @@ export default function OrcamentoObra() {
           <Chip label={total} color="primary" sx={{ fontWeight: 700, fontSize: 16 }} />
           <Box sx={{ flex: 1 }} />
           <Button variant="contained" color="success" sx={{ mr: 2 }}>Filtrar</Button>
-          <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>Criar novo orçamento</Button>
+          {canCreate && (
+            <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>Criar novo orçamento</Button>
+          )}
         </Box>
         {/* Chips de filtro exemplo */}
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -147,7 +159,7 @@ export default function OrcamentoObra() {
               try {
                 const resp = await fetch(`${API}/orcamento_obra/`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                   body: JSON.stringify(form)
                 });
                 if (!resp.ok) throw new Error('Erro ao criar orçamento');
@@ -159,7 +171,7 @@ export default function OrcamentoObra() {
               } finally {
                 setSaving(false);
               }
-            }} disabled={saving || !form.cliente_id || !form.etapa || !form.descricao}>Salvar</Button>
+            }} disabled={saving || !canCreate || !form.cliente_id || !form.etapa || !form.descricao}>Salvar</Button>
           </DialogActions>
         </Dialog>
         {/* Modal de detalhes do orçamento */}

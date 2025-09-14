@@ -18,10 +18,16 @@ import SortIcon from '@mui/icons-material/Sort';
 import EditIcon from '@mui/icons-material/Edit';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearIcon from '@mui/icons-material/Clear';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ValorMateriais() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/valor-materiais', 'read');
+  const canCreate = hasPermission('/valor-materiais', 'create');
+  const canUpdate = hasPermission('/valor-materiais', 'update');
+  const canDelete = hasPermission('/valor-materiais', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedValor, setSelectedValor] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -76,7 +82,9 @@ export default function ValorMateriais() {
 
   const loadPersisted = async () => {
     try {
-      const resp = await fetch(`${API}/valor_materiais/`);
+      const resp = await fetch(`${API}/valor_materiais/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) return;
       let data = await resp.json();
       if (!data) return;
@@ -159,7 +167,9 @@ export default function ValorMateriais() {
 
   const loadImportedFiles = async () => {
     try {
-      const resp = await fetch(`${API}/uploads?entidade=valor_materiais`);
+      const resp = await fetch(`${API}/uploads?entidade=valor_materiais`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) return;
       const data = await resp.json();
       setImportedFiles(data || []);
@@ -168,7 +178,9 @@ export default function ValorMateriais() {
 
   const loadClientes = async () => {
     try {
-      const response = await fetch(`${API}/clientes/`);
+      const response = await fetch(`${API}/clientes/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -194,6 +206,7 @@ export default function ValorMateriais() {
     try {
       const resp = await fetch(`${API}/upload_valor_materiais`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
 
@@ -225,7 +238,9 @@ export default function ValorMateriais() {
 
   const handleDownloadFile = async (fileId, filename) => {
     try {
-      const resp = await fetch(`${API}/uploads/${fileId}/download`);
+      const resp = await fetch(`${API}/uploads/${fileId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) throw new Error('Erro ao baixar arquivo');
       
       const blob = await resp.blob();
@@ -276,6 +291,7 @@ export default function ValorMateriais() {
       for (const itemId of selectedItems) {
         const resp = await fetch(`${API}/valor_materiais/${itemId}`, {
           method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!resp.ok) throw new Error(`Erro ao excluir item ${itemId}`);
       }
@@ -350,7 +366,7 @@ export default function ValorMateriais() {
 
       const resp = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(form),
       });
 
@@ -514,7 +530,8 @@ export default function ValorMateriais() {
                 <FilterListIcon fontSize={window.innerWidth < 600 ? 'small' : 'medium'} />
               </Button>
               
-              <Button 
+              {canCreate && (
+                <Button 
                 variant="contained" 
                 color="secondary" 
                 startIcon={<CloudUploadIcon fontSize={window.innerWidth < 600 ? 'small' : 'medium'} />}
@@ -526,9 +543,11 @@ export default function ValorMateriais() {
                 }}
               >
                 {window.innerWidth < 600 ? 'Excel' : 'Importar Excel'}
-              </Button>
+                </Button>
+              )}
               
-              <Button 
+              {canCreate && (
+                <Button 
                 variant="contained" 
                 color="primary" 
                 onClick={() => {
@@ -548,6 +567,7 @@ export default function ValorMateriais() {
               >
                 {window.innerWidth < 600 ? 'Novo' : 'Criar novo'}
               </Button>
+            )}
             </Box>
           </Box>
         </Box>
@@ -823,7 +843,8 @@ export default function ValorMateriais() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Button 
+                    {canUpdate && (
+                      <Button 
                       size={window.innerWidth < 600 ? 'small' : 'medium'}
                       variant="text" 
                       onClick={() => {
@@ -839,6 +860,7 @@ export default function ValorMateriais() {
                     >
                       {window.innerWidth < 600 ? 'Edit' : 'Editar'}
                     </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -1095,7 +1117,7 @@ export default function ValorMateriais() {
             <Button 
               variant="contained" 
               onClick={handleSave} 
-              disabled={saving || !form.descricao_produto || !form.valor_unitario}
+              disabled={saving || !canUpdate && !!selectedValor || !canCreate && !selectedValor || !form.descricao_produto || !form.valor_unitario}
               size={window.innerWidth < 600 ? 'medium' : 'large'}
               sx={{ 
                 width: { xs: '100%', sm: 'auto' },
@@ -1122,7 +1144,7 @@ export default function ValorMateriais() {
               onClick={handleBulkDelete} 
               color="error" 
               variant="contained"
-              disabled={deleting}
+              disabled={deleting || !canDelete}
             >
               {deleting ? <CircularProgress size={20} /> : 'Excluir'}
             </Button>

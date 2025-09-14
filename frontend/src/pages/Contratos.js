@@ -31,11 +31,17 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Contratos() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/contratos', 'read');
+  const canCreate = hasPermission('/contratos', 'create');
+  const canUpdate = hasPermission('/contratos', 'update');
+  const canDelete = hasPermission('/contratos', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedContrato, setSelectedContrato] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -61,6 +67,26 @@ export default function Contratos() {
   });
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+  const handleDownloadAnexo = async (contratoId, filename) => {
+    try {
+      const resp = await fetch(`${API}/contratos/${contratoId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar arquivo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `contrato_${contratoId}.bin`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar arquivo');
+    }
+  };
+
   const calcularDiasRestantes = (dataFim) => {
     if (!dataFim) return null;
     
@@ -82,12 +108,18 @@ export default function Contratos() {
 
   const loadPersisted = async () => {
     try {
-      const response = await fetch(`${API}/contratos`);
+      const response = await fetch(`${API}/contratos`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setRows(data);
         setFilteredRows(data);
         setTotal(data.length);
+      } else if (response.status === 401 || response.status === 403) {
+        setRows([]);
+        setFilteredRows([]);
+        setTotal(0);
       }
     } catch (error) {
       console.error('Erro ao carregar contratos:', error);
@@ -96,7 +128,9 @@ export default function Contratos() {
 
   const loadClientes = async () => {
     try {
-      const response = await fetch(`${API}/clientes/`);
+      const response = await fetch(`${API}/clientes/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -195,14 +229,16 @@ export default function Contratos() {
           alignItems: { xs: 'stretch', sm: 'center' }
         }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flex: 1 }}>
-            <Button 
-              variant="contained" 
-              onClick={() => setOpenModal(true)}
-              size={isMobile ? 'small' : 'medium'}
-              sx={{ fontWeight: 600 }}
-            >
-              Novo Contrato
-            </Button>
+            {canCreate && (
+              <Button 
+                variant="contained" 
+                onClick={() => setOpenModal(true)}
+                size={isMobile ? 'small' : 'medium'}
+                sx={{ fontWeight: 600 }}
+              >
+                Novo Contrato
+              </Button>
+            )}
             <Button 
               variant="outlined" 
               onClick={() => setOpenFilter(true)}
@@ -622,6 +658,7 @@ export default function Contratos() {
 
                   const response = await fetch(`${API}/contratos`, {
                     method: 'POST',
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
                     body: formData
                   });
 
@@ -639,7 +676,7 @@ export default function Contratos() {
                   setSaving(false);
                 }
               }}
-              disabled={saving}
+              disabled={saving || !canCreate}
             >
               {saving ? 'Salvando...' : 'Criar contrato'}
             </Button>
@@ -672,7 +709,7 @@ export default function Contratos() {
                         <Button 
                           variant="outlined" 
                           sx={{ mt: 1 }}
-                          onClick={() => window.open(`${API}/contratos/${selectedContrato.id}/download`, '_blank')}
+                          onClick={() => handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)}
                         >
                           Baixar arquivo ({selectedContrato.arquivo})
                         </Button>
@@ -736,7 +773,7 @@ export default function Contratos() {
                         <Button 
                           variant="outlined" 
                           sx={{ mt: 1 }}
-                          onClick={() => window.open(`${API}/contratos/${selectedContrato.id}/download`, '_blank')}
+                          onClick={() => handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)}
                         >
                           Baixar arquivo ({selectedContrato.arquivo})
                         </Button>
@@ -750,21 +787,23 @@ export default function Contratos() {
           <DialogActions>
             {!editMode ? (
               <>
-                <Button onClick={() => {
-                  setEditMode(true);
-                  setEditForm({
-                    numero: selectedContrato.numero,
-                    cliente_id: selectedContrato.cliente_id,
-                    cliente: selectedContrato.cliente,
-                    valor: selectedContrato.valor,
-                    dataInicio: selectedContrato.dataInicio,
-                    dataFim: selectedContrato.dataFim,
-                    tipo: selectedContrato.tipo,
-                    situacao: selectedContrato.situacao,
-                    prazoPagamento: selectedContrato.prazoPagamento,
-                    quantidadeParcelas: selectedContrato.quantidadeParcelas
-                  });
-                }}>Editar</Button>
+                {canUpdate && (
+                  <Button onClick={() => {
+                    setEditMode(true);
+                    setEditForm({
+                      numero: selectedContrato.numero,
+                      cliente_id: selectedContrato.cliente_id,
+                      cliente: selectedContrato.cliente,
+                      valor: selectedContrato.valor,
+                      dataInicio: selectedContrato.dataInicio,
+                      dataFim: selectedContrato.dataFim,
+                      tipo: selectedContrato.tipo,
+                      situacao: selectedContrato.situacao,
+                      prazoPagamento: selectedContrato.prazoPagamento,
+                      quantidadeParcelas: selectedContrato.quantidadeParcelas
+                    });
+                  }}>Editar</Button>
+                )}
                 <Button onClick={() => setSelectedContrato(null)}>Fechar</Button>
               </>
             ) : (
@@ -782,6 +821,7 @@ export default function Contratos() {
                         method: 'PUT',
                         headers: {
                           'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
                         },
                         body: JSON.stringify(editForm)
                       });
@@ -800,7 +840,7 @@ export default function Contratos() {
                       setSaving(false);
                     }
                   }}
-                  disabled={saving}
+                  disabled={saving || !canUpdate}
                 >
                   {saving ? 'Salvando...' : 'Salvar'}
                 </Button>

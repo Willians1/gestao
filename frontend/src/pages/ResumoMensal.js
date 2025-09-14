@@ -3,10 +3,16 @@ import { Box, Button, Paper, Typography, Chip, Stack, Table, TableBody, TableCel
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ResumoMensal() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { token, hasPermission } = useAuth();
+  const canRead = hasPermission('/resumo-mensal', 'read');
+  const canCreate = hasPermission('/resumo-mensal', 'create');
+  const canUpdate = hasPermission('/resumo-mensal', 'update');
+  const canDelete = hasPermission('/resumo-mensal', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedResumo, setSelectedResumo] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -19,7 +25,9 @@ export default function ResumoMensal() {
 
   const loadPersisted = async () => {
     try {
-      const resp = await fetch(`${API}/resumo_mensal/`);
+      const resp = await fetch(`${API}/resumo_mensal/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!resp.ok) return;
       const data = await resp.json();
       if (!data) return;
@@ -42,7 +50,9 @@ export default function ResumoMensal() {
           <Chip label={total} color="primary" sx={{ fontWeight: 700, fontSize: 16 }} />
           <Box sx={{ flex: 1 }} />
           <Button variant="contained" color="success" sx={{ mr: 2 }}>Filtrar</Button>
-          <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>Criar novo resumo</Button>
+          {canCreate && (
+            <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>Criar novo resumo</Button>
+          )}
         </Box>
         {/* Chips de filtro exemplo */}
         <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -98,7 +108,7 @@ export default function ResumoMensal() {
               try {
                 const resp = await fetch(`${API}/resumo_mensal/`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                   body: JSON.stringify(form)
                 });
                 if (!resp.ok) throw new Error('Erro ao criar resumo');
@@ -110,7 +120,7 @@ export default function ResumoMensal() {
               } finally {
                 setSaving(false);
               }
-            }} disabled={saving || !form.nome || !form.valor_total}>Salvar</Button>
+            }} disabled={saving || !canCreate || !form.nome || !form.valor_total}>Salvar</Button>
           </DialogActions>
         </Dialog>
         {/* Modal de detalhes do resumo */}
