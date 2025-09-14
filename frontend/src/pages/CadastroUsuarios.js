@@ -21,9 +21,13 @@ import {
 	MenuItem,
 	Stack,
 	Snackbar,
-	Alert
+	Alert,
+	FormGroup,
+	FormControlLabel,
+	Checkbox,
+	Divider
 } from '@mui/material';
-import { Add, Delete, Edit, Save, Close } from '@mui/icons-material';
+import { Add, Delete, Edit, Save, Close, Security } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -50,6 +54,25 @@ export default function CadastroUsuarios() {
 	const [openNew, setOpenNew] = useState(false);
 	const [newData, setNewData] = useState({ username: '', nome: '', email: '', password: '', confirm: '', nivel_acesso: 'visualizacao', ativo: true, grupo_id: null });
 
+	// Diálogo de Permissões (por página via grupo do usuário)
+	const [permOpen, setPermOpen] = useState(false);
+	const [permLoading, setPermLoading] = useState(false);
+	const [permUser, setPermUser] = useState(null);
+	const [permGroup, setPermGroup] = useState(null); // detalhes do grupo
+	const [permChecked, setPermChecked] = useState(new Set());
+
+	// Mapa das páginas x IDs base de permissão (leitura/acesso)
+	const PAGE_FLAGS = [
+		{ id: 1101, label: 'Usuários', route: '/cadastro-usuarios' },
+		{ id: 1201, label: 'Clientes', route: '/clientes' },
+		{ id: 1301, label: 'Fornecedores', route: '/fornecedores' },
+		{ id: 1401, label: 'Contratos', route: '/contratos' },
+		{ id: 1501, label: 'Orçamento de Obra', route: '/orcamento-obra' },
+		{ id: 1601, label: 'Despesas', route: '/despesas' },
+		{ id: 1701, label: 'Valor Materiais', route: '/valor-materiais' },
+		{ id: 1801, label: 'Resumo Mensal', route: '/resumo-mensal' },
+	];
+
 	const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }), [token]);
 
 	const fetchUsers = async () => {
@@ -75,6 +98,87 @@ export default function CadastroUsuarios() {
 	};
 
 	useEffect(() => { fetchUsers(); }, []);
+
+	const openPermissionsDialog = async (user) => {
+		if (!user.grupo_id) {
+			setSnack({ open: true, message: 'Defina um Grupo para o usuário antes de ajustar permissões.', severity: 'warning' });
+			return;
+		}
+		setPermUser(user);
+		setPermOpen(true);
+		setPermLoading(true);
+		try {
+			// Buscar detalhes do grupo e suas permissões atuais
+			const [resGroup, resPerms] = await Promise.all([
+				fetch(`${API_BASE}/grupos/${user.grupo_id}`),
+				fetch(`${API_BASE}/grupos/${user.grupo_id}/permissoes/`)
+			]);
+			let g = null;
+			if (resGroup.ok) g = await resGroup.json();
+			setPermGroup(g);
+			let currentIds = new Set();
+			if (resPerms.ok) {
+				const data = await resPerms.json();
+				const ids = (data?.permissoes || []).map(p => p.id);
+				currentIds = new Set(ids);
+			}
+			// Se nível admin, tudo marcado
+			const isAdminLevel = String(user.nivel_acesso || '').toLowerCase() === 'admin' || String(user.nivel_acesso || '').toLowerCase() === 'willians';
+			if (isAdminLevel) {
+				setPermChecked(new Set(PAGE_FLAGS.map(p => p.id)));
+			} else {
+				const baseChecked = new Set(PAGE_FLAGS.filter(p => currentIds.has(p.id)).map(p => p.id));
+				setPermChecked(baseChecked);
+			}
+		} catch (e) {
+			setSnack({ open: true, message: 'Falha ao carregar permissões', severity: 'error' });
+		} finally {
+			setPermLoading(false);
+		}
+	};
+
+	const toggleFlag = (permId) => {
+		setPermChecked(prev => {
+			const n = new Set(prev);
+			if (n.has(permId)) n.delete(permId); else n.add(permId);
+			return n;
+		});
+	};
+
+	const savePermissions = async () => {
+		if (!permUser || !permGroup) { setPermOpen(false); return; }
+		const isAdminLevel = String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians';
+		if (isAdminLevel) { setPermOpen(false); return; }
+		setPermLoading(true);
+		try {
+			// Montar payload preservando campos do grupo; atualizar apenas permissoes
+			const payload = {
+				nome: permGroup.nome,
+				descricao: permGroup.descricao ?? null,
+				status: permGroup.status ?? 'Aprovado',
+				motivo: permGroup.motivo ?? null,
+				valor_maximo_diario_financeiro: permGroup.valor_maximo_diario_financeiro ?? 0,
+				preco_venda: permGroup.preco_venda ?? 0,
+				plano_contas: permGroup.plano_contas ?? 0,
+				valor_maximo_movimentacao: permGroup.valor_maximo_movimentacao ?? 0,
+				valor_maximo_solicitacao_compra: permGroup.valor_maximo_solicitacao_compra ?? 0,
+				valor_maximo_diario_solicitacao_compra: permGroup.valor_maximo_diario_solicitacao_compra ?? 0,
+				permissoes: Array.from(permChecked),
+			};
+			const res = await fetch(`${API_BASE}/grupos/${permUser.grupo_id}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+			if (!res.ok) {
+				let msg = `Falha ao salvar permissões (HTTP ${res.status})`;
+				try { const j = await res.json(); if (j?.detail) msg = j.detail; } catch {}
+				throw new Error(msg);
+			}
+			setSnack({ open: true, message: 'Permissões atualizadas', severity: 'success' });
+			setPermOpen(false);
+		} catch (e) {
+			setSnack({ open: true, message: e.message || 'Erro ao atualizar permissões', severity: 'error' });
+		} finally {
+			setPermLoading(false);
+		}
+	};
 
 	const startEdit = (row) => {
 		setEditRowId(row.id);
@@ -304,6 +408,7 @@ export default function CadastroUsuarios() {
 										</Stack>
 									) : (
 										<Stack direction="row" spacing={1} justifyContent="flex-end">
+											<IconButton onClick={() => openPermissionsDialog(r)} title="Permissões"><Security /></IconButton>
 											<IconButton onClick={() => startEdit(r)} title="Editar"><Edit /></IconButton>
 											<IconButton color="error" onClick={() => deleteUser(r.id)} title="Remover"><Delete /></IconButton>
 										</Stack>
@@ -342,6 +447,47 @@ export default function CadastroUsuarios() {
 				<DialogActions>
 					<Button onClick={() => setOpenNew(false)}>Cancelar</Button>
 					<Button onClick={createUser} variant="contained">Criar</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Dialog Permissões por Página */}
+			<Dialog open={permOpen} onClose={() => setPermOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>Permissões de Acesso por Página</DialogTitle>
+				<DialogContent dividers>
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+						As permissões são aplicadas ao Grupo do usuário selecionado. Ajustes aqui afetam todos os usuários deste grupo.
+					</Typography>
+					{permUser && (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians') && (
+						<Alert severity="info" sx={{ mb: 2 }}>
+							Nível de acesso Admin: todas as páginas estão habilitadas por padrão.
+						</Alert>
+					)}
+					{permLoading ? (
+						<Typography>Carregando permissões…</Typography>
+					) : (
+						<FormGroup>
+							{PAGE_FLAGS.map(p => {
+								const isAdminLevel = permUser && (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians');
+								return (
+									<FormControlLabel
+										key={p.id}
+										control={<Checkbox checked={permChecked.has(p.id)} onChange={() => toggleFlag(p.id)} disabled={isAdminLevel} />}
+										label={p.label}
+									/>
+								);
+							})}
+						</FormGroup>
+					)}
+					<Divider sx={{ mt: 1 }} />
+					{permGroup && (
+						<Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+							Grupo: {permGroup?.nome} (ID {permGroup?.id})
+						</Typography>
+					)}
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setPermOpen(false)}>Fechar</Button>
+					<Button onClick={savePermissions} disabled={permLoading || (permUser && (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' || String(permUser.nivel_acesso || '').toLowerCase() === 'willians'))} variant="contained">Salvar</Button>
 				</DialogActions>
 			</Dialog>
 
