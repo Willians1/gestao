@@ -1,10 +1,11 @@
 #!/bin/sh
-set -euo pipefail
+# Modo estrito compatível com /bin/sh (dash)
+set -eu
 
 # Ajusta Apache para a porta do Render
 PORT_ENV="${PORT:-8080}"
-if [ -f /etc/apache2/ports.conf ]; then sed -ri "s/Listen 80/Listen ${PORT_ENV}/" /etc/apache2/ports.conf || true; fi
-if [ -f /etc/apache2/sites-available/000-default.conf ]; then sed -ri "s/:80>/:${PORT_ENV}>/" /etc/apache2/sites-available/000-default.conf || true; fi
+if [ -f /etc/apache2/ports.conf ]; then sed -i "s/Listen 80/Listen ${PORT_ENV}/" /etc/apache2/ports.conf || true; fi
+if [ -f /etc/apache2/sites-available/000-default.conf ]; then sed -i "s/:80>/:${PORT_ENV}>/" /etc/apache2/sites-available/000-default.conf || true; fi
 
 # Caminho do DB
 : "${PHP_DB_PATH:=/var/www/html/gestao_obras.db}"
