@@ -12,6 +12,7 @@ import GruposUsuarios from './pages/GruposUsuariosNovo';
 import Clientes from './pages/Clientes';
 import Contratos from './pages/Contratos';
 import Admin from './pages/Admin';
+import CadastroUsuarios from './pages/CadastroUsuarios';
 import Despesas from './pages/Despesas';
 import Fornecedores from './pages/Fornecedores';
 import OrcamentoObra from './pages/OrcamentoObra';
@@ -138,6 +139,11 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute page="/admin">
                   <Layout><Admin /></Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/cadastro-usuarios" element={
+                <ProtectedRoute page="/admin">
+                  <Layout><CadastroUsuarios /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/despesas" element={
