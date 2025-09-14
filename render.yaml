@@ -20,7 +20,7 @@ services:
     plan: free
     region: oregon
     autoDeploy: true
-    dockerfilePath: Dockerfile
+    dockerfilePath: ./php/Dockerfile
     dockerContext: ./php
     envVars:
       - key: PHP_DB_PATH
