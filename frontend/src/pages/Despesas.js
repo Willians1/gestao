@@ -39,7 +39,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Upload as UploadIcon,
-  Download as DownloadIcon,
   Visibility as ViewIcon
 } from '@mui/icons-material';
 

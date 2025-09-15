@@ -11,7 +11,6 @@ export default function Fornecedores() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const { token, hasPermission } = useAuth();
   const canCreate = hasPermission('/fornecedores', 'create');
   const [rows, setRows] = React.useState([]);
