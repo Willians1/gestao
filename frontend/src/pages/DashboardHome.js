@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   Avatar,
   Button,
   Chip,
@@ -15,7 +15,7 @@ import {
   List,
   ListItem,
   ListItemText,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TestesModal from '../components/TestesModal';
@@ -28,9 +28,9 @@ import {
   AttachMoney,
   Inventory,
   Science,
-  ExitToApp
-} from '@mui/icons-material';
-import { Storefront } from '@mui/icons-material';
+  ExitToApp,
+, Storefront } from '@mui/icons-material';
+
 
 export default function DashboardHome() {
   const theme = useTheme();
@@ -58,16 +58,16 @@ export default function DashboardHome() {
     try {
       const [resGer, resAr] = await Promise.all([
         fetch(`${API}/testes-loja/`),
-        fetch(`${API}/testes-ar-condicionado/`)
+        fetch(`${API}/testes-ar-condicionado/`),
       ]);
       const [dataGer, dataAr] = await Promise.all([
         resGer.ok ? resGer.json() : Promise.resolve([]),
-        resAr.ok ? resAr.json() : Promise.resolve([])
+        resAr.ok ? resAr.json() : Promise.resolve([]),
       ]);
       const listGer = Array.isArray(dataGer) ? dataGer : [];
       const listAr = Array.isArray(dataAr) ? dataAr : [];
       const count = listGer.length; // métricas do card baseadas em Gerador
-      const off = listGer.filter(t => (t.status || '').toString().toUpperCase() === 'OFF').length;
+      const off = listGer.filter((t) => (t.status || '').toString().toUpperCase() === 'OFF').length;
       const ok = count - off;
       setTestesList(listGer);
       setTestesArList(listAr);
@@ -85,8 +85,12 @@ export default function DashboardHome() {
     }
   }, [API]);
 
-  React.useEffect(() => { fetchBothTestes(); }, [fetchBothTestes]);
-  React.useEffect(() => { if (openTestesModal) fetchBothTestes(); }, [openTestesModal, fetchBothTestes]);
+  React.useEffect(() => {
+    fetchBothTestes();
+  }, [fetchBothTestes]);
+  React.useEffect(() => {
+    if (openTestesModal) fetchBothTestes();
+  }, [openTestesModal, fetchBothTestes]);
 
   // carregar clientes para mapear nomes por cliente_id
   React.useEffect(() => {
@@ -102,7 +106,9 @@ export default function DashboardHome() {
         if (mounted) setClientes([]);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [API]);
 
   const allDashboardCards = [
@@ -112,7 +118,7 @@ export default function DashboardHome() {
       icon: People,
       color: '#3b82f6',
       path: '/clientes',
-      permission: 'clientes:read'
+      permission: 'clientes:read',
     },
     {
       title: 'Obras',
@@ -120,7 +126,7 @@ export default function DashboardHome() {
       icon: Construction,
       color: '#10b981',
       path: '/contratos',
-      permission: 'contratos:read'
+      permission: 'contratos:read',
     },
     {
       title: 'Financeiro',
@@ -128,16 +134,16 @@ export default function DashboardHome() {
       icon: AttachMoney,
       color: '#f59e0b',
       path: '/financeiro',
-      permission: 'financeiro:read'
+      permission: 'financeiro:read',
     },
-  // Removed cards: Contratos, Despesas, Fornecedores, Orçamento Obra, Valor Materiais, Resumo Mensal
+    // Removed cards: Contratos, Despesas, Fornecedores, Orçamento Obra, Valor Materiais, Resumo Mensal
     {
       title: 'Testes de Loja',
       description: 'Agendamentos e registros de testes',
       icon: Storefront,
       color: '#06b6d4',
       path: '/testes-loja-menu',
-      permission: 'testes_loja:read'
+      permission: 'testes_loja:read',
     },
     {
       title: 'Administrador',
@@ -146,12 +152,12 @@ export default function DashboardHome() {
       color: '#6b7280',
       path: '/cadastro-usuarios',
       permission: 'admin:read',
-      adminOnly: true
-    }
+      adminOnly: true,
+    },
   ];
 
   // Filtrar cards baseado nas permissões do usuário
-  const filteredCards = allDashboardCards.filter(card => {
+  const filteredCards = allDashboardCards.filter((card) => {
     if (card.adminOnly && !isAdmin()) return false;
     return hasPermission(card.permission);
   });
@@ -175,50 +181,66 @@ export default function DashboardHome() {
     if (!Array.isArray(list)) return null;
     const candidates = list.filter(predicate);
     if (!candidates.length) return null;
-    candidates.sort((a, b) => new Date(b.data_teste || b.data || b.created_at || 0) - new Date(a.data_teste || a.data || a.created_at || 0));
+    candidates.sort(
+      (a, b) =>
+        new Date(b.data_teste || b.data || b.created_at || 0) -
+        new Date(a.data_teste || a.data || a.created_at || 0)
+    );
     return candidates[0];
   };
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      p: 3
-    }}>
-      <Box sx={{ 
-        maxWidth: 1200, 
-        mx: 'auto',
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: 3,
-        p: 4,
-        backdropFilter: 'blur(10px)'
-      }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 3,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: 1200,
+          mx: 'auto',
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: 3,
+          p: 4,
+          backdropFilter: 'blur(10px)',
+        }}
+      >
         {/* Header */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 4,
-          pb: 2,
-          borderBottom: '2px solid',
-          borderColor: theme.palette.grey[200]
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 4,
+            pb: 2,
+            borderBottom: '2px solid',
+            borderColor: theme.palette.grey[200],
+          }}
+        >
           <Box>
-            <Typography variant="h3" sx={{ 
-              fontWeight: 700, 
-              color: theme.palette.primary.main,
-              mb: 1
-            }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                color: theme.palette.primary.main,
+                mb: 1,
+              }}
+            >
               Dashboard
             </Typography>
-            <Typography variant="h6" sx={{ 
-              color: theme.palette.text.secondary,
-              fontWeight: 400
-            }}>
+            <Typography
+              variant="h6"
+              sx={{
+                color: theme.palette.text.secondary,
+                fontWeight: 400,
+              }}
+            >
               Bem-vindo, {user?.nome}!
             </Typography>
           </Box>
-          
+
           <Button
             variant="outlined"
             color="error"
@@ -228,15 +250,20 @@ export default function DashboardHome() {
               borderRadius: 2,
               px: 3,
               py: 1.5,
-              fontWeight: 600
+              fontWeight: 600,
             }}
           >
             Sair
           </Button>
         </Box>
 
-  {/* Cards Grid */}
-  <Grid container spacing={3} alignItems="stretch" sx={{ flexDirection: { xs: 'column', sm: 'row' } }}>
+        {/* Cards Grid */}
+        <Grid
+          container
+          spacing={3}
+          alignItems="stretch"
+          sx={{ flexDirection: { xs: 'column', sm: 'row' } }}
+        >
           {filteredCards.map((card, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Card
@@ -253,11 +280,21 @@ export default function DashboardHome() {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  height: '100%'
+                  height: '100%',
                 }}
                 onClick={() => handleCardClick(card.path)}
               >
-                <CardContent sx={{ p: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', flexGrow: 1, minHeight: { xs: 160, sm: 200, md: 240 } }}>
+                <CardContent
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    flexGrow: 1,
+                    minHeight: { xs: 160, sm: 200, md: 240 },
+                  }}
+                >
                   <Avatar
                     sx={{
                       width: { xs: 56, sm: 64 },
@@ -265,7 +302,7 @@ export default function DashboardHome() {
                       mx: 'auto',
                       mb: 2,
                       bgcolor: card.color,
-                      boxShadow: `0 8px 24px ${card.color}40`
+                      boxShadow: `0 8px 24px ${card.color}40`,
                     }}
                   >
                     <card.icon sx={{ fontSize: { xs: 24, sm: 32 }, color: 'white' }} />
@@ -278,7 +315,7 @@ export default function DashboardHome() {
                       color: theme.palette.text.primary,
                       mb: 1,
                       fontSize: { xs: '1rem', sm: '1.05rem', md: '1.1rem' },
-                      textAlign: 'center'
+                      textAlign: 'center',
                     }}
                   >
                     {card.title}
@@ -290,7 +327,10 @@ export default function DashboardHome() {
                         size="small"
                         color="primary"
                         clickable
-                        onClick={(e) => { e.stopPropagation(); setOpenTestesModal(true); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenTestesModal(true);
+                        }}
                       />
                       {testesUrgent && (
                         <Chip
@@ -298,12 +338,15 @@ export default function DashboardHome() {
                           size="small"
                           color="error"
                           clickable
-                          onClick={(e) => { e.stopPropagation(); setOpenTestesModal(true); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenTestesModal(true);
+                          }}
                         />
                       )}
                     </Box>
                   )}
-                  
+
                   <Typography
                     variant="body2"
                     sx={{
@@ -315,7 +358,7 @@ export default function DashboardHome() {
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
                     }}
                     title={card.description}
                   >
@@ -328,23 +371,33 @@ export default function DashboardHome() {
         </Grid>
 
         {/* Footer */}
-        <Box sx={{ 
-          textAlign: 'center', 
-          mt: 6,
-          pt: 3,
-          borderTop: '1px solid',
-          borderColor: theme.palette.grey[200]
-        }}>
-          <Typography variant="body2" sx={{ 
-            color: theme.palette.text.secondary,
-            fontWeight: 500
-          }}>
+        <Box
+          sx={{
+            textAlign: 'center',
+            mt: 6,
+            pt: 3,
+            borderTop: '1px solid',
+            borderColor: theme.palette.grey[200],
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.text.secondary,
+              fontWeight: 500,
+            }}
+          >
             Sistema de Gestão de Obras © {new Date().getFullYear()}
           </Typography>
         </Box>
       </Box>
 
-  <TestesModal open={openTestesModal} onClose={() => setOpenTestesModal(false)} API={API} navigate={navigate} />
+      <TestesModal
+        open={openTestesModal}
+        onClose={() => setOpenTestesModal(false)}
+        API={API}
+        navigate={navigate}
+      />
     </Box>
   );
 }

@@ -6,26 +6,26 @@ export const USER_ROLES = {
   ADMIN: 'Admin',
   WILLIANS: 'Willians',
   MANUTENCAO: 'Manutenção',
-  VISUALIZACAO: 'Visualização'
+  VISUALIZACAO: 'Visualização',
 };
 
 export const PERMISSIONS = {
   [USER_ROLES.ADMIN]: {
     pages: ['*'], // Acesso a todas as páginas
-    actions: ['create', 'read', 'update', 'delete']
+    actions: ['create', 'read', 'update', 'delete'],
   },
   [USER_ROLES.WILLIANS]: {
     pages: ['*'], // Acesso a todas as páginas
-    actions: ['create', 'read', 'update', 'delete']
+    actions: ['create', 'read', 'update', 'delete'],
   },
   [USER_ROLES.MANUTENCAO]: {
     pages: ['/testes-loja-menu', '/testes-loja', '/testes-ar-condicionado'],
-    actions: ['create', 'read', 'update']
+    actions: ['create', 'read', 'update'],
   },
   [USER_ROLES.VISUALIZACAO]: {
     pages: ['/testes-loja-menu', '/testes-loja', '/testes-ar-condicionado'],
-    actions: ['read']
-  }
+    actions: ['read'],
+  },
 };
 
 const AuthContext = createContext();
@@ -56,9 +56,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       // carregar permissões do usuário logado
       fetch(`${API_BASE}/me/permissoes`, { headers: { Authorization: `Bearer ${savedToken}` } })
-        .then(r => r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] }))
-        .then(data => {
-          const ids = new Set((data?.permissoes || []).map(p => p.id));
+        .then((r) => (r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] })))
+        .then((data) => {
+          const ids = new Set((data?.permissoes || []).map((p) => p.id));
           setPermissions({ grupo_id: data?.grupo_id ?? null, ids, list: data?.permissoes || [] });
         })
         .catch(() => setPermissions({ grupo_id: null, ids: new Set(), list: [] }));
@@ -74,9 +74,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(userData));
     // carregar permissões imediatamente após login
     fetch(`${API_BASE}/me/permissoes`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] }))
-      .then(data => {
-        const ids = new Set((data?.permissoes || []).map(p => p.id));
+      .then((r) => (r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] })))
+      .then((data) => {
+        const ids = new Set((data?.permissoes || []).map((p) => p.id));
         setPermissions({ grupo_id: data?.grupo_id ?? null, ids, list: data?.permissoes || [] });
       })
       .catch(() => setPermissions({ grupo_id: null, ids: new Set(), list: [] }));
@@ -92,7 +92,11 @@ export const AuthProvider = ({ children }) => {
 
   const hasPermission = (page, action = 'read') => {
     // Se for admin pelo nível, libera tudo
-    if (user?.nivel_acesso && (user.nivel_acesso === USER_ROLES.ADMIN || user.nivel_acesso === USER_ROLES.WILLIANS)) return true;
+    if (
+      user?.nivel_acesso &&
+      (user.nivel_acesso === USER_ROLES.ADMIN || user.nivel_acesso === USER_ROLES.WILLIANS)
+    )
+      return true;
     // Mapear páginas para IDs de permissão base
     const pageToPermId = {
       '/cadastro-usuarios': 1101,
@@ -160,12 +164,8 @@ export const AuthProvider = ({ children }) => {
     getUserRoleLabel,
     isAdmin,
     canAccessTests,
-    USER_ROLES
+    USER_ROLES,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

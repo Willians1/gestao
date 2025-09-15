@@ -1,0 +1,9 @@
+build/
+node_modules/
+*.min.js
+*.bundle.js
+**/*.min.js
+**/*.bundle.js
+src/Dashboard.js
+src/pages/DashboardHome.js
+src/pages/GruposUsuarios.js

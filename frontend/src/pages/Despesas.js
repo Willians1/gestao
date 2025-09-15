@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Box,
@@ -27,7 +26,7 @@ import {
   useMediaQuery,
   Chip,
   Alert,
-  Snackbar
+  Snackbar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -39,7 +38,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Upload as UploadIcon,
-  Visibility as ViewIcon
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
 
 function Despesas() {
@@ -51,21 +50,21 @@ function Despesas() {
   const canCreate = hasPermission('/despesas', 'create');
   const canUpdate = hasPermission('/despesas', 'update');
   const canDelete = hasPermission('/despesas', 'delete');
-  
+
   // Estados principais
   const [despesas, setDespesas] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
-  
+
   // Estados para modais
   const [openModal, setOpenModal] = React.useState(false);
   const [openEditModal, setOpenEditModal] = React.useState(false);
   const [editingDespesa, setEditingDespesa] = React.useState(null);
-  
+
   // Estados para upload de Excel
   const [openUploadModal, setOpenUploadModal] = React.useState(false);
   const [uploadFile, setUploadFile] = React.useState(null);
   const [uploadProgress, setUploadProgress] = React.useState(0);
-  
+
   // Estados para formulário
   const [formData, setFormData] = React.useState({
     id_cliente: '',
@@ -74,21 +73,23 @@ function Despesas() {
     data: '',
     categoria: '',
     status: 'Pendente',
-    observacoes: ''
+    observacoes: '',
   });
-  
+
   // Estados para notificações
   const [snackbar, setSnackbar] = React.useState({
     open: false,
     message: '',
-    severity: 'success'
+    severity: 'success',
   });
 
   // Carregar despesas
   const loadDespesas = async () => {
     setLoading(true);
     try {
-  const response = await fetch(`${API_BASE}/despesas`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const response = await fetch(`${API_BASE}/despesas`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (response.ok) {
         const data = await response.json();
         setDespesas(data);
@@ -100,7 +101,7 @@ function Despesas() {
       setSnackbar({
         open: true,
         message: 'Erro ao carregar despesas',
-        severity: 'error'
+        severity: 'error',
       });
     }
     setLoading(false);
@@ -113,19 +114,19 @@ function Despesas() {
   // Handlers do formulário
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async () => {
     try {
-  const response = await fetch(`${API_BASE}/despesas`, {
+      const response = await fetch(`${API_BASE}/despesas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(formData),
       });
@@ -139,13 +140,13 @@ function Despesas() {
           data: '',
           categoria: '',
           status: 'Pendente',
-          observacoes: ''
+          observacoes: '',
         });
         loadDespesas();
         setSnackbar({
           open: true,
           message: 'Despesa adicionada com sucesso!',
-          severity: 'success'
+          severity: 'success',
         });
       } else {
         throw new Error('Erro ao adicionar despesa');
@@ -155,7 +156,7 @@ function Despesas() {
       setSnackbar({
         open: true,
         message: 'Erro ao adicionar despesa',
-        severity: 'error'
+        severity: 'error',
       });
     }
   };
@@ -170,14 +171,14 @@ function Despesas() {
     setUploadProgress(0);
     try {
       const xhr = new XMLHttpRequest();
-      
+
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           setUploadProgress((e.loaded / e.total) * 100);
         }
       };
 
-      xhr.onload = function() {
+      xhr.onload = function () {
         if (xhr.status === 200) {
           setOpenUploadModal(false);
           setUploadFile(null);
@@ -186,25 +187,25 @@ function Despesas() {
           setSnackbar({
             open: true,
             message: 'Arquivo Excel importado com sucesso!',
-            severity: 'success'
+            severity: 'success',
           });
         } else {
           throw new Error('Erro no upload');
         }
       };
 
-      xhr.onerror = function() {
+      xhr.onerror = function () {
         throw new Error('Erro de conexão');
       };
 
-  xhr.open('POST', `${API_BASE}/despesas/upload-excel`);
+      xhr.open('POST', `${API_BASE}/despesas/upload-excel`);
       xhr.send(formData);
     } catch (e) {
       console.error(e);
       setSnackbar({
         open: true,
         message: 'Erro ao importar arquivo Excel',
-        severity: 'error'
+        severity: 'error',
       });
       setUploadProgress(0);
     }
@@ -212,36 +213,51 @@ function Despesas() {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pago': return 'success';
-      case 'pendente': return 'warning';
-      case 'cancelado': return 'error';
-      default: return 'default';
+      case 'pago':
+        return 'success';
+      case 'pendente':
+        return 'warning';
+      case 'cancelado':
+        return 'error';
+      default:
+        return 'default';
     }
   };
 
   return (
-    <Box sx={{ 
-      background: theme.palette.background.default, 
-      minHeight: '100vh', 
-      p: { xs: 1, sm: 2, md: 3 } 
-    }}>
+    <Box
+      sx={{
+        background: theme.palette.background.default,
+        minHeight: '100vh',
+        p: { xs: 1, sm: 2, md: 3 },
+      }}
+    >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
         {/* Cabeçalho */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3,
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 2
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
-            <Button variant="text" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mr: 2 }}>Voltar</Button>
+            <Button
+              variant="text"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate(-1)}
+              sx={{ mr: 2 }}
+            >
+              Voltar
+            </Button>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
               Despesas
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
@@ -270,27 +286,13 @@ function Despesas() {
           <Table>
             <TableHead sx={{ backgroundColor: theme.palette.primary.main }}>
               <TableRow>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  ID Cliente
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Serviço
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Valor
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Data
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Categoria
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Status
-                </TableCell>
-                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>
-                  Ações
-                </TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>ID Cliente</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serviço</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Valor</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Data</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Categoria</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -299,18 +301,17 @@ function Despesas() {
                   <TableCell>{despesa.id_cliente}</TableCell>
                   <TableCell>{despesa.servico}</TableCell>
                   <TableCell>
-                    R$ {Number(despesa.valor || 0).toLocaleString('pt-BR', {
+                    R${' '}
+                    {Number(despesa.valor || 0).toLocaleString('pt-BR', {
                       minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
+                      maximumFractionDigits: 2,
                     })}
                   </TableCell>
-                  <TableCell>
-                    {despesa.data ? formatDateTimeBr(despesa.data) : '-'}
-                  </TableCell>
+                  <TableCell>{despesa.data ? formatDateTimeBr(despesa.data) : '-'}</TableCell>
                   <TableCell>{despesa.categoria}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={despesa.status} 
+                    <Chip
+                      label={despesa.status}
                       color={getStatusColor(despesa.status)}
                       size="small"
                     />
@@ -350,8 +351,8 @@ function Despesas() {
         </TableContainer>
 
         {/* Modal de Nova Despesa */}
-        <Dialog 
-          open={openModal} 
+        <Dialog
+          open={openModal}
           onClose={() => setOpenModal(false)}
           maxWidth="sm"
           fullWidth
@@ -384,7 +385,7 @@ function Despesas() {
                 onChange={handleInputChange}
                 fullWidth
                 required
-                inputProps={{ step: "0.01" }}
+                inputProps={{ step: '0.01' }}
               />
               <TextField
                 name="data"
@@ -428,9 +429,7 @@ function Despesas() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenModal(false)}>
-              Cancelar
-            </Button>
+            <Button onClick={() => setOpenModal(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} variant="contained">
               Salvar
             </Button>
@@ -438,8 +437,8 @@ function Despesas() {
         </Dialog>
 
         {/* Modal de Upload Excel */}
-        <Dialog 
-          open={openUploadModal} 
+        <Dialog
+          open={openUploadModal}
           onClose={() => setOpenUploadModal(false)}
           maxWidth="sm"
           fullWidth
@@ -448,16 +447,17 @@ function Despesas() {
           <DialogContent>
             <Box sx={{ pt: 2 }}>
               <Alert severity="info" sx={{ mb: 2 }}>
-                O arquivo deve conter as colunas: ID Cliente, Serviço, Valor, Data, Categoria, Status, Observações
+                O arquivo deve conter as colunas: ID Cliente, Serviço, Valor, Data, Categoria,
+                Status, Observações
               </Alert>
-              
+
               <input
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={(e) => setUploadFile(e.target.files[0])}
                 style={{ marginBottom: 16, width: '100%' }}
               />
-              
+
               {uploadProgress > 0 && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>
@@ -469,11 +469,9 @@ function Despesas() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenUploadModal(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleFileUpload} 
+            <Button onClick={() => setOpenUploadModal(false)}>Cancelar</Button>
+            <Button
+              onClick={handleFileUpload}
               variant="contained"
               disabled={!uploadFile || uploadProgress > 0}
             >
@@ -486,10 +484,10 @@ function Despesas() {
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         >
-          <Alert 
-            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          <Alert
+            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
             severity={snackbar.severity}
           >
             {snackbar.message}

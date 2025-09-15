@@ -1,33 +1,33 @@
 import React from 'react';
-import { 
-  Box, 
-  Button, 
-  Paper, 
-  Typography, 
-  Chip, 
-  Stack, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  TablePagination, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField, 
-  Input, 
-  Select, 
-  MenuItem, 
-  FormControl, 
+import {
+  Box,
+  Button,
+  Paper,
+  Typography,
+  Chip,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Input,
+  Select,
+  MenuItem,
+  FormControl,
   InputLabel,
   useMediaQuery,
   useTheme,
   Grid,
   Card,
-  CardContent
+  CardContent,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -48,12 +48,23 @@ export default function Contratos() {
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [total, setTotal] = React.useState(0);
   const [openModal, setOpenModal] = React.useState(false);
-  const [form, setForm] = React.useState({ numero: '', cliente_id: '', cliente: '', valor: '', dataInicio: '', dataFim: '', tipo: '', situacao: '', prazoPagamento: '', quantidadeParcelas: '' });
+  const [form, setForm] = React.useState({
+    numero: '',
+    cliente_id: '',
+    cliente: '',
+    valor: '',
+    dataInicio: '',
+    dataFim: '',
+    tipo: '',
+    situacao: '',
+    prazoPagamento: '',
+    quantidadeParcelas: '',
+  });
   const [selectedFile, setSelectedFile] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
   const [editMode, setEditMode] = React.useState(false);
   const [editForm, setEditForm] = React.useState({});
-  const [clientes, setClientes] = React.useState([]);  // Lista de clientes para o dropdown
+  const [clientes, setClientes] = React.useState([]); // Lista de clientes para o dropdown
   const [openFilter, setOpenFilter] = React.useState(false);
   const [filteredRows, setFilteredRows] = React.useState([]);
   const [filters, setFilters] = React.useState({
@@ -63,7 +74,7 @@ export default function Contratos() {
     valorMin: '',
     valorMax: '',
     dataFimInicio: '',
-    dataFimFim: ''
+    dataFimFim: '',
   });
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -89,12 +100,12 @@ export default function Contratos() {
 
   const calcularDiasRestantes = (dataFim) => {
     if (!dataFim) return null;
-    
+
     const hoje = new Date();
     const dataLimite = new Date(dataFim);
     const diffTime = dataLimite - hoje;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return { dias: `${Math.abs(diffDays)}d atraso`, cor: '#f44336', fontWeight: 'bold' };
     } else if (diffDays <= 7) {
@@ -142,34 +153,39 @@ export default function Contratos() {
 
   const applyFilters = () => {
     let filtered = [...rows];
-    
+
     if (filters.searchText) {
-      filtered = filtered.filter(row => 
-        (row.numero || '').toString().toLowerCase().includes(filters.searchText.toLowerCase()) ||
-        (row.cliente || '').toLowerCase().includes(filters.searchText.toLowerCase())
+      filtered = filtered.filter(
+        (row) =>
+          (row.numero || '').toString().toLowerCase().includes(filters.searchText.toLowerCase()) ||
+          (row.cliente || '').toLowerCase().includes(filters.searchText.toLowerCase())
       );
     }
-    
+
     if (filters.valorMin) {
-      filtered = filtered.filter(row => parseFloat(row.valor || 0) >= parseFloat(filters.valorMin));
+      filtered = filtered.filter(
+        (row) => parseFloat(row.valor || 0) >= parseFloat(filters.valorMin)
+      );
     }
-    
+
     if (filters.valorMax) {
-      filtered = filtered.filter(row => parseFloat(row.valor || 0) <= parseFloat(filters.valorMax));
+      filtered = filtered.filter(
+        (row) => parseFloat(row.valor || 0) <= parseFloat(filters.valorMax)
+      );
     }
-    
+
     if (filters.dataFimInicio) {
-      filtered = filtered.filter(row => row.dataFim >= filters.dataFimInicio);
+      filtered = filtered.filter((row) => row.dataFim >= filters.dataFimInicio);
     }
-    
+
     if (filters.dataFimFim) {
-      filtered = filtered.filter(row => row.dataFim <= filters.dataFimFim);
+      filtered = filtered.filter((row) => row.dataFim <= filters.dataFimFim);
     }
-    
+
     filtered.sort((a, b) => {
       let aVal = a[filters.orderBy] || '';
       let bVal = b[filters.orderBy] || '';
-      
+
       if (filters.orderBy === 'valor') {
         aVal = parseFloat(aVal) || 0;
         bVal = parseFloat(bVal) || 0;
@@ -177,14 +193,14 @@ export default function Contratos() {
         aVal = new Date(aVal);
         bVal = new Date(bVal);
       }
-      
+
       if (filters.orderDirection === 'asc') {
         return aVal > bVal ? 1 : -1;
       } else {
         return aVal < bVal ? 1 : -1;
       }
     });
-    
+
     setFilteredRows(filtered);
     setPage(0);
   };
@@ -199,39 +215,53 @@ export default function Contratos() {
   }, []);
 
   return (
-    <Box sx={{ 
-      backgroundColor: theme.palette.background.default, 
-      minHeight: '100vh', 
-      p: { xs: 1, sm: 2, md: 4 } 
-    }}>
+    <Box
+      sx={{
+        backgroundColor: theme.palette.background.default,
+        minHeight: '100vh',
+        p: { xs: 1, sm: 2, md: 4 },
+      }}
+    >
       <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mr: 2 }}>Voltar</Button>
-          <Typography variant="h4" sx={{ 
-            fontWeight: 700, 
-            mb: 0,
-            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' }
-          }}>
+          <Button
+            variant="text"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            sx={{ mr: 2 }}
+          >
+            Voltar
+          </Button>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: 0,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            }}
+          >
             Gestão de Contratos
           </Typography>
         </Box>
-        
+
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Gerencie seus contratos de forma eficiente
         </Typography>
 
         {/* Header com botões responsivos */}
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 2, 
-          mb: 3,
-          alignItems: { xs: 'stretch', sm: 'center' }
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            mb: 3,
+            alignItems: { xs: 'stretch', sm: 'center' },
+          }}
+        >
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flex: 1 }}>
             {canCreate && (
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={() => setOpenModal(true)}
                 size={isMobile ? 'small' : 'medium'}
                 sx={{ fontWeight: 600 }}
@@ -239,8 +269,8 @@ export default function Contratos() {
                 Novo Contrato
               </Button>
             )}
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               onClick={() => setOpenFilter(true)}
               size={isMobile ? 'small' : 'medium'}
             >
@@ -252,24 +282,26 @@ export default function Contratos() {
         {/* Chips de filtro */}
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
           {filters.searchText && (
-            <Chip 
-              label={`Busca: ${filters.searchText}`} 
-              onDelete={() => setFilters(f => ({ ...f, searchText: '' }))} 
-              size={isMobile ? 'small' : 'medium'} 
+            <Chip
+              label={`Busca: ${filters.searchText}`}
+              onDelete={() => setFilters((f) => ({ ...f, searchText: '' }))}
+              size={isMobile ? 'small' : 'medium'}
             />
           )}
           {filters.orderBy !== 'numero' && (
-            <Chip 
-              label={`Ordem: ${filters.orderBy} ${filters.orderDirection}`} 
-              onDelete={() => setFilters(f => ({ ...f, orderBy: 'numero', orderDirection: 'asc' }))} 
-              size={isMobile ? 'small' : 'medium'} 
+            <Chip
+              label={`Ordem: ${filters.orderBy} ${filters.orderDirection}`}
+              onDelete={() =>
+                setFilters((f) => ({ ...f, orderBy: 'numero', orderDirection: 'asc' }))
+              }
+              size={isMobile ? 'small' : 'medium'}
             />
           )}
           {(filters.valorMin || filters.valorMax) && (
-            <Chip 
-              label="Filtro Valor" 
-              onDelete={() => setFilters(f => ({ ...f, valorMin: '', valorMax: '' }))} 
-              size={isMobile ? 'small' : 'medium'} 
+            <Chip
+              label="Filtro Valor"
+              onDelete={() => setFilters((f) => ({ ...f, valorMin: '', valorMax: '' }))}
+              size={isMobile ? 'small' : 'medium'}
             />
           )}
         </Stack>
@@ -291,47 +323,55 @@ export default function Contratos() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, idx) => {
-                  const diasRestantes = calcularDiasRestantes(row.dataFim);
-                  return (
-                    <TableRow key={row.id || idx} hover sx={{ borderBottom: '1px solid #e0e0e0' }}>
-                      <TableCell>{row.numero || ''}</TableCell>
-                      <TableCell>{row.cliente || ''}</TableCell>
-                      <TableCell>
-                        {row.valor ? `R$ ${parseFloat(row.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                      </TableCell>
-                      <TableCell>{row.dataInicio || ''}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span>{row.dataFim || ''}</span>
-                          {diasRestantes && (
-                            <Chip 
-                              label={diasRestantes.dias}
-                              size="small"
-                              sx={{ 
-                                backgroundColor: diasRestantes.cor,
-                                color: 'white',
-                                fontWeight: diasRestantes.fontWeight,
-                                fontSize: '0.75rem'
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{row.tipo || ''}</TableCell>
-                      <TableCell>{row.situacao || ''}</TableCell>
-                      <TableCell>
-                        <Button 
-                          size="small" 
-                          variant="text" 
-                          onClick={() => setSelectedContrato(row)}
-                        >
-                          Ver detalhes
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filteredRows
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row, idx) => {
+                    const diasRestantes = calcularDiasRestantes(row.dataFim);
+                    return (
+                      <TableRow
+                        key={row.id || idx}
+                        hover
+                        sx={{ borderBottom: '1px solid #e0e0e0' }}
+                      >
+                        <TableCell>{row.numero || ''}</TableCell>
+                        <TableCell>{row.cliente || ''}</TableCell>
+                        <TableCell>
+                          {row.valor
+                            ? `R$ ${parseFloat(row.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : ''}
+                        </TableCell>
+                        <TableCell>{row.dataInicio || ''}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <span>{row.dataFim || ''}</span>
+                            {diasRestantes && (
+                              <Chip
+                                label={diasRestantes.dias}
+                                size="small"
+                                sx={{
+                                  backgroundColor: diasRestantes.cor,
+                                  color: 'white',
+                                  fontWeight: diasRestantes.fontWeight,
+                                  fontSize: '0.75rem',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>{row.tipo || ''}</TableCell>
+                        <TableCell>{row.situacao || ''}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => setSelectedContrato(row)}
+                          >
+                            Ver detalhes
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
             <TablePagination
@@ -340,7 +380,10 @@ export default function Contratos() {
               page={page}
               onPageChange={(_, newPage) => setPage(newPage)}
               rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
               rowsPerPageOptions={[5, 10, 25]}
               labelRowsPerPage="Linhas por página:"
             />
@@ -348,86 +391,91 @@ export default function Contratos() {
         ) : (
           /* Versão Mobile - Cards */
           <Box>
-            {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, idx) => {
-              const diasRestantes = calcularDiasRestantes(row.dataFim);
-              return (
-                <Card key={row.id || idx} sx={{ mb: 2, borderRadius: 2 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        O.S #{row.numero || ''}
+            {filteredRows
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((row, idx) => {
+                const diasRestantes = calcularDiasRestantes(row.dataFim);
+                return (
+                  <Card key={row.id || idx} sx={{ mb: 2, borderRadius: 2 }}>
+                    <CardContent>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          mb: 2,
+                        }}
+                      >
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                          O.S #{row.numero || ''}
+                        </Typography>
+                        <Chip
+                          label={row.situacao || ''}
+                          size="small"
+                          variant="outlined"
+                          sx={{ backgroundColor: '#f5f5f5' }}
+                        />
+                      </Box>
+
+                      <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                        {row.cliente || ''}
                       </Typography>
-                      <Chip 
-                        label={row.situacao || ''} 
-                        size="small" 
-                        variant="outlined" 
-                        sx={{ backgroundColor: '#f5f5f5' }}
-                      />
-                    </Box>
-                    
-                    <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-                      {row.cliente || ''}
-                    </Typography>
-                    
-                    <Typography variant="h6" color="primary" sx={{ mb: 2, fontWeight: 600 }}>
-                      {row.valor ? `R$ ${parseFloat(row.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                    </Typography>
-                    
-                    <Grid container spacing={1} sx={{ mb: 2 }}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          Início
-                        </Typography>
-                        <Typography variant="body2">
-                          {row.dataInicio || ''}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">
-                          Fim
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2">
-                            {row.dataFim || ''}
+
+                      <Typography variant="h6" color="primary" sx={{ mb: 2, fontWeight: 600 }}>
+                        {row.valor
+                          ? `R$ ${parseFloat(row.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : ''}
+                      </Typography>
+
+                      <Grid container spacing={1} sx={{ mb: 2 }}>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Início
                           </Typography>
-                          {diasRestantes && (
-                            <Chip 
-                              label={diasRestantes.dias}
-                              size="small"
-                              sx={{ 
-                                backgroundColor: diasRestantes.cor,
-                                color: 'white',
-                                fontWeight: diasRestantes.fontWeight,
-                                fontSize: '0.7rem',
-                                height: 20
-                              }}
-                            />
-                          )}
-                        </Box>
+                          <Typography variant="body2">{row.dataInicio || ''}</Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Fim
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2">{row.dataFim || ''}</Typography>
+                            {diasRestantes && (
+                              <Chip
+                                label={diasRestantes.dias}
+                                size="small"
+                                sx={{
+                                  backgroundColor: diasRestantes.cor,
+                                  color: 'white',
+                                  fontWeight: diasRestantes.fontWeight,
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="caption" color="text.secondary">
+                            Tipo
+                          </Typography>
+                          <Typography variant="body2">{row.tipo || ''}</Typography>
+                        </Grid>
                       </Grid>
-                      <Grid item xs={12}>
-                        <Typography variant="caption" color="text.secondary">
-                          Tipo
-                        </Typography>
-                        <Typography variant="body2">
-                          {row.tipo || ''}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                    
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      onClick={() => setSelectedContrato(row)}
-                      fullWidth
-                    >
-                      Ver detalhes
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            
+
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setSelectedContrato(row)}
+                        fullWidth
+                      >
+                        Ver detalhes
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
             {/* Paginação Mobile */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <TablePagination
@@ -436,18 +484,21 @@ export default function Contratos() {
                 page={page}
                 onPageChange={(_, newPage) => setPage(newPage)}
                 rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
                 rowsPerPageOptions={[5, 10, 25]}
                 labelRowsPerPage="Por página:"
                 sx={{
                   '& .MuiTablePagination-toolbar': {
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 1
+                    gap: 1,
                   },
                   '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                    fontSize: '0.875rem'
-                  }
+                    fontSize: '0.875rem',
+                  },
                 }}
               />
             </Box>
@@ -458,28 +509,29 @@ export default function Contratos() {
         <Dialog open={openFilter} onClose={() => setOpenFilter(false)} maxWidth="md" fullWidth>
           <DialogTitle>Filtros e Ordenação</DialogTitle>
           <DialogContent sx={{ minWidth: isMobile ? 300 : 500 }}>
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
-              gap: 2, 
-              mt: 1 
-            }}>
-              
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                gap: 2,
+                mt: 1,
+              }}
+            >
               {/* Busca por texto */}
-              <TextField 
-                label="Buscar por O.S ou Cliente" 
-                fullWidth 
-                value={filters.searchText} 
-                onChange={e => setFilters(f => ({ ...f, searchText: e.target.value }))}
+              <TextField
+                label="Buscar por O.S ou Cliente"
+                fullWidth
+                value={filters.searchText}
+                onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
                 placeholder="Digite para buscar..."
               />
-              
+
               {/* Ordenação */}
               <FormControl fullWidth>
                 <InputLabel>Ordenar por</InputLabel>
                 <Select
                   value={filters.orderBy}
-                  onChange={e => setFilters(f => ({ ...f, orderBy: e.target.value }))}
+                  onChange={(e) => setFilters((f) => ({ ...f, orderBy: e.target.value }))}
                   label="Ordenar por"
                 >
                   <MenuItem value="numero">O.S</MenuItem>
@@ -488,74 +540,77 @@ export default function Contratos() {
                   <MenuItem value="dataFim">Data Fim</MenuItem>
                 </Select>
               </FormControl>
-              
+
               {/* Direção da ordenação */}
               <FormControl fullWidth>
                 <InputLabel>Direção</InputLabel>
                 <Select
                   value={filters.orderDirection}
-                  onChange={e => setFilters(f => ({ ...f, orderDirection: e.target.value }))}
+                  onChange={(e) => setFilters((f) => ({ ...f, orderDirection: e.target.value }))}
                   label="Direção"
                 >
                   <MenuItem value="asc">Crescente (A-Z, Menor-Maior, Mais próximo)</MenuItem>
                   <MenuItem value="desc">Decrescente (Z-A, Maior-Menor, Mais distante)</MenuItem>
                 </Select>
               </FormControl>
-              
+
               {/* Valor mínimo */}
-              <TextField 
-                label="Valor Mínimo (R$)" 
+              <TextField
+                label="Valor Mínimo (R$)"
                 type="number"
-                fullWidth 
-                value={filters.valorMin} 
-                onChange={e => setFilters(f => ({ ...f, valorMin: e.target.value }))}
+                fullWidth
+                value={filters.valorMin}
+                onChange={(e) => setFilters((f) => ({ ...f, valorMin: e.target.value }))}
                 placeholder="0.00"
               />
-              
+
               {/* Valor máximo */}
-              <TextField 
-                label="Valor Máximo (R$)" 
+              <TextField
+                label="Valor Máximo (R$)"
                 type="number"
-                fullWidth 
-                value={filters.valorMax} 
-                onChange={e => setFilters(f => ({ ...f, valorMax: e.target.value }))}
+                fullWidth
+                value={filters.valorMax}
+                onChange={(e) => setFilters((f) => ({ ...f, valorMax: e.target.value }))}
                 placeholder="0.00"
               />
-              
+
               {/* Data fim início */}
-              <TextField 
-                label="Data Fim - A partir de" 
+              <TextField
+                label="Data Fim - A partir de"
                 type="date"
-                fullWidth 
+                fullWidth
                 InputLabelProps={{ shrink: true }}
-                value={filters.dataFimInicio} 
-                onChange={e => setFilters(f => ({ ...f, dataFimInicio: e.target.value }))}
+                value={filters.dataFimInicio}
+                onChange={(e) => setFilters((f) => ({ ...f, dataFimInicio: e.target.value }))}
               />
-              
+
               {/* Data fim final */}
-              <TextField 
-                label="Data Fim - Até" 
+              <TextField
+                label="Data Fim - Até"
                 type="date"
-                fullWidth 
+                fullWidth
                 InputLabelProps={{ shrink: true }}
-                value={filters.dataFimFim} 
-                onChange={e => setFilters(f => ({ ...f, dataFimFim: e.target.value }))}
+                value={filters.dataFimFim}
+                onChange={(e) => setFilters((f) => ({ ...f, dataFimFim: e.target.value }))}
               />
-              
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => {
-              setFilters({
-                searchText: '',
-                orderBy: 'numero',
-                orderDirection: 'asc',
-                valorMin: '',
-                valorMax: '',
-                dataFimInicio: '',
-                dataFimFim: ''
-              });
-            }}>Limpar Filtros</Button>
+            <Button
+              onClick={() => {
+                setFilters({
+                  searchText: '',
+                  orderBy: 'numero',
+                  orderDirection: 'asc',
+                  valorMin: '',
+                  valorMax: '',
+                  dataFimInicio: '',
+                  dataFimFim: '',
+                });
+              }}
+            >
+              Limpar Filtros
+            </Button>
             <Button onClick={() => setOpenFilter(false)}>Fechar</Button>
           </DialogActions>
         </Dialog>
@@ -564,38 +619,71 @@ export default function Contratos() {
         <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Novo Contrato</DialogTitle>
           <DialogContent>
-            <TextField margin="normal" label="Número O.S" fullWidth value={form.numero} onChange={e => setForm(f => ({ ...f, numero: e.target.value }))} />
-            
+            <TextField
+              margin="normal"
+              label="Número O.S"
+              fullWidth
+              value={form.numero}
+              onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+            />
+
             <FormControl fullWidth margin="normal">
               <InputLabel>Cliente</InputLabel>
               <Select
                 value={form.cliente_id}
                 label="Cliente"
-                onChange={e => {
+                onChange={(e) => {
                   const clienteId = e.target.value;
-                  const cliente = clientes.find(c => c.id === clienteId);
-                  setForm(f => ({ 
-                    ...f, 
+                  const cliente = clientes.find((c) => c.id === clienteId);
+                  setForm((f) => ({
+                    ...f,
                     cliente_id: clienteId,
-                    cliente: cliente ? cliente.nome : ''
+                    cliente: cliente ? cliente.nome : '',
                   }));
                 }}
               >
-                {clientes.map(cliente => (
+                {clientes.map((cliente) => (
                   <MenuItem key={cliente.id} value={cliente.id}>
                     ID: {cliente.id} - {cliente.nome}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            
-            <TextField margin="normal" label="Valor (R$)" type="number" fullWidth value={form.valor} onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} />
-            <TextField margin="normal" label="Data Início" type="date" fullWidth InputLabelProps={{ shrink: true }} value={form.dataInicio} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))} />
-            <TextField margin="normal" label="Data Fim" type="date" fullWidth InputLabelProps={{ shrink: true }} value={form.dataFim} onChange={e => setForm(f => ({ ...f, dataFim: e.target.value }))} />
+
+            <TextField
+              margin="normal"
+              label="Valor (R$)"
+              type="number"
+              fullWidth
+              value={form.valor}
+              onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
+            />
+            <TextField
+              margin="normal"
+              label="Data Início"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={form.dataInicio}
+              onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))}
+            />
+            <TextField
+              margin="normal"
+              label="Data Fim"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={form.dataFim}
+              onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
+            />
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Tipo</InputLabel>
-              <Select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} label="Tipo">
+              <Select
+                value={form.tipo}
+                onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
+                label="Tipo"
+              >
                 <MenuItem value="Obra">Obra</MenuItem>
                 <MenuItem value="Reforma">Reforma</MenuItem>
                 <MenuItem value="Manutenção">Manutenção</MenuItem>
@@ -605,7 +693,11 @@ export default function Contratos() {
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Situação</InputLabel>
-              <Select value={form.situacao} onChange={e => setForm(f => ({ ...f, situacao: e.target.value }))} label="Situação">
+              <Select
+                value={form.situacao}
+                onChange={(e) => setForm((f) => ({ ...f, situacao: e.target.value }))}
+                label="Situação"
+              >
                 <MenuItem value="Em andamento">Em andamento</MenuItem>
                 <MenuItem value="Concluído">Concluído</MenuItem>
                 <MenuItem value="Cancelado">Cancelado</MenuItem>
@@ -615,56 +707,79 @@ export default function Contratos() {
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Prazo de Pagamento</InputLabel>
-              <Select value={form.prazoPagamento} onChange={e => setForm(f => ({ ...f, prazoPagamento: e.target.value }))} label="Prazo de Pagamento">
+              <Select
+                value={form.prazoPagamento}
+                onChange={(e) => setForm((f) => ({ ...f, prazoPagamento: e.target.value }))}
+                label="Prazo de Pagamento"
+              >
                 <MenuItem value="À vista">À vista</MenuItem>
-                {Array.from({length: 180}, (_, i) => i + 1).map(dias => (
-                  <MenuItem key={dias} value={`${dias} DD`}>{dias} DD</MenuItem>
+                {Array.from({ length: 180 }, (_, i) => i + 1).map((dias) => (
+                  <MenuItem key={dias} value={`${dias} DD`}>
+                    {dias} DD
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Quantidade de Parcelas</InputLabel>
-              <Select value={form.quantidadeParcelas} onChange={e => setForm(f => ({ ...f, quantidadeParcelas: e.target.value }))} label="Quantidade de Parcelas">
+              <Select
+                value={form.quantidadeParcelas}
+                onChange={(e) => setForm((f) => ({ ...f, quantidadeParcelas: e.target.value }))}
+                label="Quantidade de Parcelas"
+              >
                 <MenuItem value="1">1x</MenuItem>
-                {Array.from({length: 36}, (_, i) => i + 2).map(parcelas => (
-                  <MenuItem key={parcelas} value={parcelas}>{parcelas}x</MenuItem>
+                {Array.from({ length: 36 }, (_, i) => i + 2).map((parcelas) => (
+                  <MenuItem key={parcelas} value={parcelas}>
+                    {parcelas}x
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             <Input
               type="file"
-              onChange={e => setSelectedFile(e.target.files[0])}
+              onChange={(e) => setSelectedFile(e.target.files[0])}
               sx={{ mt: 2 }}
               fullWidth
             />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenModal(false)}>Cancelar</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={async () => {
                 if (!form.cliente_id) {
                   alert('Por favor, selecione um cliente');
                   return;
                 }
-                
+
                 setSaving(true);
                 try {
                   const formData = new FormData();
-                  Object.keys(form).forEach(key => formData.append(key, form[key]));
+                  Object.keys(form).forEach((key) => formData.append(key, form[key]));
                   if (selectedFile) formData.append('arquivo', selectedFile);
 
                   const response = await fetch(`${API}/contratos`, {
                     method: 'POST',
                     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-                    body: formData
+                    body: formData,
                   });
 
                   if (response.ok) {
                     await loadPersisted();
-                    setForm({ numero: '', cliente_id: '', cliente: '', valor: '', dataInicio: '', dataFim: '', tipo: '', situacao: '', prazoPagamento: '', quantidadeParcelas: '' });
+                    setForm({
+                      numero: '',
+                      cliente_id: '',
+                      cliente: '',
+                      valor: '',
+                      dataInicio: '',
+                      dataFim: '',
+                      tipo: '',
+                      situacao: '',
+                      prazoPagamento: '',
+                      quantidadeParcelas: '',
+                    });
                     setSelectedFile(null);
                     setOpenModal(false);
                   } else {
@@ -684,32 +799,61 @@ export default function Contratos() {
         </Dialog>
 
         {/* Modal de detalhes do contrato */}
-        <Dialog open={!!selectedContrato} onClose={() => setSelectedContrato(null)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {editMode ? 'Editar Contrato' : 'Detalhes do Contrato'}
-          </DialogTitle>
+        <Dialog
+          open={!!selectedContrato}
+          onClose={() => setSelectedContrato(null)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>{editMode ? 'Editar Contrato' : 'Detalhes do Contrato'}</DialogTitle>
           <DialogContent>
             {selectedContrato && (
               <Box sx={{ mt: 1 }}>
                 {!editMode ? (
                   <>
-                    <Typography><b>O.S:</b> {selectedContrato.numero}</Typography>
-                    <Typography><b>Cliente:</b> {selectedContrato.cliente}</Typography>
-                    <Typography><b>Valor:</b> R$ {parseFloat(selectedContrato.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
-                    <Typography><b>Data Início:</b> {selectedContrato.dataInicio}</Typography>
-                    <Typography><b>Data Fim:</b> {selectedContrato.dataFim}</Typography>
-                    <Typography><b>Tipo:</b> {selectedContrato.tipo}</Typography>
-                    <Typography><b>Situação:</b> {selectedContrato.situacao}</Typography>
-                    <Typography><b>Prazo Pagamento:</b> {selectedContrato.prazoPagamento}</Typography>
-                    <Typography><b>Parcelas:</b> {selectedContrato.quantidadeParcelas}</Typography>
-                    
+                    <Typography>
+                      <b>O.S:</b> {selectedContrato.numero}
+                    </Typography>
+                    <Typography>
+                      <b>Cliente:</b> {selectedContrato.cliente}
+                    </Typography>
+                    <Typography>
+                      <b>Valor:</b> R${' '}
+                      {parseFloat(selectedContrato.valor || 0).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </Typography>
+                    <Typography>
+                      <b>Data Início:</b> {selectedContrato.dataInicio}
+                    </Typography>
+                    <Typography>
+                      <b>Data Fim:</b> {selectedContrato.dataFim}
+                    </Typography>
+                    <Typography>
+                      <b>Tipo:</b> {selectedContrato.tipo}
+                    </Typography>
+                    <Typography>
+                      <b>Situação:</b> {selectedContrato.situacao}
+                    </Typography>
+                    <Typography>
+                      <b>Prazo Pagamento:</b> {selectedContrato.prazoPagamento}
+                    </Typography>
+                    <Typography>
+                      <b>Parcelas:</b> {selectedContrato.quantidadeParcelas}
+                    </Typography>
+
                     {selectedContrato.arquivo && (
                       <Box sx={{ mt: 2 }}>
-                        <Typography><b>Anexo:</b></Typography>
-                        <Button 
-                          variant="outlined" 
+                        <Typography>
+                          <b>Anexo:</b>
+                        </Typography>
+                        <Button
+                          variant="outlined"
                           sx={{ mt: 1 }}
-                          onClick={() => handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)}
+                          onClick={() =>
+                            handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)
+                          }
                         >
                           Baixar arquivo ({selectedContrato.arquivo})
                         </Button>
@@ -718,38 +862,71 @@ export default function Contratos() {
                   </>
                 ) : (
                   <>
-                    <TextField margin="normal" label="Número O.S" fullWidth value={editForm.numero || ''} onChange={e => setEditForm(f => ({ ...f, numero: e.target.value }))} />
-                    
+                    <TextField
+                      margin="normal"
+                      label="Número O.S"
+                      fullWidth
+                      value={editForm.numero || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, numero: e.target.value }))}
+                    />
+
                     <FormControl fullWidth margin="normal">
                       <InputLabel>Cliente</InputLabel>
                       <Select
                         value={editForm.cliente_id || ''}
                         label="Cliente"
-                        onChange={e => {
+                        onChange={(e) => {
                           const clienteId = e.target.value;
-                          const cliente = clientes.find(c => c.id === clienteId);
-                          setEditForm(f => ({ 
-                            ...f, 
+                          const cliente = clientes.find((c) => c.id === clienteId);
+                          setEditForm((f) => ({
+                            ...f,
                             cliente_id: clienteId,
-                            cliente: cliente ? cliente.nome : ''
+                            cliente: cliente ? cliente.nome : '',
                           }));
                         }}
                       >
-                        {clientes.map(cliente => (
+                        {clientes.map((cliente) => (
                           <MenuItem key={cliente.id} value={cliente.id}>
                             ID: {cliente.id} - {cliente.nome}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                    
-                    <TextField margin="normal" label="Valor (R$)" type="number" fullWidth value={editForm.valor || ''} onChange={e => setEditForm(f => ({ ...f, valor: e.target.value }))} />
-                    <TextField margin="normal" label="Data Início" type="date" fullWidth InputLabelProps={{ shrink: true }} value={editForm.dataInicio || ''} onChange={e => setEditForm(f => ({ ...f, dataInicio: e.target.value }))} />
-                    <TextField margin="normal" label="Data Fim" type="date" fullWidth InputLabelProps={{ shrink: true }} value={editForm.dataFim || ''} onChange={e => setEditForm(f => ({ ...f, dataFim: e.target.value }))} />
+
+                    <TextField
+                      margin="normal"
+                      label="Valor (R$)"
+                      type="number"
+                      fullWidth
+                      value={editForm.valor || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, valor: e.target.value }))}
+                    />
+                    <TextField
+                      margin="normal"
+                      label="Data Início"
+                      type="date"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      value={editForm.dataInicio || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, dataInicio: e.target.value }))}
+                    />
+                    <TextField
+                      margin="normal"
+                      label="Data Fim"
+                      type="date"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      value={editForm.dataFim || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, dataFim: e.target.value }))}
+                    />
 
                     <FormControl fullWidth margin="normal">
                       <InputLabel>Tipo</InputLabel>
-                      <Select value={editForm.tipo || ''} onChange={e => setEditForm(f => ({ ...f, tipo: e.target.value }))} label="Tipo">
+                      <Select
+                        value={editForm.tipo || ''}
+                        onChange={(e) => setEditForm((f) => ({ ...f, tipo: e.target.value }))}
+                        label="Tipo"
+                      >
                         <MenuItem value="Obra">Obra</MenuItem>
                         <MenuItem value="Reforma">Reforma</MenuItem>
                         <MenuItem value="Manutenção">Manutenção</MenuItem>
@@ -759,7 +936,11 @@ export default function Contratos() {
 
                     <FormControl fullWidth margin="normal">
                       <InputLabel>Situação</InputLabel>
-                      <Select value={editForm.situacao || ''} onChange={e => setEditForm(f => ({ ...f, situacao: e.target.value }))} label="Situação">
+                      <Select
+                        value={editForm.situacao || ''}
+                        onChange={(e) => setEditForm((f) => ({ ...f, situacao: e.target.value }))}
+                        label="Situação"
+                      >
                         <MenuItem value="Em andamento">Em andamento</MenuItem>
                         <MenuItem value="Concluído">Concluído</MenuItem>
                         <MenuItem value="Cancelado">Cancelado</MenuItem>
@@ -769,11 +950,15 @@ export default function Contratos() {
 
                     {selectedContrato.arquivo && (
                       <Box sx={{ mt: 2 }}>
-                        <Typography><b>Anexo atual:</b></Typography>
-                        <Button 
-                          variant="outlined" 
+                        <Typography>
+                          <b>Anexo atual:</b>
+                        </Typography>
+                        <Button
+                          variant="outlined"
                           sx={{ mt: 1 }}
-                          onClick={() => handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)}
+                          onClick={() =>
+                            handleDownloadAnexo(selectedContrato.id, selectedContrato.arquivo)
+                          }
                         >
                           Baixar arquivo ({selectedContrato.arquivo})
                         </Button>
@@ -788,32 +973,40 @@ export default function Contratos() {
             {!editMode ? (
               <>
                 {canUpdate && (
-                  <Button onClick={() => {
-                    setEditMode(true);
-                    setEditForm({
-                      numero: selectedContrato.numero,
-                      cliente_id: selectedContrato.cliente_id,
-                      cliente: selectedContrato.cliente,
-                      valor: selectedContrato.valor,
-                      dataInicio: selectedContrato.dataInicio,
-                      dataFim: selectedContrato.dataFim,
-                      tipo: selectedContrato.tipo,
-                      situacao: selectedContrato.situacao,
-                      prazoPagamento: selectedContrato.prazoPagamento,
-                      quantidadeParcelas: selectedContrato.quantidadeParcelas
-                    });
-                  }}>Editar</Button>
+                  <Button
+                    onClick={() => {
+                      setEditMode(true);
+                      setEditForm({
+                        numero: selectedContrato.numero,
+                        cliente_id: selectedContrato.cliente_id,
+                        cliente: selectedContrato.cliente,
+                        valor: selectedContrato.valor,
+                        dataInicio: selectedContrato.dataInicio,
+                        dataFim: selectedContrato.dataFim,
+                        tipo: selectedContrato.tipo,
+                        situacao: selectedContrato.situacao,
+                        prazoPagamento: selectedContrato.prazoPagamento,
+                        quantidadeParcelas: selectedContrato.quantidadeParcelas,
+                      });
+                    }}
+                  >
+                    Editar
+                  </Button>
                 )}
                 <Button onClick={() => setSelectedContrato(null)}>Fechar</Button>
               </>
             ) : (
               <>
-                <Button onClick={() => {
-                  setEditMode(false);
-                  setEditForm({});
-                }}>Cancelar</Button>
-                <Button 
-                  variant="contained" 
+                <Button
+                  onClick={() => {
+                    setEditMode(false);
+                    setEditForm({});
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
                   onClick={async () => {
                     setSaving(true);
                     try {
@@ -823,9 +1016,9 @@ export default function Contratos() {
                           'Content-Type': 'application/json',
                           ...(token ? { Authorization: `Bearer ${token}` } : {}),
                         },
-                        body: JSON.stringify(editForm)
+                        body: JSON.stringify(editForm),
                       });
-                      
+
                       if (response.ok) {
                         await loadPersisted();
                         setSelectedContrato(null);
@@ -851,7 +1044,9 @@ export default function Contratos() {
 
         {/* Status */}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
-          {filteredRows.length === 0 ? 'Nenhum contrato encontrado' : `${filteredRows.length} contratos encontrados`}
+          {filteredRows.length === 0
+            ? 'Nenhum contrato encontrado'
+            : `${filteredRows.length} contratos encontrados`}
         </Typography>
       </Box>
     </Box>

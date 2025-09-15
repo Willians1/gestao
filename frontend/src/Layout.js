@@ -15,7 +15,7 @@ import {
   createTheme,
   Alert,
   Snackbar,
-  useMediaQuery
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -34,7 +34,7 @@ import {
   Assessment,
   TrendingUp,
   AdminPanelSettings,
-  Science
+  Science,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -51,7 +51,7 @@ export default function Layout({ children }) {
 
   // Para detectar mobile/tablet
   const isDesktop = useMediaQuery('(min-width:900px)');
-  
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -106,7 +106,12 @@ export default function Layout({ children }) {
   const { isAdmin, hasPermission } = useAuth();
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, route: '/', active: location.pathname === '/' || location.pathname === '/dashboard' },
+    {
+      text: 'Dashboard',
+      icon: <DashboardIcon />,
+      route: '/',
+      active: location.pathname === '/' || location.pathname === '/dashboard',
+    },
     { text: 'Financeiro', icon: <AttachMoney />, route: '/financeiro' },
     { text: 'Testes', icon: <Science />, route: '/testes-loja-menu' },
     { text: 'Relatórios', icon: <Assessment />, route: '/relatorios' },
@@ -151,10 +156,14 @@ export default function Layout({ children }) {
   const handleCreateInternalBackup = async () => {
     try {
       const response = await fetch(`${API_BASE}/backup/create`, {
-        method: 'POST'
+        method: 'POST',
       });
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Backup interno criado com sucesso!', severity: 'success' });
+        setSnackbar({
+          open: true,
+          message: 'Backup interno criado com sucesso!',
+          severity: 'success',
+        });
       } else {
         setSnackbar({ open: true, message: 'Erro ao criar backup interno', severity: 'error' });
       }
@@ -184,75 +193,92 @@ export default function Layout({ children }) {
       <Box sx={{ overflow: 'auto', p: { xs: 1, sm: 2 } }}>
         {/* Menu Principal */}
         <List>
-    {menuItems.filter(i => !i.requiresAdmin || isAdmin?.()).map((item) => (
-            <ListItem
-              key={item.text}
-              disablePadding
-              sx={{ mb: 1 }}
-            >
-              <Button
-                fullWidth
-                startIcon={item.icon}
-                onClick={() => item.route && handleNavigation(item.route)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  py: { xs: 1, sm: 1.5 },
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
-      color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
-      backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
-                  '&:hover': { backgroundColor: 'action.hover' },
-                }}
-              >
-                {item.text}
-              </Button>
-            </ListItem>
-          ))}
+          {menuItems
+            .filter((i) => !i.requiresAdmin || isAdmin?.())
+            .map((item) => (
+              <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                <Button
+                  fullWidth
+                  startIcon={item.icon}
+                  onClick={() => item.route && handleNavigation(item.route)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    py: { xs: 1, sm: 1.5 },
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
+                    backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
+                    '&:hover': { backgroundColor: 'action.hover' },
+                  }}
+                >
+                  {item.text}
+                </Button>
+              </ListItem>
+            ))}
         </List>
 
         <Divider sx={{ my: 2 }} />
 
         {/* Seção de Dados */}
-        <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            px: 2,
+            mb: 1,
+            color: 'text.secondary',
+            fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          }}
+        >
           Tabelas de Dados
         </Typography>
         <List>
-    {dataMenuItems.filter(i => !i.requiresPermission || hasPermission?.(i.route)).map((item) => (
-            <ListItem
-              key={item.text}
-              disablePadding
-              sx={{ mb: 0.5 }}
-            >
-              <Button
-                fullWidth
-                startIcon={item.icon}
-                onClick={() => handleNavigation(item.route)}
-                sx={{
-                  justifyContent: 'flex-start',
-                  textTransform: 'none',
-                  borderRadius: 2,
-                  py: { xs: 0.75, sm: 1 },
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-      color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
-      backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
-                  '&:hover': { backgroundColor: 'action.hover' },
-                }}
-              >
-                {item.text}
-              </Button>
-            </ListItem>
-          ))}
+          {dataMenuItems
+            .filter((i) => !i.requiresPermission || hasPermission?.(i.route))
+            .map((item) => (
+              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                <Button
+                  fullWidth
+                  startIcon={item.icon}
+                  onClick={() => handleNavigation(item.route)}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    textTransform: 'none',
+                    borderRadius: 2,
+                    py: { xs: 0.75, sm: 1 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
+                    backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
+                    '&:hover': { backgroundColor: 'action.hover' },
+                  }}
+                >
+                  {item.text}
+                </Button>
+              </ListItem>
+            ))}
         </List>
 
         <Divider sx={{ my: 2 }} />
 
         {/* Seção de Backup */}
-        <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            px: 2,
+            mb: 1,
+            color: 'text.secondary',
+            fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          }}
+        >
           Sistema
         </Typography>
         <Box sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: 'action.hover', borderRadius: 2 }}>
-          <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+          <Typography
+            variant="body2"
+            sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+          >
             <Backup sx={{ fontSize: { xs: 14, sm: 16 }, mr: 1 }} />
             Backup do Sistema
           </Typography>
@@ -261,11 +287,11 @@ export default function Layout({ children }) {
             size="small"
             startIcon={<Download />}
             onClick={handleDownloadBackup}
-            sx={{ 
-              mb: 1, 
+            sx={{
+              mb: 1,
               textTransform: 'none',
               fontSize: { xs: '0.7rem', sm: '0.75rem' },
-              py: { xs: 0.5, sm: 0.75 }
+              py: { xs: 0.5, sm: 0.75 },
             }}
             variant="outlined"
           >
@@ -276,10 +302,10 @@ export default function Layout({ children }) {
             size="small"
             startIcon={<Save />}
             onClick={handleCreateInternalBackup}
-            sx={{ 
+            sx={{
               textTransform: 'none',
               fontSize: { xs: '0.7rem', sm: '0.75rem' },
-              py: { xs: 0.5, sm: 0.75 }
+              py: { xs: 0.5, sm: 0.75 },
             }}
             variant="text"
           >
@@ -294,14 +320,14 @@ export default function Layout({ children }) {
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        
+
         {/* AppBar Responsivo */}
-        <AppBar 
-          position="fixed" 
-          sx={{ 
+        <AppBar
+          position="fixed"
+          sx={{
             zIndex: theme.zIndex.drawer + 1,
             width: { sm: `calc(100% - ${isDesktop ? drawerWidth : 0}px)` },
-            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 }
+            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
           }}
         >
           <Toolbar>
@@ -315,26 +341,31 @@ export default function Layout({ children }) {
               <MenuIcon />
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <img 
-                src="/images/thors-logo.svg" 
-                alt="THORS Logo" 
-                style={{ 
-                  height: '40px', 
+              <img
+                src="/images/thors-logo.svg"
+                alt="THORS Logo"
+                style={{
+                  height: '40px',
                   marginRight: '12px',
-                  objectFit: 'contain'
-                }} 
+                  objectFit: 'contain',
+                }}
               />
-              <Typography variant="h6" noWrap component="div" sx={{ 
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}>
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                }}
+              >
                 Gestão de Obras
               </Typography>
             </Box>
-              {/* Status da API na AppBar */}
-              <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
-                <ApiStatusBadge compact={true} />
-              </Box>
+            {/* Status da API na AppBar */}
+            <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
+              <ApiStatusBadge compact={true} />
+            </Box>
           </Toolbar>
         </AppBar>
 
@@ -353,16 +384,16 @@ export default function Layout({ children }) {
             }}
             sx={{
               display: { xs: 'block', md: isDesktop ? 'none' : 'block' },
-              '& .MuiDrawer-paper': { 
-                boxSizing: 'border-box', 
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-box',
                 width: { xs: '85vw', sm: drawerWidth },
-                maxWidth: drawerWidth
+                maxWidth: drawerWidth,
               },
             }}
           >
             <DrawerContent />
           </Drawer>
-          
+
           {/* Desktop drawer */}
           <Drawer
             variant="permanent"
@@ -377,14 +408,14 @@ export default function Layout({ children }) {
         </Box>
 
         {/* Conteúdo Principal Responsivo */}
-        <Box 
-          component="main" 
-          sx={{ 
-            flexGrow: 1, 
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
             p: { xs: 1, sm: 2, md: 3 },
             width: { sm: `calc(100% - ${isDesktop ? drawerWidth : 0}px)` },
             ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
-            minHeight: '100vh'
+            minHeight: '100vh',
           }}
         >
           <Toolbar />

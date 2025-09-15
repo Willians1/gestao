@@ -4,7 +4,7 @@ import { API_BASE } from '../api';
 
 export default function Admin() {
   const theme = useTheme();
-  
+
   const handleDownloadBackup = () => {
     window.open(`${API_BASE}/admin/backup`, '_blank');
   };
@@ -14,29 +14,23 @@ export default function Admin() {
   };
 
   return (
-    <Box sx={{ 
-      p: 3,
-      backgroundColor: theme.palette.background.default,
-      minHeight: '100vh'
-    }}>
+    <Box
+      sx={{
+        p: 3,
+        backgroundColor: theme.palette.background.default,
+        minHeight: '100vh',
+      }}
+    >
       <Typography variant="h4" sx={{ mb: 3 }}>
         Painel de Administração
       </Typography>
-      
+
       <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', maxWidth: 400 }}>
-        <Button 
-          variant="contained" 
-          onClick={handleDownloadBackup}
-          size="large"
-        >
+        <Button variant="contained" onClick={handleDownloadBackup} size="large">
           Download Backup do Sistema
         </Button>
-        
-        <Button 
-          variant="outlined" 
-          onClick={handleDownloadSource}
-          size="large"
-        >
+
+        <Button variant="outlined" onClick={handleDownloadSource} size="large">
           Download Código Fonte
         </Button>
       </Box>

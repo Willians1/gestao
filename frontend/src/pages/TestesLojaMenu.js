@@ -1,23 +1,18 @@
 import React from 'react';
-import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   Avatar,
   Button,
   Breadcrumbs,
-  Link
+  Link,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import {
-  Science,
-  AcUnit,
-  Home,
-  NavigateNext
-} from '@mui/icons-material';
+import { Science, AcUnit, Home, NavigateNext } from '@mui/icons-material';
 
 export default function TestesLojaMenu() {
   const theme = useTheme();
@@ -29,15 +24,15 @@ export default function TestesLojaMenu() {
       icon: <Science sx={{ fontSize: 40, color: '#fff' }} />,
       backgroundColor: '#EF5350', // Vermelho
       route: '/testes-loja',
-      description: ''
+      description: '',
     },
     {
       title: 'Ar Condicionado',
       icon: <AcUnit sx={{ fontSize: 40, color: '#fff' }} />,
       backgroundColor: '#29B6F6', // Azul céu
       route: '/testes-ar-condicionado',
-      description: ''
-    }
+      description: '',
+    },
   ];
 
   const handleCardClick = (route) => {
@@ -45,8 +40,8 @@ export default function TestesLojaMenu() {
   };
 
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         position: 'relative',
         minHeight: '100vh',
         p: { xs: 2, sm: 3, md: 4 },
@@ -80,19 +75,16 @@ export default function TestesLojaMenu() {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           zIndex: 0,
-        }
+        },
       }}
     >
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         {/* Breadcrumb */}
-        <Breadcrumbs 
-          separator={<NavigateNext fontSize="small" />} 
-          sx={{ mb: 3 }}
-        >
-          <Link 
-            underline="hover" 
-            color="inherit" 
-            href="#" 
+        <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
+          <Link
+            underline="hover"
+            color="inherit"
+            href="#"
             onClick={() => navigate('/')}
             sx={{ display: 'flex', alignItems: 'center' }}
           >
@@ -104,10 +96,10 @@ export default function TestesLojaMenu() {
 
         {/* Header */}
         <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography 
-            variant="h2" 
-            component="h1" 
-            sx={{ 
+          <Typography
+            variant="h2"
+            component="h1"
+            sx={{
               fontWeight: 900,
               fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
               background: 'linear-gradient(45deg, #1e293b 30%, #475569 90%)',
@@ -115,18 +107,18 @@ export default function TestesLojaMenu() {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               mb: 2,
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.02em',
             }}
           >
             TESTES DE LOJA
           </Typography>
-          <Typography 
-            variant="h6" 
-            color="text.secondary" 
-            sx={{ 
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{
               fontSize: { xs: '1rem', sm: '1.25rem' },
               maxWidth: '600px',
-              mx: 'auto'
+              mx: 'auto',
             }}
           >
             Selecione o tipo de teste que deseja realizar
@@ -153,18 +145,18 @@ export default function TestesLojaMenu() {
                     transform: 'translateY(-8px)',
                     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
                     borderColor: 'primary.main',
-                  }
+                  },
                 }}
               >
-                <CardContent 
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
+                <CardContent
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     p: { xs: 2, sm: 3 },
-                    textAlign: 'center'
+                    textAlign: 'center',
                   }}
                 >
                   <Avatar
@@ -178,26 +170,26 @@ export default function TestesLojaMenu() {
                   >
                     {card.icon}
                   </Avatar>
-                  
-                  <Typography 
-                    variant="h5" 
-                    component="h2" 
-                    sx={{ 
+
+                  <Typography
+                    variant="h5"
+                    component="h2"
+                    sx={{
                       fontWeight: 700,
                       fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' },
                       color: 'text.primary',
-                      mb: 1
+                      mb: 1,
                     }}
                   >
                     {card.title}
                   </Typography>
-                  
-                  <Typography 
-                    variant="body2" 
+
+                  <Typography
+                    variant="body2"
                     color="text.secondary"
-                    sx={{ 
+                    sx={{
                       fontSize: { xs: '0.85rem', sm: '0.9rem' },
-                      lineHeight: 1.4
+                      lineHeight: 1.4,
                     }}
                   >
                     {card.description}
@@ -219,7 +211,7 @@ export default function TestesLojaMenu() {
               py: 1.5,
               textTransform: 'none',
               fontSize: '1rem',
-              fontWeight: 600
+              fontWeight: 600,
             }}
           >
             Voltar ao Dashboard

@@ -15,7 +15,7 @@ const ProtectedRoute = ({ children, page, requiredPermission = 'read' }) => {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '100vh',
-          gap: 2
+          gap: 2,
         }}
       >
         <CircularProgress />
@@ -33,8 +33,12 @@ const ProtectedRoute = ({ children, page, requiredPermission = 'read' }) => {
   // Checagem opcional de permissão de página/ação
   if (page && !hasPermission(page, requiredPermission)) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
-        <Typography variant="body1" color="text.secondary">Acesso negado</Typography>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          Acesso negado
+        </Typography>
       </Box>
     );
   }

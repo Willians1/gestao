@@ -1,9 +1,32 @@
 import React from 'react';
 import {
-  Box, Button, Paper, Typography, Chip, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle, 
-  DialogContent, DialogActions, TextField, FormControlLabel, Checkbox, useTheme,
-  FormControl, InputLabel, Select, MenuItem, Grid, Divider, InputAdornment
+  Box,
+  Button,
+  Paper,
+  Typography,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+  useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Divider,
+  InputAdornment,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -35,7 +58,7 @@ export default function GruposUsuarios() {
     valor_maximo_diario_solicitacao_compra: 0,
     permissoes: [],
     lojas: [],
-    acesso_total_lojas: false
+    acesso_total_lojas: false,
   });
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -45,25 +68,25 @@ export default function GruposUsuarios() {
       const [gruposResp, permissoesResp, lojasResp] = await Promise.all([
         fetch(`${API}/grupos/`),
         fetch(`${API}/permissoes/`),
-        fetch(`${API}/lojas/`)
+        fetch(`${API}/lojas/`),
       ]);
-      
+
       if (gruposResp.ok) {
         const gruposData = await gruposResp.json();
         setGrupos(gruposData);
       }
-      
+
       if (permissoesResp.ok) {
         const permissoesData = await permissoesResp.json();
         setPermissoes(permissoesData);
       }
-      
+
       if (lojasResp.ok) {
         const lojasData = await lojasResp.json();
         setLojas(lojasData);
       }
-    } catch (e) { 
-      console.error(e); 
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -77,7 +100,7 @@ export default function GruposUsuarios() {
       const resp = await fetch(`${API}/grupos/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
       if (!resp.ok) throw new Error('Erro ao criar grupo');
       setOpenModal(false);
@@ -104,31 +127,29 @@ export default function GruposUsuarios() {
       valor_maximo_diario_solicitacao_compra: 0,
       permissoes: [],
       lojas: [],
-      acesso_total_lojas: false
+      acesso_total_lojas: false,
     });
   };
 
   const handlePermissaoChange = (permissaoNome, checked) => {
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
-      permissoes: checked 
+      permissoes: checked
         ? [...f.permissoes, permissaoNome]
-        : f.permissoes.filter(p => p !== permissaoNome)
+        : f.permissoes.filter((p) => p !== permissaoNome),
     }));
   };
 
   const handleLojaChange = (lojaId, checked) => {
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
-      lojas: checked 
-        ? [...f.lojas, lojaId]
-        : f.lojas.filter(l => l !== lojaId)
+      lojas: checked ? [...f.lojas, lojaId] : f.lojas.filter((l) => l !== lojaId),
     }));
   };
 
   const agruparPermissoesPorCategoria = () => {
     const categorias = {};
-    permissoes.forEach(perm => {
+    permissoes.forEach((perm) => {
       const cat = perm.categoria || 'Outros';
       if (!categorias[cat]) categorias[cat] = [];
       categorias[cat].push(perm);
@@ -139,7 +160,14 @@ export default function GruposUsuarios() {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button variant="text" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mr: 2 }}>Voltar</Button>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate(-1)}
+          sx={{ mr: 2 }}
+        >
+          Voltar
+        </Button>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
           Grupos de Usuários
         </Typography>
@@ -161,28 +189,43 @@ export default function GruposUsuarios() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {grupos.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((grupo, idx) => (
-              <TableRow key={grupo.id || idx} hover sx={{ borderBottom: '1px solid #e0e0e0' }}>
-                <TableCell>{grupo.nome}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={grupo.status}
-                    color={grupo.status === 'Aprovado' ? 'success' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{grupo.descricao || '-'}</TableCell>
-                <TableCell>R$ {Number(grupo.valor_maximo_diario_financeiro || 0).toFixed(2)}</TableCell>
-                <TableCell>
-                  <Button size="small" variant="text" onClick={() => setSelectedGrupo(grupo)} sx={{ mr: 1 }}>
-                    Ver detalhes
-                  </Button>
-                  <Button size="small" variant="outlined" onClick={() => {/* handleEditGrupo(grupo) */}}>
-                    Editar
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {grupos
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((grupo, idx) => (
+                <TableRow key={grupo.id || idx} hover sx={{ borderBottom: '1px solid #e0e0e0' }}>
+                  <TableCell>{grupo.nome}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={grupo.status}
+                      color={grupo.status === 'Aprovado' ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{grupo.descricao || '-'}</TableCell>
+                  <TableCell>
+                    R$ {Number(grupo.valor_maximo_diario_financeiro || 0).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => setSelectedGrupo(grupo)}
+                      sx={{ mr: 1 }}
+                    >
+                      Ver detalhes
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        /* handleEditGrupo(grupo) */
+                      }}
+                    >
+                      Editar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
         <TablePagination
@@ -191,7 +234,10 @@ export default function GruposUsuarios() {
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
           rowsPerPageOptions={[5, 10, 25]}
           labelRowsPerPage="Linhas por página:"
         />
@@ -208,7 +254,7 @@ export default function GruposUsuarios() {
                 fullWidth
                 margin="normal"
                 value={form.nome}
-                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -217,7 +263,7 @@ export default function GruposUsuarios() {
                 <Select
                   value={form.status}
                   label="Status"
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
                 >
                   <MenuItem value="Aprovado">Aprovado</MenuItem>
                   <MenuItem value="Pendente">Pendente</MenuItem>
@@ -232,7 +278,7 @@ export default function GruposUsuarios() {
                 multiline
                 rows={2}
                 value={form.descricao}
-                onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -242,7 +288,12 @@ export default function GruposUsuarios() {
                 fullWidth
                 margin="normal"
                 value={form.valor_maximo_diario_financeiro}
-                onChange={e => setForm(f => ({ ...f, valor_maximo_diario_financeiro: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    valor_maximo_diario_financeiro: parseFloat(e.target.value) || 0,
+                  }))
+                }
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -252,7 +303,12 @@ export default function GruposUsuarios() {
                 fullWidth
                 margin="normal"
                 value={form.valor_maximo_movimentacao}
-                onChange={e => setForm(f => ({ ...f, valor_maximo_movimentacao: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    valor_maximo_movimentacao: parseFloat(e.target.value) || 0,
+                  }))
+                }
               />
             </Grid>
           </Grid>
@@ -260,20 +316,21 @@ export default function GruposUsuarios() {
           <Divider sx={{ my: 2 }} />
 
           {/* Seção de Permissões */}
-          <Typography variant="h6" sx={{ mb: 2 }}>Permissões</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Permissões
+          </Typography>
           {Object.entries(agruparPermissoesPorCategoria()).map(([categoria, perms]) => (
             <Accordion key={categoria} sx={{ mb: 1 }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{categoria}</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {categoria}
+                </Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <List dense>
-                  {perms.map(perm => (
+                  {perms.map((perm) => (
                     <ListItem key={perm.id}>
-                      <ListItemText 
-                        primary={perm.nome}
-                        secondary={perm.descricao}
-                      />
+                      <ListItemText primary={perm.nome} secondary={perm.descricao} />
                       <ListItemSecondaryAction>
                         <Switch
                           checked={form.permissoes.includes(perm.nome)}
@@ -290,22 +347,24 @@ export default function GruposUsuarios() {
           <Divider sx={{ my: 2 }} />
 
           {/* Seção de Lojas */}
-          <Typography variant="h6" sx={{ mb: 2 }}>Acesso às Lojas</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Acesso às Lojas
+          </Typography>
           <FormControlLabel
             control={
-              <Checkbox 
+              <Checkbox
                 checked={form.acesso_total_lojas}
-                onChange={e => setForm(f => ({ ...f, acesso_total_lojas: e.target.checked }))}
+                onChange={(e) => setForm((f) => ({ ...f, acesso_total_lojas: e.target.checked }))}
               />
             }
             label="Acesso a todas as lojas"
           />
-          
+
           {!form.acesso_total_lojas && (
             <List dense>
-              {lojas.map(loja => (
+              {lojas.map((loja) => (
                 <ListItem key={loja.id}>
-                  <ListItemText 
+                  <ListItemText
                     primary={loja.nome}
                     secondary={`${loja.codigo} - ${loja.endereco}`}
                   />
@@ -321,7 +380,9 @@ export default function GruposUsuarios() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenModal(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={() => setOpenModal(false)} disabled={saving}>
+            Cancelar
+          </Button>
           <Button variant="contained" onClick={handleCreateGrupo} disabled={saving || !form.nome}>
             Salvar
           </Button>
@@ -334,10 +395,19 @@ export default function GruposUsuarios() {
         <DialogContent sx={{ minWidth: 400 }}>
           {selectedGrupo && (
             <Box>
-              <Typography><b>Nome:</b> {selectedGrupo.nome}</Typography>
-              <Typography><b>Status:</b> {selectedGrupo.status}</Typography>
-              <Typography><b>Descrição:</b> {selectedGrupo.descricao || '-'}</Typography>
-              <Typography><b>Valor Máximo Financeiro:</b> R$ {Number(selectedGrupo.valor_maximo_diario_financeiro || 0).toFixed(2)}</Typography>
+              <Typography>
+                <b>Nome:</b> {selectedGrupo.nome}
+              </Typography>
+              <Typography>
+                <b>Status:</b> {selectedGrupo.status}
+              </Typography>
+              <Typography>
+                <b>Descrição:</b> {selectedGrupo.descricao || '-'}
+              </Typography>
+              <Typography>
+                <b>Valor Máximo Financeiro:</b> R${' '}
+                {Number(selectedGrupo.valor_maximo_diario_financeiro || 0).toFixed(2)}
+              </Typography>
             </Box>
           )}
         </DialogContent>

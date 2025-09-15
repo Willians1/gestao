@@ -17,7 +17,14 @@ export function formatDateTimeBr(dateLike, timeStr) {
     if (timeStr && typeof timeStr === 'string') {
       // Combina a data com um horário HH:mm[:ss]
       const [hh = '00', mm = '00', ss = '00'] = timeStr.split(':');
-      d = new Date(d.getFullYear(), d.getMonth(), d.getDate(), parseInt(hh, 10) || 0, parseInt(mm, 10) || 0, parseInt(ss, 10) || 0);
+      d = new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate(),
+        parseInt(hh, 10) || 0,
+        parseInt(mm, 10) || 0,
+        parseInt(ss, 10) || 0
+      );
     }
     // Usa Intl para forçar timezone de Brasília
     const opts = {
@@ -27,7 +34,7 @@ export function formatDateTimeBr(dateLike, timeStr) {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     };
     return new Intl.DateTimeFormat('pt-BR', opts).format(d);
   } catch (e) {

@@ -3,10 +3,12 @@
 
 export function getLojaNome(clienteId, clientes = []) {
   const idNum = Number(clienteId);
-  const suf = String(idNum || '').toString().padStart(2, '0');
+  const suf = String(idNum || '')
+    .toString()
+    .padStart(2, '0');
   try {
     if (Array.isArray(clientes) && clientes.length > 0) {
-      const c = clientes.find(x => Number(x.id) === idNum);
+      const c = clientes.find((x) => Number(x.id) === idNum);
       if (c && c.nome) {
         // Remove qualquer sufixo existente "LOJA NN" do nome vindo do backend para evitar duplicação
         let base = String(c.nome).toUpperCase().trim();
@@ -15,7 +17,9 @@ export function getLojaNome(clienteId, clientes = []) {
         return `${base} LOJA ${suf}`;
       }
     }
-  } catch (_) { /* noop */ }
+  } catch (_) {
+    /* noop */
+  }
   const map = {
     1: 'PEREQUE',
     2: 'COTIA',
@@ -24,7 +28,7 @@ export function getLojaNome(clienteId, clientes = []) {
     5: 'PRAIA GRANDE',
     6: 'SANTOS',
     7: 'PIRAJUSSARA',
-  8: 'ITANHAÉM',
+    8: 'ITANHAÉM',
     9: 'MBOI',
     10: 'MONGAGUA',
     11: 'MORUMBI',

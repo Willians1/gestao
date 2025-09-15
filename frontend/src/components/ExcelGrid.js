@@ -43,12 +43,15 @@ export default function ExcelGrid({ rows, columns, onRowsChange, showToolbar = t
     return { columnDefs: defs, frameworkComponents };
   }, [columns]);
 
-  const defaultColDef = useMemo(() => ({
-    editable: true,
-    sortable: true,
-    filter: true,
-    resizable: true,
-  }), []);
+  const defaultColDef = useMemo(
+    () => ({
+      editable: true,
+      sortable: true,
+      filter: true,
+      resizable: true,
+    }),
+    []
+  );
 
   const onCellValueChanged = (params) => {
     if (!onRowsChange) return;
@@ -91,23 +94,29 @@ export default function ExcelGrid({ rows, columns, onRowsChange, showToolbar = t
     <div className="ag-theme-alpine" style={{ width: '100%' }}>
       {showToolbar && (
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-          <Button size="small" variant="outlined" onClick={handleExportCsv}>Exportar CSV</Button>
-          <Button size="small" variant="outlined" onClick={handleExportXlsx}>Exportar Excel</Button>
-          <Button size="small" variant="outlined" onClick={handleAutoSize}>Auto tamanho</Button>
+          <Button size="small" variant="outlined" onClick={handleExportCsv}>
+            Exportar CSV
+          </Button>
+          <Button size="small" variant="outlined" onClick={handleExportXlsx}>
+            Exportar Excel
+          </Button>
+          <Button size="small" variant="outlined" onClick={handleAutoSize}>
+            Auto tamanho
+          </Button>
         </Box>
       )}
       <AgGridReact
         rowData={rows}
         columnDefs={columnDefs}
-  frameworkComponents={frameworkComponents}
+        frameworkComponents={frameworkComponents}
         defaultColDef={defaultColDef}
         rowSelection="multiple"
         suppressRowClickSelection={true}
         animateRows={true}
         enableRangeSelection={true}
         domLayout="autoHeight"
-  enableCellTextSelection={true}
-  clipboardDelimiter="," // permite copiar e colar CSV
+        enableCellTextSelection={true}
+        clipboardDelimiter="," // permite copiar e colar CSV
         onCellValueChanged={onCellValueChanged}
         onGridReady={onGridReady}
       />

@@ -20,7 +20,7 @@ export default function Login() {
       const res = await fetch(`http://localhost:8000/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
 
       if (!res.ok) {
@@ -75,7 +75,7 @@ export default function Login() {
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer'
+            cursor: loading ? 'not-allowed' : 'pointer',
           }}
         >
           {loading ? 'Entrando...' : 'Entrar'}

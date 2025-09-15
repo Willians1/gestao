@@ -14,7 +14,7 @@ import {
   ThemeProvider,
   createTheme,
   Alert,
-  Snackbar
+  Snackbar,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -32,7 +32,7 @@ import {
   Menu as MenuIcon,
   Assessment,
   TrendingUp,
-  Science
+  Science,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -82,7 +82,12 @@ export default function Layout({ children }) {
   });
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, route: '/', active: location.pathname === '/' || location.pathname === '/dashboard' },
+    {
+      text: 'Dashboard',
+      icon: <DashboardIcon />,
+      route: '/',
+      active: location.pathname === '/' || location.pathname === '/dashboard',
+    },
     { text: 'Testes', icon: <Science />, route: '/testes-loja-menu' },
     { text: 'Relatórios', icon: <Assessment />, route: '/relatorios' },
     { text: 'Análises', icon: <TrendingUp />, route: '/analises' },
@@ -101,7 +106,9 @@ export default function Layout({ children }) {
 
   const handleDownloadBackup = async () => {
     try {
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/download`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/download`
+      );
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -123,11 +130,18 @@ export default function Layout({ children }) {
 
   const handleCreateInternalBackup = async () => {
     try {
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/create`, {
-        method: 'POST'
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/create`,
+        {
+          method: 'POST',
+        }
+      );
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Backup interno criado com sucesso!', severity: 'success' });
+        setSnackbar({
+          open: true,
+          message: 'Backup interno criado com sucesso!',
+          severity: 'success',
+        });
       } else {
         setSnackbar({ open: true, message: 'Erro ao criar backup interno', severity: 'error' });
       }
@@ -140,7 +154,7 @@ export default function Layout({ children }) {
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        
+
         {/* AppBar */}
         <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
           <Toolbar>
@@ -148,14 +162,14 @@ export default function Layout({ children }) {
               <MenuIcon />
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <img 
-                src="/images/thors-logo.svg" 
-                alt="THORS Logo" 
-                style={{ 
-                  height: '40px', 
+              <img
+                src="/images/thors-logo.svg"
+                alt="THORS Logo"
+                style={{
+                  height: '40px',
                   marginRight: '12px',
-                  objectFit: 'contain'
-                }} 
+                  objectFit: 'contain',
+                }}
               />
               <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
                 Gestão de Obras
@@ -178,11 +192,7 @@ export default function Layout({ children }) {
             {/* Menu Principal */}
             <List>
               {menuItems.map((item) => (
-                <ListItem
-                  key={item.text}
-                  disablePadding
-                  sx={{ mb: 1 }}
-                >
+                <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
                   <Button
                     fullWidth
                     startIcon={item.icon}
@@ -206,16 +216,15 @@ export default function Layout({ children }) {
             <Divider sx={{ my: 2 }} />
 
             {/* Seção de Dados */}
-            <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600 }}
+            >
               Tabelas de Dados
             </Typography>
             <List>
               {dataMenuItems.map((item) => (
-                <ListItem
-                  key={item.text}
-                  disablePadding
-                  sx={{ mb: 0.5 }}
-                >
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                   <Button
                     fullWidth
                     startIcon={item.icon}
@@ -226,7 +235,8 @@ export default function Layout({ children }) {
                       borderRadius: 2,
                       py: 1,
                       color: location.pathname === item.route ? 'primary.main' : 'text.primary',
-                      backgroundColor: location.pathname === item.route ? 'action.selected' : 'transparent',
+                      backgroundColor:
+                        location.pathname === item.route ? 'action.selected' : 'transparent',
                       '&:hover': { backgroundColor: 'action.hover' },
                     }}
                   >
@@ -239,7 +249,10 @@ export default function Layout({ children }) {
             <Divider sx={{ my: 2 }} />
 
             {/* Seção de Backup */}
-            <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600 }}
+            >
               Sistema
             </Typography>
             <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 2 }}>

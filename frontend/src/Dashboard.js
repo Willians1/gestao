@@ -24,9 +24,9 @@ import {
   Avatar,
   ThemeProvider,
   createTheme,
-  useMediaQuery
-} from '@mui/material';
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+  useMediaQuery,
+, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+
 import {
   Dashboard as DashboardIcon,
   People,
@@ -45,12 +45,23 @@ import {
   TrendingUp,
   Schedule,
   AccountBalance,
-  Science
+  Science,
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import TestesModal from './components/TestesModal';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 const drawerWidth = 280;
 
@@ -96,7 +107,7 @@ export default function DashboardPage() {
   // Para detectar mobile/tablet
   const isDesktop = useMediaQuery('(min-width:900px)');
   const isMobile = useMediaQuery('(max-width:600px)');
-  
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -158,12 +169,20 @@ export default function DashboardPage() {
     if (!Array.isArray(list)) return null;
     const candidates = list.filter(predicate);
     if (!candidates.length) return null;
-    candidates.sort((a, b) => new Date(b.data_teste || b.data || b.created_at || 0) - new Date(a.data_teste || a.data || a.created_at || 0));
+    candidates.sort(
+      (a, b) =>
+        new Date(b.data_teste || b.data || b.created_at || 0) -
+        new Date(a.data_teste || a.data || a.created_at || 0)
+    );
     return candidates[0];
   };
   const getClienteNomeById = (id) => {
     const c = clientes.find((x) => Number(x.id) === Number(id));
-    return c ? c.nome : `PEREQUE LOJA ${String(id || '').toString().padStart(2, '0')}`;
+    return c
+      ? c.nome
+      : `PEREQUE LOJA ${String(id || '')
+          .toString()
+          .padStart(2, '0')}`;
   };
 
   // Carregar clientes
@@ -175,9 +194,13 @@ export default function DashboardPage() {
         if (!res.ok) return;
         const data = await res.json();
         if (mounted) setClientes(Array.isArray(data) ? data : []);
-      } catch { if (mounted) setClientes([]); }
+      } catch {
+        if (mounted) setClientes([]);
+      }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [API]);
 
   // Carregar testes (Gerador e AR)
@@ -185,28 +208,32 @@ export default function DashboardPage() {
     try {
       const [resGer, resAr] = await Promise.all([
         fetch(`${API}/testes-loja/`),
-        fetch(`${API}/testes-ar-condicionado/`)
+        fetch(`${API}/testes-ar-condicionado/`),
       ]);
       const [dataGer, dataAr] = await Promise.all([
         resGer.ok ? resGer.json() : Promise.resolve([]),
-        resAr.ok ? resAr.json() : Promise.resolve([])
+        resAr.ok ? resAr.json() : Promise.resolve([]),
       ]);
       const listGer = Array.isArray(dataGer) ? dataGer : [];
       const listAr = Array.isArray(dataAr) ? dataAr : [];
-  const countGer = listGer.length;
-  const countAr = listAr.length;
-  // Somatório simples: Gerador + AR (pode haver duplicidade dependendo do backend)
-  const total = countGer + countAr;
-  const offGer = listGer.filter(t => (t.status || '').toString().toUpperCase() === 'OFF').length;
-  const offAr = listAr.filter(t => (t.status || '').toString().toUpperCase() === 'OFF').length;
-  const off = offGer + offAr;
-  const ok = Math.max(0, total - off);
-  setTestesList(listGer);
-  setTestesArList(listAr);
-  setTestesCount(total);
-  setTestesOffCount(off);
-  setTestesOkCount(ok);
-  setTestesUrgent(off > 0);
+      const countGer = listGer.length;
+      const countAr = listAr.length;
+      // Somatório simples: Gerador + AR (pode haver duplicidade dependendo do backend)
+      const total = countGer + countAr;
+      const offGer = listGer.filter(
+        (t) => (t.status || '').toString().toUpperCase() === 'OFF'
+      ).length;
+      const offAr = listAr.filter(
+        (t) => (t.status || '').toString().toUpperCase() === 'OFF'
+      ).length;
+      const off = offGer + offAr;
+      const ok = Math.max(0, total - off);
+      setTestesList(listGer);
+      setTestesArList(listAr);
+      setTestesCount(total);
+      setTestesOffCount(off);
+      setTestesOkCount(ok);
+      setTestesUrgent(off > 0);
     } catch {
       setTestesList([]);
       setTestesArList([]);
@@ -217,8 +244,12 @@ export default function DashboardPage() {
     }
   }, [API]);
 
-  useEffect(() => { fetchBothTestes(); }, [fetchBothTestes]);
-  useEffect(() => { if (openTestesModal) fetchBothTestes(); }, [openTestesModal, fetchBothTestes]);
+  useEffect(() => {
+    fetchBothTestes();
+  }, [fetchBothTestes]);
+  useEffect(() => {
+    if (openTestesModal) fetchBothTestes();
+  }, [openTestesModal, fetchBothTestes]);
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, route: '/', active: true },
@@ -240,7 +271,7 @@ export default function DashboardPage() {
 
   const handleDownloadBackup = async () => {
     try {
-  const response = await fetch(`${API}/backup/download`);
+      const response = await fetch(`${API}/backup/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -262,11 +293,15 @@ export default function DashboardPage() {
 
   const handleCreateInternalBackup = async () => {
     try {
-  const response = await fetch(`${API}/backup/create`, {
-        method: 'POST'
+      const response = await fetch(`${API}/backup/create`, {
+        method: 'POST',
       });
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Backup interno criado com sucesso!', severity: 'success' });
+        setSnackbar({
+          open: true,
+          message: 'Backup interno criado com sucesso!',
+          severity: 'success',
+        });
       } else {
         setSnackbar({ open: true, message: 'Erro ao criar backup interno', severity: 'error' });
       }
@@ -279,53 +314,55 @@ export default function DashboardPage() {
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        
+
         {/* AppBar responsiva */}
-        <AppBar 
-          position="fixed" 
-          sx={{ 
+        <AppBar
+          position="fixed"
+          sx={{
             zIndex: theme.zIndex.drawer + 1,
             width: { sm: isDesktop ? `calc(100% - ${drawerWidth}px)` : '100%' },
             ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
           }}
         >
-          <Toolbar sx={{ 
-            minHeight: { xs: 56, sm: 64 },
-            px: { xs: 1, sm: 2, md: 3 }
-          }}>
+          <Toolbar
+            sx={{
+              minHeight: { xs: 56, sm: 64 },
+              px: { xs: 1, sm: 2, md: 3 },
+            }}
+          >
             {/* Menu button para mobile */}
             {!isDesktop && (
-              <IconButton 
-                edge="start" 
-                color="inherit" 
-                aria-label="menu" 
+              <IconButton
+                edge="start"
+                color="inherit"
+                aria-label="menu"
                 sx={{ mr: 2 }}
                 onClick={handleDrawerToggle}
               >
                 <MenuIcon />
               </IconButton>
             )}
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <img 
-                src="/images/thors-logo.svg" 
-                alt="THORS Logo" 
-                style={{ 
-                  height: '40px', 
+              <img
+                src="/images/thors-logo.svg"
+                alt="THORS Logo"
+                style={{
+                  height: '40px',
                   marginRight: '12px',
-                  objectFit: 'contain'
-                }} 
+                  objectFit: 'contain',
+                }}
               />
-              <Typography 
-                variant="h6" 
-                noWrap 
-                component="div" 
-                sx={{ 
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
                   fontWeight: 600,
-                  fontSize: { xs: '1rem', sm: '1.25rem' }
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
                 }}
               >
-                {isMobile ? "Gestão Obras" : "Gestão de Obras"}
+                {isMobile ? 'Gestão Obras' : 'Gestão de Obras'}
               </Typography>
             </Box>
           </Toolbar>
@@ -333,7 +370,7 @@ export default function DashboardPage() {
 
         {/* Sidebar responsiva */}
         <Drawer
-          variant={isDesktop ? "permanent" : "temporary"}
+          variant={isDesktop ? 'permanent' : 'temporary'}
           open={isDesktop ? true : mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
@@ -342,10 +379,10 @@ export default function DashboardPage() {
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            [`& .MuiDrawer-paper`]: { 
-              width: drawerWidth, 
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
               boxSizing: 'border-box',
-              border: 'none'
+              border: 'none',
             },
           }}
         >
@@ -354,11 +391,7 @@ export default function DashboardPage() {
             {/* Menu Principal */}
             <List>
               {menuItems.map((item) => (
-                <ListItem
-                  key={item.text}
-                  disablePadding
-                  sx={{ mb: 1 }}
-                >
+                <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
                   <Button
                     fullWidth
                     startIcon={item.icon}
@@ -386,25 +419,21 @@ export default function DashboardPage() {
             <Divider sx={{ my: 2 }} />
 
             {/* Seção de Dados */}
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                px: 2, 
-                mb: 1, 
-                color: 'text.secondary', 
+            <Typography
+              variant="subtitle2"
+              sx={{
+                px: 2,
+                mb: 1,
+                color: 'text.secondary',
                 fontWeight: 600,
-                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
               }}
             >
               Tabelas de Dados
             </Typography>
             <List>
               {dataMenuItems.map((item) => (
-                <ListItem
-                  key={item.text}
-                  disablePadding
-                  sx={{ mb: 0.5 }}
-                >
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                   <Button
                     fullWidth
                     startIcon={item.icon}
@@ -431,29 +460,31 @@ export default function DashboardPage() {
             <Divider sx={{ my: 2 }} />
 
             {/* Seção de Backup */}
-            <Typography 
-              variant="subtitle2" 
-              sx={{ 
-                px: 2, 
-                mb: 1, 
-                color: 'text.secondary', 
+            <Typography
+              variant="subtitle2"
+              sx={{
+                px: 2,
+                mb: 1,
+                color: 'text.secondary',
                 fontWeight: 600,
-                fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
               }}
             >
               Sistema
             </Typography>
-            <Box sx={{ 
-              p: { xs: 1.5, sm: 2 }, 
-              backgroundColor: 'action.hover', 
-              borderRadius: 2 
-            }}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mb: 2, 
+            <Box
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                backgroundColor: 'action.hover',
+                borderRadius: 2,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  mb: 2,
                   fontWeight: 600,
-                  fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
                 }}
               >
                 <Backup sx={{ fontSize: { xs: 14, sm: 16 }, mr: 1 }} />
@@ -464,142 +495,187 @@ export default function DashboardPage() {
                 size="small"
                 startIcon={<Download sx={{ fontSize: { xs: 14, sm: 16 } }} />}
                 onClick={handleDownloadBackup}
-                sx={{ 
-                  mb: 1, 
+                sx={{
+                  mb: 1,
                   textTransform: 'none',
-                  fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
                 }}
                 variant="outlined"
               >
-                {isMobile ? "Baixar" : "Baixar Backup"}
+                {isMobile ? 'Baixar' : 'Baixar Backup'}
               </Button>
               <Button
                 fullWidth
                 size="small"
                 startIcon={<Save sx={{ fontSize: { xs: 14, sm: 16 } }} />}
                 onClick={handleCreateInternalBackup}
-                sx={{ 
+                sx={{
                   textTransform: 'none',
-                  fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
                 }}
                 variant="text"
               >
-                {isMobile ? "Interno" : "Backup Interno"}
+                {isMobile ? 'Interno' : 'Backup Interno'}
               </Button>
             </Box>
           </Box>
         </Drawer>
 
         {/* Conteúdo Principal Responsivo */}
-        <Box 
-          component="main" 
-          sx={{ 
-            flexGrow: 1, 
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
             p: { xs: 1, sm: 2, md: 3 },
             width: { sm: isDesktop ? `calc(100% - ${drawerWidth}px)` : '100%' },
-            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 }
+            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
           }}
         >
           <Toolbar />
-          
+
           {/* Header com estatísticas responsivas */}
           <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 2, md: 3 } }}>
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
                     <Box>
-                      <Typography 
-                        color="textSecondary" 
-                        gutterBottom 
-                        variant="overline" 
+                      <Typography
+                        color="textSecondary"
+                        gutterBottom
+                        variant="overline"
                         sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                       >
                         Horas Trabalhadas
                       </Typography>
-                      <Typography 
-                        variant="h4" 
-                        component="div" 
-                        sx={{ 
+                      <Typography
+                        variant="h4"
+                        component="div"
+                        sx={{
                           fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                          fontWeight: 600
+                          fontWeight: 600,
                         }}
                       >
                         35
                       </Typography>
-                      <Typography 
-                        variant="body2" 
-                        color="textSecondary" 
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
                         sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
                       >
                         3:00 agendadas
                       </Typography>
                     </Box>
-                    <Schedule sx={{ 
-                      fontSize: { xs: 28, sm: 35, md: 40 }, 
-                      color: 'primary.main' 
-                    }} />
+                    <Schedule
+                      sx={{
+                        fontSize: { xs: 28, sm: 35, md: 40 },
+                        color: 'primary.main',
+                      }}
+                    />
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={65} 
-                    sx={{ 
+                  <LinearProgress
+                    variant="determinate"
+                    value={65}
+                    sx={{
                       mt: { xs: 1.5, sm: 2 },
-                      height: { xs: 4, sm: 6 }
-                    }} 
+                      height: { xs: 4, sm: 6 },
+                    }}
                   />
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
                     <Box>
-                      <Typography color="textSecondary" gutterBottom variant="overline" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                      <Typography
+                        color="textSecondary"
+                        gutterBottom
+                        variant="overline"
+                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                      >
                         Não Faturável
                       </Typography>
-                      <Typography variant="h4" component="div" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                      <Typography
+                        variant="h4"
+                        component="div"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}
+                      >
                         2.000 USD
                       </Typography>
                     </Box>
-                    <AccountBalance sx={{ fontSize: { xs: 30, sm: 35, md: 40 }, color: 'warning.main' }} />
+                    <AccountBalance
+                      sx={{ fontSize: { xs: 30, sm: 35, md: 40 }, color: 'warning.main' }}
+                    />
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
                     <Box>
-                      <Typography color="textSecondary" gutterBottom variant="overline" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                      <Typography
+                        color="textSecondary"
+                        gutterBottom
+                        variant="overline"
+                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                      >
                         Custo Total
                       </Typography>
-                      <Typography variant="h4" component="div" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                      <Typography
+                        variant="h4"
+                        component="div"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}
+                      >
                         2.000 USD
                       </Typography>
-                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                      >
                         0 USD custo por hora
                       </Typography>
                     </Box>
-                    <AttachMoney sx={{ fontSize: { xs: 30, sm: 35, md: 40 }, color: 'success.main' }} />
+                    <AttachMoney
+                      sx={{ fontSize: { xs: 30, sm: 35, md: 40 }, color: 'success.main' }}
+                    />
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
                     <Box>
-                      <Typography color="textSecondary" gutterBottom variant="overline" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                      <Typography
+                        color="textSecondary"
+                        gutterBottom
+                        variant="overline"
+                        sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                      >
                         Taxa Horária
                       </Typography>
-                      <Typography variant="h4" component="div" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                      <Typography
+                        variant="h4"
+                        component="div"
+                        sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}
+                      >
                         2.000 USD
                       </Typography>
                     </Box>
@@ -617,15 +693,44 @@ export default function DashboardPage() {
                   transition: 'all 0.3s ease',
                   borderRadius: 3,
                   boxShadow: '0 8px 24px rgba(6,182,212,0.15)',
-                  '&:hover': { transform: 'translateY(-6px)', boxShadow: '0 16px 40px rgba(6,182,212,0.18)' }
+                  '&:hover': {
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 16px 40px rgba(6,182,212,0.18)',
+                  },
                 }}
               >
-                <CardContent sx={{ p: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Avatar sx={{ width: 56, height: 56, bgcolor: '#06b6d4', mb: 1, boxShadow: '0 8px 24px #06b6d440' }}>
+                <CardContent
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      bgcolor: '#06b6d4',
+                      mb: 1,
+                      boxShadow: '0 8px 24px #06b6d440',
+                    }}
+                  >
                     <Science sx={{ fontSize: 28, color: 'white' }} />
                   </Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Testes de Loja</Typography>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center', mt: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    Testes de Loja
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 1,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mt: 1,
+                    }}
+                  >
                     <Chip size="small" label={`Total: ${testesCount}`} color="primary" />
                     <Chip size="small" label={`OK: ${testesOkCount}`} color="success" />
                     <Chip size="small" label={`OFF: ${testesOffCount}`} color="error" />
@@ -642,18 +747,28 @@ export default function DashboardPage() {
             <Grid item xs={12} lg={8}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    mb: 2,
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: { xs: 1, sm: 0 }
-                  }}>
-                    <Typography variant="h6" component="div" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 1, sm: 0 },
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      component="div"
+                      sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                    >
                       Atividade
                     </Typography>
-                    <Button size="small" variant="outlined" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       Mês
                     </Button>
                   </Box>
@@ -674,35 +789,48 @@ export default function DashboardPage() {
             <Grid item xs={12} lg={4}>
               <Card>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" component="div" sx={{ mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{ mb: 2, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                  >
                     Horas por Colaborador
                   </Typography>
                   {workData.map((person, index) => (
                     <Box key={person.name} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ 
-                        bgcolor: person.color, 
-                        mr: 2, 
-                        width: { xs: 28, sm: 32 }, 
-                        height: { xs: 28, sm: 32 },
-                        fontSize: { xs: '0.8rem', sm: '1rem' }
-                      }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: person.color,
+                          mr: 2,
+                          width: { xs: 28, sm: 32 },
+                          height: { xs: 28, sm: 32 },
+                          fontSize: { xs: '0.8rem', sm: '1rem' },
+                        }}
+                      >
                         {person.name[0]}
                       </Avatar>
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                        >
                           {person.name}
                         </Typography>
-                        <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                        <Typography
+                          variant="caption"
+                          color="textSecondary"
+                          sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                        >
                           {person.value}:00
                         </Typography>
                       </Box>
                       <Chip
                         label={`${person.value}h`}
                         size="small"
-                        sx={{ 
-                          bgcolor: person.color, 
+                        sx={{
+                          bgcolor: person.color,
                           color: 'white',
-                          fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                          fontSize: { xs: '0.65rem', sm: '0.75rem' },
                         }}
                       />
                     </Box>
@@ -719,29 +847,51 @@ export default function DashboardPage() {
                 <Card>
                   <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Avatar sx={{ 
-                        bgcolor: person.color, 
-                        mr: 2,
-                        width: { xs: 32, sm: 40 },
-                        height: { xs: 32, sm: 40 },
-                        fontSize: { xs: '0.9rem', sm: '1.25rem' }
-                      }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: person.color,
+                          mr: 2,
+                          width: { xs: 32, sm: 40 },
+                          height: { xs: 32, sm: 40 },
+                          fontSize: { xs: '0.9rem', sm: '1.25rem' },
+                        }}
+                      >
                         {person.name[0]}
                       </Avatar>
-                      <Typography variant="h6" component="div" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                      <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                      >
                         {person.name}
                       </Typography>
                     </Box>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       100:00 / 250:00 horas trabalhadas
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       68 / 224 tarefas
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       0 excedidas
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                    >
                       0 atrasadas
                     </Typography>
                   </CardContent>
@@ -751,7 +901,12 @@ export default function DashboardPage() {
           </Grid>
         </Box>
 
-  <TestesModal open={openTestesModal} onClose={() => setOpenTestesModal(false)} API={API} navigate={navigate} />
+        <TestesModal
+          open={openTestesModal}
+          onClose={() => setOpenTestesModal(false)}
+          API={API}
+          navigate={navigate}
+        />
 
         {/* Snackbar para notificações */}
         <Snackbar

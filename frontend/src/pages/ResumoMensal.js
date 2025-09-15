@@ -1,5 +1,24 @@
 import React from 'react';
-import { Box, Button, Paper, Typography, Chip, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import {
+  Box,
+  Button,
+  Paper,
+  Typography,
+  Chip,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -33,25 +52,46 @@ export default function ResumoMensal() {
       if (!data) return;
       setRows((data || []).map((r, i) => ({ id: r.id ?? i + 1, ...r })));
       setTotal((data || []).length);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  React.useEffect(() => { loadPersisted(); }, []);
+  React.useEffect(() => {
+    loadPersisted();
+  }, []);
 
   return (
-    <Box sx={{ background: theme.palette.background.default, minHeight: '100vh', p: { xs: 1, md: 4 } }}>
+    <Box
+      sx={{ background: theme.palette.background.default, minHeight: '100vh', p: { xs: 1, md: 4 } }}
+    >
       <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Button variant="text" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mr: 2 }}>Voltar</Button>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0 }}>Resumos Mensais</Typography>
+          <Button
+            variant="text"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            sx={{ mr: 2 }}
+          >
+            Voltar
+          </Button>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0 }}>
+            Resumos Mensais
+          </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ mr: 2 }}>Total de resultados:</Typography>
+          <Typography variant="subtitle1" sx={{ mr: 2 }}>
+            Total de resultados:
+          </Typography>
           <Chip label={total} color="primary" sx={{ fontWeight: 700, fontSize: 16 }} />
           <Box sx={{ flex: 1 }} />
-          <Button variant="contained" color="success" sx={{ mr: 2 }}>Filtrar</Button>
+          <Button variant="contained" color="success" sx={{ mr: 2 }}>
+            Filtrar
+          </Button>
           {canCreate && (
-            <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>Criar novo resumo</Button>
+            <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>
+              Criar novo resumo
+            </Button>
           )}
         </Box>
         {/* Chips de filtro exemplo */}
@@ -76,7 +116,9 @@ export default function ResumoMensal() {
                   <TableCell>{row.valor_total || ''}</TableCell>
                   <TableCell>{row.data || ''}</TableCell>
                   <TableCell>
-                    <Button size="small" variant="text" onClick={() => setSelectedResumo(row)}>Ver detalhes</Button>
+                    <Button size="small" variant="text" onClick={() => setSelectedResumo(row)}>
+                      Ver detalhes
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -88,7 +130,10 @@ export default function ResumoMensal() {
             page={page}
             onPageChange={(_, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
             rowsPerPageOptions={[5, 10, 25]}
             labelRowsPerPage="Linhas por página:"
           />
@@ -97,30 +142,59 @@ export default function ResumoMensal() {
         <Dialog open={openModal} onClose={() => setOpenModal(false)}>
           <DialogTitle>Novo Resumo</DialogTitle>
           <DialogContent sx={{ minWidth: 340 }}>
-            <TextField label="Nome" fullWidth margin="normal" value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} />
-            <TextField label="Valor Total" fullWidth margin="normal" value={form.valor_total} onChange={e => setForm(f => ({ ...f, valor_total: e.target.value }))} />
-            <TextField label="Data" fullWidth margin="normal" value={form.data} onChange={e => setForm(f => ({ ...f, data: e.target.value }))} />
+            <TextField
+              label="Nome"
+              fullWidth
+              margin="normal"
+              value={form.nome}
+              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+            />
+            <TextField
+              label="Valor Total"
+              fullWidth
+              margin="normal"
+              value={form.valor_total}
+              onChange={(e) => setForm((f) => ({ ...f, valor_total: e.target.value }))}
+            />
+            <TextField
+              label="Data"
+              fullWidth
+              margin="normal"
+              value={form.data}
+              onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+            />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenModal(false)} disabled={saving}>Cancelar</Button>
-            <Button variant="contained" onClick={async () => {
-              setSaving(true);
-              try {
-                const resp = await fetch(`${API}/resumo_mensal/`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                  body: JSON.stringify(form)
-                });
-                if (!resp.ok) throw new Error('Erro ao criar resumo');
-                setOpenModal(false);
-                setForm({ nome: '', valor_total: '', data: '' });
-                await loadPersisted();
-              } catch (e) {
-                alert('Erro ao criar resumo.');
-              } finally {
-                setSaving(false);
-              }
-            }} disabled={saving || !canCreate || !form.nome || !form.valor_total}>Salvar</Button>
+            <Button onClick={() => setOpenModal(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  const resp = await fetch(`${API}/resumo_mensal/`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                    body: JSON.stringify(form),
+                  });
+                  if (!resp.ok) throw new Error('Erro ao criar resumo');
+                  setOpenModal(false);
+                  setForm({ nome: '', valor_total: '', data: '' });
+                  await loadPersisted();
+                } catch (e) {
+                  alert('Erro ao criar resumo.');
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving || !canCreate || !form.nome || !form.valor_total}
+            >
+              Salvar
+            </Button>
           </DialogActions>
         </Dialog>
         {/* Modal de detalhes do resumo */}
@@ -129,10 +203,18 @@ export default function ResumoMensal() {
           <DialogContent sx={{ minWidth: 340 }}>
             {selectedResumo && (
               <Box>
-                <Typography><b>Nome:</b> {selectedResumo.nome}</Typography>
-                <Typography><b>ID:</b> {selectedResumo.id}</Typography>
-                <Typography><b>Valor Total:</b> {selectedResumo.valor_total}</Typography>
-                <Typography><b>Data:</b> {selectedResumo.data}</Typography>
+                <Typography>
+                  <b>Nome:</b> {selectedResumo.nome}
+                </Typography>
+                <Typography>
+                  <b>ID:</b> {selectedResumo.id}
+                </Typography>
+                <Typography>
+                  <b>Valor Total:</b> {selectedResumo.valor_total}
+                </Typography>
+                <Typography>
+                  <b>Data:</b> {selectedResumo.data}
+                </Typography>
               </Box>
             )}
           </DialogContent>

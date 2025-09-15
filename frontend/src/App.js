@@ -43,13 +43,15 @@ const LoginRoute = () => {
   // Verificar se o contexto está disponível
   if (!authContext) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '18px',
+        }}
+      >
         Inicializando...
       </div>
     );
@@ -58,13 +60,15 @@ const LoginRoute = () => {
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '18px',
+        }}
+      >
         Carregando…
       </div>
     );
@@ -81,11 +85,13 @@ const LoginRoute = () => {
   } catch (error) {
     console.error('Erro ao renderizar Login:', error);
     return (
-      <div style={{
-        padding: '20px',
-        textAlign: 'center',
-        color: 'red'
-      }}>
+      <div
+        style={{
+          padding: '20px',
+          textAlign: 'center',
+          color: 'red',
+        }}
+      >
         Erro ao carregar página de login. Tente recarregar a página.
       </div>
     );
@@ -101,91 +107,148 @@ function App() {
             <Routes>
               <Route path="/teste" element={<TestePage />} />
               <Route path="/login" element={<LoginRoute />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <DashboardHomeSimple />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard-home" element={
-                <ProtectedRoute>
-                  <Navigate to="/" replace />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Navigate to="/" replace />
-                </ProtectedRoute>
-              } />
-              <Route path="/financeiro" element={
-                <ProtectedRoute page="/financeiro">
-                  <FinanceiroPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/grupos-usuarios" element={
-                <ProtectedRoute page="/grupos-usuarios">
-                  <Layout><GruposUsuarios /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/clientes" element={
-                <ProtectedRoute page="/clientes">
-                  <Clientes />
-                </ProtectedRoute>
-              } />
-              <Route path="/contratos" element={
-                <ProtectedRoute page="/contratos">
-                  <Contratos />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute page="/admin">
-                  <Layout><Admin /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/cadastro-usuarios" element={
-                <ProtectedRoute page="/admin">
-                  <Layout><CadastroUsuarios /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/despesas" element={
-                <ProtectedRoute page="/despesas">
-                  <Despesas />
-                </ProtectedRoute>
-              } />
-              <Route path="/fornecedores" element={
-                <ProtectedRoute page="/fornecedores">
-                  <Fornecedores />
-                </ProtectedRoute>
-              } />
-              <Route path="/orcamento-obra" element={
-                <ProtectedRoute page="/orcamento-obra">
-                  <OrcamentoObra />
-                </ProtectedRoute>
-              } />
-              <Route path="/resumo-mensal" element={
-                <ProtectedRoute page="/resumo-mensal">
-                  <ResumoMensal />
-                </ProtectedRoute>
-              } />
-              <Route path="/valor-materiais" element={
-                <ProtectedRoute page="/valor-materiais">
-                  <ValorMateriais />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-loja-menu" element={
-                <ProtectedRoute page="/testes-loja-menu">
-                  <TestesLojaMenu />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-loja" element={
-                <ProtectedRoute page="/testes-loja" requiredPermission="update">
-                  <TestesLoja />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-ar-condicionado" element={
-                <ProtectedRoute page="/testes-ar-condicionado" requiredPermission="update">
-                  <TestesArCondicionado />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <DashboardHomeSimple />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard-home"
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/financeiro"
+                element={
+                  <ProtectedRoute page="/financeiro">
+                    <FinanceiroPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/grupos-usuarios"
+                element={
+                  <ProtectedRoute page="/grupos-usuarios">
+                    <Layout>
+                      <GruposUsuarios />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clientes"
+                element={
+                  <ProtectedRoute page="/clientes">
+                    <Clientes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contratos"
+                element={
+                  <ProtectedRoute page="/contratos">
+                    <Contratos />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute page="/admin">
+                    <Layout>
+                      <Admin />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cadastro-usuarios"
+                element={
+                  <ProtectedRoute page="/admin">
+                    <Layout>
+                      <CadastroUsuarios />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/despesas"
+                element={
+                  <ProtectedRoute page="/despesas">
+                    <Despesas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fornecedores"
+                element={
+                  <ProtectedRoute page="/fornecedores">
+                    <Fornecedores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orcamento-obra"
+                element={
+                  <ProtectedRoute page="/orcamento-obra">
+                    <OrcamentoObra />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resumo-mensal"
+                element={
+                  <ProtectedRoute page="/resumo-mensal">
+                    <ResumoMensal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/valor-materiais"
+                element={
+                  <ProtectedRoute page="/valor-materiais">
+                    <ValorMateriais />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-loja-menu"
+                element={
+                  <ProtectedRoute page="/testes-loja-menu">
+                    <TestesLojaMenu />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-loja"
+                element={
+                  <ProtectedRoute page="/testes-loja" requiredPermission="update">
+                    <TestesLoja />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-ar-condicionado"
+                element={
+                  <ProtectedRoute page="/testes-ar-condicionado" requiredPermission="update">
+                    <TestesArCondicionado />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </ErrorBoundary>

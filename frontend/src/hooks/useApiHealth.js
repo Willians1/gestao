@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { API_BASE } from '../api';
 
 export default function useApiHealth({ intervalMs = 30000 } = {}) {
-  const [state, setState] = useState({ 
-    status: 'checking', 
-    latencyMs: null, 
-    message: '', 
+  const [state, setState] = useState({
+    status: 'checking',
+    latencyMs: null,
+    message: '',
     lastCheck: null,
     version: null,
     commit_sha: null,
@@ -28,8 +28,8 @@ export default function useApiHealth({ intervalMs = 30000 } = {}) {
           try {
             info = await res.json();
           } catch (_) {}
-          setState({ 
-            status: 'ok', 
+          setState({
+            status: 'ok',
             ...base,
             version: info?.version ?? null,
             commit_sha: info?.commit_sha ?? null,
@@ -41,10 +41,10 @@ export default function useApiHealth({ intervalMs = 30000 } = {}) {
         }
       } catch (e) {
         if (!mounted) return;
-        setState({ 
-          status: 'offline', 
-          latencyMs: null, 
-          lastCheck: new Date(), 
+        setState({
+          status: 'offline',
+          latencyMs: null,
+          lastCheck: new Date(),
           message: e?.message || 'Falha ao conectar',
           version: null,
           commit_sha: null,
@@ -55,7 +55,10 @@ export default function useApiHealth({ intervalMs = 30000 } = {}) {
     };
     check();
     timer = setInterval(check, intervalMs);
-    return () => { mounted = false; if (timer) clearInterval(timer); };
+    return () => {
+      mounted = false;
+      if (timer) clearInterval(timer);
+    };
   }, [intervalMs]);
 
   return state;

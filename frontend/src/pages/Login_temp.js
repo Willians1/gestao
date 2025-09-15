@@ -9,7 +9,7 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material';
 import { Email, Lock } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,7 +32,7 @@ export default function Login() {
       const res = await fetch(`http://localhost:8000/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
 
       if (!res.ok) {

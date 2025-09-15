@@ -20,9 +20,7 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div style={{ padding: 24 }}>
           <h2>Ocorreu um erro ao renderizar esta página.</h2>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {String(this.state.error)}
-          </pre>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{String(this.state.error)}</pre>
         </div>
       );
     }

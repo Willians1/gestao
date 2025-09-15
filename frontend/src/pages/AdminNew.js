@@ -19,7 +19,7 @@ export default function Admin() {
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
           Painel de Administração
         </Typography>
-        
+
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
           Área restrita para administradores do sistema
         </Typography>
@@ -38,11 +38,7 @@ export default function Admin() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Download completo do banco de dados e arquivos.
               </Typography>
-              <Button 
-                variant="contained" 
-                startIcon={<Download />}
-                onClick={handleDownloadBackup}
-              >
+              <Button variant="contained" startIcon={<Download />} onClick={handleDownloadBackup}>
                 Download Backup
               </Button>
             </CardContent>
@@ -57,11 +53,7 @@ export default function Admin() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Download do código fonte completo em ZIP.
               </Typography>
-              <Button 
-                variant="outlined" 
-                startIcon={<Download />}
-                onClick={handleDownloadSource}
-              >
+              <Button variant="outlined" startIcon={<Download />} onClick={handleDownloadSource}>
                 Download Código
               </Button>
             </CardContent>

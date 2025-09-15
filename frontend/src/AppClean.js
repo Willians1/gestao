@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { API_BASE } from './api';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import { useNavigate } from 'react-router-dom';
+
 import {
   Box,
   Container,
@@ -16,7 +16,7 @@ import {
   Alert,
   CircularProgress,
   Avatar,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material';
 import { Email, Lock, Person } from '@mui/icons-material';
 import DashboardHomeSimple from './pages/DashboardHomeSimple';
@@ -38,7 +38,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -46,12 +46,12 @@ function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       const res = await fetch(`${API_BASE}/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password }),
       });
       if (!res.ok) throw new Error('Usuário ou senha inválidos');
       const data = await res.json();
@@ -65,11 +65,30 @@ function Login() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      }}
+    >
       <Container maxWidth="sm">
-        <Paper elevation={0} sx={{ p: 4, borderRadius: 4, background: 'rgba(255, 255, 255, 0.95)' }}>
+        <Paper
+          elevation={0}
+          sx={{ p: 4, borderRadius: 4, background: 'rgba(255, 255, 255, 0.95)' }}
+        >
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Avatar sx={{ width: 60, height: 60, mx: 'auto', mb: 2, background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)' }}>
+            <Avatar
+              sx={{
+                width: 60,
+                height: 60,
+                mx: 'auto',
+                mb: 2,
+                background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+              }}
+            >
               <Person sx={{ fontSize: 28, color: 'white' }} />
             </Avatar>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#1f2937' }}>
@@ -78,8 +97,12 @@ function Login() {
           </Box>
 
           <Box component="form" onSubmit={handleSubmit}>
-            {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-            
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
+
             <TextField
               margin="normal"
               required
@@ -97,7 +120,7 @@ function Login() {
                 ),
               }}
             />
-            
+
             <TextField
               margin="normal"
               required
@@ -116,7 +139,7 @@ function Login() {
                 ),
               }}
             />
-            
+
             <Button
               type="submit"
               fullWidth
@@ -144,7 +167,7 @@ const LoginRoute = () => {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <div style={{ padding: 24 }}>Carregando…</div>;
   if (isAuthenticated) return <Navigate to="/" replace />;
-  
+
   return <Login />;
 };
 
@@ -156,66 +179,102 @@ function App() {
           <ErrorBoundary>
             <Routes>
               <Route path="/login" element={<LoginRoute />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <DashboardHomeSimple />
-                </ProtectedRoute>
-              } />
-              <Route path="/contratos" element={
-                <ProtectedRoute page="/contratos">
-                  <Contratos />
-                </ProtectedRoute>
-              } />
-              <Route path="/clientes" element={
-                <ProtectedRoute page="/clientes">
-                  <Clientes />
-                </ProtectedRoute>
-              } />
-              <Route path="/despesas" element={
-                <ProtectedRoute page="/despesas">
-                  <Despesas />
-                </ProtectedRoute>
-              } />
-              <Route path="/fornecedores" element={
-                <ProtectedRoute page="/fornecedores">
-                  <Fornecedores />
-                </ProtectedRoute>
-              } />
-              <Route path="/resumo-mensal" element={
-                <ProtectedRoute page="/resumo-mensal">
-                  <ResumoMensal />
-                </ProtectedRoute>
-              } />
-              <Route path="/valor-materiais" element={
-                <ProtectedRoute page="/valor-materiais">
-                  <ValorMateriais />
-                </ProtectedRoute>
-              } />
-              <Route path="/cadastro-usuarios" element={
-                <ProtectedRoute page="/admin">
-                  <CadastroUsuarios />
-                </ProtectedRoute>
-              } />
-              <Route path="/financeiro" element={
-                <ProtectedRoute page="/financeiro">
-                  <FinanceiroPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-loja-menu" element={
-                <ProtectedRoute page="/testes-loja-menu">
-                  <TestesLojaMenu />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-loja" element={
-                <ProtectedRoute page="/testes-loja" requiredPermission="update">
-                  <TestesLoja />
-                </ProtectedRoute>
-              } />
-              <Route path="/testes-ar-condicionado" element={
-                <ProtectedRoute page="/testes-ar-condicionado" requiredPermission="update">
-                  <TestesArCondicionado />
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <DashboardHomeSimple />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contratos"
+                element={
+                  <ProtectedRoute page="/contratos">
+                    <Contratos />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clientes"
+                element={
+                  <ProtectedRoute page="/clientes">
+                    <Clientes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/despesas"
+                element={
+                  <ProtectedRoute page="/despesas">
+                    <Despesas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fornecedores"
+                element={
+                  <ProtectedRoute page="/fornecedores">
+                    <Fornecedores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resumo-mensal"
+                element={
+                  <ProtectedRoute page="/resumo-mensal">
+                    <ResumoMensal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/valor-materiais"
+                element={
+                  <ProtectedRoute page="/valor-materiais">
+                    <ValorMateriais />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cadastro-usuarios"
+                element={
+                  <ProtectedRoute page="/admin">
+                    <CadastroUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/financeiro"
+                element={
+                  <ProtectedRoute page="/financeiro">
+                    <FinanceiroPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-loja-menu"
+                element={
+                  <ProtectedRoute page="/testes-loja-menu">
+                    <TestesLojaMenu />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-loja"
+                element={
+                  <ProtectedRoute page="/testes-loja" requiredPermission="update">
+                    <TestesLoja />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testes-ar-condicionado"
+                element={
+                  <ProtectedRoute page="/testes-ar-condicionado" requiredPermission="update">
+                    <TestesArCondicionado />
+                  </ProtectedRoute>
+                }
+              />
               {/* Rota de cadastro-usuarios removida; cadastro agora é feito via PHP */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

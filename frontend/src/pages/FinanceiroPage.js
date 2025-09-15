@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
   Avatar,
   Button,
   IconButton,
   Breadcrumbs,
-  Link
+  Link,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +20,7 @@ import {
   CalendarMonth,
   Inventory,
   ArrowBack,
-  Home
+  Home,
 } from '@mui/icons-material';
 
 export default function FinanceiroPage() {
@@ -33,36 +33,36 @@ export default function FinanceiroPage() {
       icon: <Assignment sx={{ fontSize: 35, color: '#fff' }} />,
       backgroundColor: '#5C6BC0', // Azul
       route: '/contratos',
-      description: 'Gestão de Contratos'
+      description: 'Gestão de Contratos',
     },
     {
       title: 'Despesas',
       icon: <AttachMoney sx={{ fontSize: 35, color: '#fff' }} />,
       backgroundColor: '#EF5350', // Vermelho
       route: '/despesas',
-      description: 'Controle de Despesas'
+      description: 'Controle de Despesas',
     },
     {
       title: 'Fornecedores',
       icon: <Store sx={{ fontSize: 35, color: '#fff' }} />,
       backgroundColor: '#26A69A', // Verde
       route: '/fornecedores',
-      description: 'Cadastro de Fornecedores'
+      description: 'Cadastro de Fornecedores',
     },
     {
       title: 'Resumo Mensal',
       icon: <CalendarMonth sx={{ fontSize: 35, color: '#fff' }} />,
       backgroundColor: '#FF7043', // Laranja
       route: '/resumo-mensal',
-      description: 'Relatórios Mensais'
+      description: 'Relatórios Mensais',
     },
     {
       title: 'Valor Materiais',
       icon: <Inventory sx={{ fontSize: 35, color: '#fff' }} />,
       backgroundColor: '#AB47BC', // Roxo
       route: '/valor-materiais',
-      description: 'Preços de Materiais'
-    }
+      description: 'Preços de Materiais',
+    },
   ];
 
   const handleCardClick = (route) => {
@@ -74,73 +74,71 @@ export default function FinanceiroPage() {
   };
 
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         background: 'linear-gradient(135deg, #26A69A 0%, #4DB6AC 100%)',
         minHeight: '100vh',
-        p: { xs: 2, sm: 3, md: 4 }
+        p: { xs: 2, sm: 3, md: 4 },
       }}
     >
       {/* Header com navegação */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton 
+          <IconButton
             onClick={handleBack}
-            sx={{ 
-              color: '#fff', 
+            sx={{
+              color: '#fff',
               mr: 1,
               backgroundColor: 'rgba(255,255,255,0.1)',
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.2)'
-              }
+                backgroundColor: 'rgba(255,255,255,0.2)',
+              },
             }}
           >
             <ArrowBack />
           </IconButton>
-          
-          <Breadcrumbs 
-            sx={{ 
+
+          <Breadcrumbs
+            sx={{
               '& .MuiBreadcrumbs-separator': { color: '#fff' },
-              flexGrow: 1
+              flexGrow: 1,
             }}
           >
-        <Link 
-          onClick={handleBack}
-              sx={{ 
-                color: '#fff', 
+            <Link
+              onClick={handleBack}
+              sx={{
+                color: '#fff',
                 opacity: 0.8,
                 cursor: 'pointer',
                 textDecoration: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                '&:hover': { opacity: 1 }
+                '&:hover': { opacity: 1 },
               }}
             >
               <Home sx={{ mr: 0.5, fontSize: 18 }} />
               Dashboard
             </Link>
-            <Typography sx={{ color: '#fff', fontWeight: 600 }}>
-              Financeiro
-            </Typography>
+            <Typography sx={{ color: '#fff', fontWeight: 600 }}>Financeiro</Typography>
           </Breadcrumbs>
         </Box>
 
         <Box sx={{ textAlign: 'center', color: '#fff' }}>
-          <Typography 
-            variant="h4" 
-            sx={{ 
+          <Typography
+            variant="h4"
+            sx={{
               fontWeight: 700,
               mb: 1,
-              fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' }
+              fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
             }}
           >
             Gestão Financeira
           </Typography>
-          <Typography 
-            variant="subtitle1" 
-            sx={{ 
+          <Typography
+            variant="subtitle1"
+            sx={{
               opacity: 0.9,
-              fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' }
+              fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
             }}
           >
             Selecione uma opção para gerenciar
@@ -171,7 +169,7 @@ export default function FinanceiroPage() {
                   overflow: 'hidden',
                   background: theme.palette.background.paper,
                   border: 'none',
-                  minHeight: { xs: 140, sm: 160 }
+                  minHeight: { xs: 140, sm: 160 },
                 }}
               >
                 <CardContent
@@ -182,7 +180,7 @@ export default function FinanceiroPage() {
                     textAlign: 'center',
                     p: { xs: 2, sm: 3 },
                     height: '100%',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
                   }}
                 >
                   {/* Ícone */}
@@ -192,7 +190,7 @@ export default function FinanceiroPage() {
                       height: { xs: 50, sm: 60 },
                       backgroundColor: card.backgroundColor,
                       mb: 2,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                     }}
                   >
                     {card.icon}
@@ -206,7 +204,7 @@ export default function FinanceiroPage() {
                       color: theme.palette.text.primary,
                       fontSize: { xs: '0.9rem', sm: '1rem' },
                       mb: 0.5,
-                      lineHeight: 1.2
+                      lineHeight: 1.2,
                     }}
                   >
                     {card.title}
@@ -223,7 +221,7 @@ export default function FinanceiroPage() {
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
                     }}
                     title={card.description}
                   >
@@ -248,8 +246,8 @@ export default function FinanceiroPage() {
             textTransform: 'none',
             '&:hover': {
               borderColor: '#fff',
-              backgroundColor: 'rgba(255,255,255,0.1)'
-            }
+              backgroundColor: 'rgba(255,255,255,0.1)',
+            },
           }}
         >
           Voltar ao Dashboard

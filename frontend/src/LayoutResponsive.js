@@ -15,7 +15,7 @@ import {
   createTheme,
   Alert,
   Snackbar,
-  useMediaQuery
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -33,7 +33,7 @@ import {
   Menu as MenuIcon,
   Assessment,
   TrendingUp,
-  Science
+  Science,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -47,7 +47,7 @@ export default function Layout({ children }) {
 
   // Para detectar mobile/tablet
   const isDesktop = useMediaQuery('(min-width:900px)');
-  
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -100,7 +100,12 @@ export default function Layout({ children }) {
   });
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, route: '/', active: location.pathname === '/' || location.pathname === '/dashboard' },
+    {
+      text: 'Dashboard',
+      icon: <DashboardIcon />,
+      route: '/',
+      active: location.pathname === '/' || location.pathname === '/dashboard',
+    },
     { text: 'Testes', icon: <Science />, route: '/testes-loja-menu' },
     { text: 'Relatórios', icon: <Assessment />, route: '/relatorios' },
     { text: 'Análises', icon: <TrendingUp />, route: '/analises' },
@@ -119,7 +124,9 @@ export default function Layout({ children }) {
 
   const handleDownloadBackup = async () => {
     try {
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/download`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/download`
+      );
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -141,11 +148,18 @@ export default function Layout({ children }) {
 
   const handleCreateInternalBackup = async () => {
     try {
-  const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/create`, {
-        method: 'POST'
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/backup/create`,
+        {
+          method: 'POST',
+        }
+      );
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Backup interno criado com sucesso!', severity: 'success' });
+        setSnackbar({
+          open: true,
+          message: 'Backup interno criado com sucesso!',
+          severity: 'success',
+        });
       } else {
         setSnackbar({ open: true, message: 'Erro ao criar backup interno', severity: 'error' });
       }
@@ -168,11 +182,7 @@ export default function Layout({ children }) {
         {/* Menu Principal */}
         <List>
           {menuItems.map((item) => (
-            <ListItem
-              key={item.text}
-              disablePadding
-              sx={{ mb: 1 }}
-            >
+            <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
               <Button
                 fullWidth
                 startIcon={item.icon}
@@ -197,16 +207,21 @@ export default function Layout({ children }) {
         <Divider sx={{ my: 2 }} />
 
         {/* Seção de Dados */}
-        <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            px: 2,
+            mb: 1,
+            color: 'text.secondary',
+            fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          }}
+        >
           Tabelas de Dados
         </Typography>
         <List>
           {dataMenuItems.map((item) => (
-            <ListItem
-              key={item.text}
-              disablePadding
-              sx={{ mb: 0.5 }}
-            >
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <Button
                 fullWidth
                 startIcon={item.icon}
@@ -218,7 +233,8 @@ export default function Layout({ children }) {
                   py: { xs: 0.75, sm: 1 },
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   color: location.pathname === item.route ? 'primary.main' : 'text.primary',
-                  backgroundColor: location.pathname === item.route ? 'action.selected' : 'transparent',
+                  backgroundColor:
+                    location.pathname === item.route ? 'action.selected' : 'transparent',
                   '&:hover': { backgroundColor: 'action.hover' },
                 }}
               >
@@ -231,11 +247,23 @@ export default function Layout({ children }) {
         <Divider sx={{ my: 2 }} />
 
         {/* Seção de Backup */}
-        <Typography variant="subtitle2" sx={{ px: 2, mb: 1, color: 'text.secondary', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            px: 2,
+            mb: 1,
+            color: 'text.secondary',
+            fontWeight: 600,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          }}
+        >
           Sistema
         </Typography>
         <Box sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: 'action.hover', borderRadius: 2 }}>
-          <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+          <Typography
+            variant="body2"
+            sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+          >
             <Backup sx={{ fontSize: { xs: 14, sm: 16 }, mr: 1 }} />
             Backup do Sistema
           </Typography>
@@ -244,11 +272,11 @@ export default function Layout({ children }) {
             size="small"
             startIcon={<Download />}
             onClick={handleDownloadBackup}
-            sx={{ 
-              mb: 1, 
+            sx={{
+              mb: 1,
               textTransform: 'none',
               fontSize: { xs: '0.7rem', sm: '0.75rem' },
-              py: { xs: 0.5, sm: 0.75 }
+              py: { xs: 0.5, sm: 0.75 },
             }}
             variant="outlined"
           >
@@ -259,10 +287,10 @@ export default function Layout({ children }) {
             size="small"
             startIcon={<Save />}
             onClick={handleCreateInternalBackup}
-            sx={{ 
+            sx={{
               textTransform: 'none',
               fontSize: { xs: '0.7rem', sm: '0.75rem' },
-              py: { xs: 0.5, sm: 0.75 }
+              py: { xs: 0.5, sm: 0.75 },
             }}
             variant="text"
           >
@@ -277,14 +305,14 @@ export default function Layout({ children }) {
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        
+
         {/* AppBar Responsivo */}
-        <AppBar 
-          position="fixed" 
-          sx={{ 
+        <AppBar
+          position="fixed"
+          sx={{
             zIndex: theme.zIndex.drawer + 1,
             width: { sm: `calc(100% - ${isDesktop ? drawerWidth : 0}px)` },
-            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 }
+            ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
           }}
         >
           <Toolbar>
@@ -298,19 +326,24 @@ export default function Layout({ children }) {
               <MenuIcon />
             </IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <img 
-                src="/images/thors-logo.svg" 
-                alt="THORS Logo" 
-                style={{ 
-                  height: '40px', 
+              <img
+                src="/images/thors-logo.svg"
+                alt="THORS Logo"
+                style={{
+                  height: '40px',
                   marginRight: '12px',
-                  objectFit: 'contain'
-                }} 
+                  objectFit: 'contain',
+                }}
               />
-              <Typography variant="h6" noWrap component="div" sx={{ 
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}>
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                }}
+              >
                 Gestão de Obras
               </Typography>
             </Box>
@@ -332,16 +365,16 @@ export default function Layout({ children }) {
             }}
             sx={{
               display: { xs: 'block', md: isDesktop ? 'none' : 'block' },
-              '& .MuiDrawer-paper': { 
-                boxSizing: 'border-box', 
+              '& .MuiDrawer-paper': {
+                boxSizing: 'border-box',
                 width: { xs: '85vw', sm: drawerWidth },
-                maxWidth: drawerWidth
+                maxWidth: drawerWidth,
               },
             }}
           >
             <DrawerContent />
           </Drawer>
-          
+
           {/* Desktop drawer */}
           <Drawer
             variant="permanent"
@@ -356,14 +389,14 @@ export default function Layout({ children }) {
         </Box>
 
         {/* Conteúdo Principal Responsivo */}
-        <Box 
-          component="main" 
-          sx={{ 
-            flexGrow: 1, 
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
             p: { xs: 1, sm: 2, md: 3 },
             width: { sm: `calc(100% - ${isDesktop ? drawerWidth : 0}px)` },
             ml: { sm: isDesktop ? `${drawerWidth}px` : 0 },
-            minHeight: '100vh'
+            minHeight: '100vh',
           }}
         >
           <Toolbar />
