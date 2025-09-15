@@ -44,7 +44,7 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
       {typeof h.uptime_seconds === 'number' && (
         <div><strong>Uptime:</strong> {Math.floor(h.uptime_seconds / 3600)}h {Math.floor((h.uptime_seconds % 3600) / 60)}m</div>
       )}
-      {h.lastCheck && (<div><strong>Último check:</strong> {h.lastCheck.toLocaleString()}</div>)}
+  {h.lastCheck && (<div><strong>Último check:</strong> {new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(h.lastCheck)}</div>)}
       {h.message && (<div style={{ color: '#b91c1c' }}><strong>Obs:</strong> {h.message}</div>)}
     </div>
   );
@@ -57,7 +57,7 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
           <div style={{ opacity: 0.8 }}>
             <small>{API_BASE}</small>
             {h.lastCheck && (
-              <div><small style={{ opacity: 0.8 }}>Último check: {h.lastCheck.toLocaleString()}</small></div>
+              <div><small style={{ opacity: 0.8 }}>Último check: {new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(h.lastCheck)}</small></div>
             )}
             {h.message && (
               <div><small style={{ color: '#b91c1c' }}>{h.message}</small></div>

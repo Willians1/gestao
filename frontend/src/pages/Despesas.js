@@ -32,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { API_BASE } from '../api';
+import { formatDateTimeBr } from '../utils/datetime';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Add as AddIcon,
@@ -305,7 +306,7 @@ function Despesas() {
                     })}
                   </TableCell>
                   <TableCell>
-                    {despesa.data ? new Date(despesa.data).toLocaleDateString('pt-BR') : '-'}
+                    {despesa.data ? formatDateTimeBr(despesa.data) : '-'}
                   </TableCell>
                   <TableCell>{despesa.categoria}</TableCell>
                   <TableCell>

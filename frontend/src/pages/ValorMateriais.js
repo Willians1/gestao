@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Box, Button, Paper, Typography, Chip, Stack, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle, 
+  TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, Alert, CircularProgress, IconButton,
   TableSortLabel, InputAdornment, Menu, MenuItem, FormControl, InputLabel, Select,
   Checkbox, Toolbar, Tooltip, Grid, CardContent, Card
@@ -19,6 +20,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDateTimeBr } from '../utils/datetime';
 
 export default function ValorMateriais() {
   const theme = useTheme();
@@ -1231,7 +1233,7 @@ export default function ValorMateriais() {
                             {file.filename}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Importado em: {new Date(file.criado_em).toLocaleString('pt-BR')}
+                            Importado em: {formatDateTimeBr(file.criado_em)}
                           </Typography>
                         </Box>
                         <IconButton

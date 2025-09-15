@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { formatDateTimeBr } from '../utils/datetime';
 import ApiStatusBadge from '../components/ApiStatusBadge';
 import {
   Box,
@@ -408,7 +409,7 @@ export default function DashboardHome() {
                                 {progress.running ? `${progress.percent?.toFixed?.(0) || 0}%` : 'Criar agora'}
                               </Button>
                             }>
-                              {backupStatus?.last_backup_at ? `Último backup: ${new Date(backupStatus.last_backup_at).toLocaleString('pt-BR')}` : 'Sem histórico de backup'}
+                              {backupStatus?.last_backup_at ? `Último backup: ${formatDateTimeBr(backupStatus.last_backup_at)}` : 'Sem histórico de backup'}
                             </Alert>
                           ) : (
                             <Alert severity="info" sx={{ width: '100%' }} action={
@@ -477,7 +478,7 @@ export default function DashboardHome() {
               <ListItem key={b.name} dense disableGutters secondaryAction={
                 <Checkbox edge="end" checked={selectedFiles.has(b.name)} onChange={() => toggleFile(b.name)} />
               }>
-                <ListItemText primary={b.name} secondary={`${new Date(b.created).toLocaleString('pt-BR')} • ${(b.size/1024/1024).toFixed(2)} MB`} />
+                <ListItemText primary={b.name} secondary={`${formatDateTimeBr(b.created)} • ${(b.size/1024/1024).toFixed(2)} MB`} />
               </ListItem>
             ))}
             {!backups.length && (

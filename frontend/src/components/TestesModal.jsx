@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { getLojaNome } from '../utils/lojas';
+import { formatDateTimeBr } from '../utils/datetime';
 
 export default function TestesModal({ open, onClose, API = (process.env.REACT_APP_API_URL || 'http://localhost:8000'), navigate, initialPendentes = false }) {
   const [clientes, setClientes] = useState([]);
@@ -187,7 +188,7 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
                   <Box sx={{ width: 150, textAlign: 'center' }}>
                     {r.gerCandidate ? (
                       (r.gerDays !== null && r.gerDays <= 7) ? (
-                        <Button size="small" variant="contained" color="success" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.gerCandidate, _tipo: 'gerador' }); setOpenTestDetail(true); }}>{new Date(r.gerCandidate.data_teste || r.gerCandidate.data || r.gerCandidate.created_at).toLocaleDateString()}</Button>
+                        <Button size="small" variant="contained" color="success" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.gerCandidate, _tipo: 'gerador' }); setOpenTestDetail(true); }}>{formatDateTimeBr(r.gerCandidate.data_teste || r.gerCandidate.data || r.gerCandidate.created_at, r.gerCandidate.horario)}</Button>
                       ) : (
                         <Button size="small" variant="contained" color="error" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.gerCandidate, _tipo: 'gerador' }); setOpenTestDetail(true); }}>{r.gerDays != null ? `${r.gerDays}d` : 'SEM REGISTRO'}</Button>
                       )
@@ -198,7 +199,7 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
                   <Box sx={{ width: 150, textAlign: 'center' }}>
                     {r.arCandidate ? (
                       (r.arDays !== null && r.arDays <= 7) ? (
-                        <Button size="small" variant="contained" color="success" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.arCandidate, _tipo: 'ar' }); setOpenTestDetail(true); }}>{new Date(r.arCandidate.data_teste || r.arCandidate.data || r.arCandidate.created_at).toLocaleDateString()}</Button>
+                        <Button size="small" variant="contained" color="success" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.arCandidate, _tipo: 'ar' }); setOpenTestDetail(true); }}>{formatDateTimeBr(r.arCandidate.data_teste || r.arCandidate.data || r.arCandidate.created_at, r.arCandidate.horario)}</Button>
                       ) : (
                         <Button size="small" variant="contained" color="error" onClick={(e) => { e.stopPropagation(); setSelectedTest({ ...r.arCandidate, _tipo: 'ar' }); setOpenTestDetail(true); }}>{r.arDays != null ? `${r.arDays}d` : 'SEM REGISTRO'}</Button>
                       )
@@ -228,7 +229,7 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
           {selectedTest ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography><b>Cliente:</b> {getClienteNomeById(selectedTest.cliente_id) || selectedTest.cliente || '—'}</Typography>
-              <Typography><b>Data:</b> {new Date(selectedTest.data_teste || selectedTest.data || selectedTest.created_at).toLocaleString()}</Typography>
+              <Typography><b>Data:</b> {formatDateTimeBr(selectedTest.data_teste || selectedTest.data || selectedTest.created_at, selectedTest.horario)}</Typography>
               <Typography><b>Status:</b> {selectedTest.status || '—'}</Typography>
               {selectedTest.observacao && <Typography><b>Observação:</b> {selectedTest.observacao}</Typography>}
               {selectedTest.foto && (

@@ -43,6 +43,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../api';
 import { getLojaNome } from '../utils/lojas';
+import { formatDateTimeBr } from '../utils/datetime';
 
 export default function TestesArCondicionado() {
   const navigate = useNavigate();
@@ -483,7 +484,7 @@ export default function TestesArCondicionado() {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <DateRange sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
                     <Typography variant="body2" color="text.secondary">
-                      {new Date(teste.data_teste).toLocaleDateString('pt-BR')} às {teste.horario}
+                      {formatDateTimeBr(teste.data_teste, teste.horario)}
                     </Typography>
                   </Box>
 
@@ -723,7 +724,7 @@ export default function TestesArCondicionado() {
                         Data do Teste
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {new Date(testeDetalhes.data_teste).toLocaleDateString('pt-BR')}
+                        {formatDateTimeBr(testeDetalhes.data_teste, testeDetalhes.horario)}
                       </Typography>
                     </Box>
 
@@ -777,7 +778,7 @@ export default function TestesArCondicionado() {
                         Criado em
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {new Date(testeDetalhes.criado_em).toLocaleString('pt-BR')}
+                        {formatDateTimeBr(testeDetalhes.criado_em)}
                       </Typography>
                     </Box>
                   </Paper>
