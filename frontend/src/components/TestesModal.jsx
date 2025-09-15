@@ -14,6 +14,7 @@ import {
   Typography
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { getLojaNome } from '../utils/lojas';
 
 export default function TestesModal({ open, onClose, API = (process.env.REACT_APP_API_URL || 'http://localhost:8000'), navigate, initialPendentes = false }) {
   const [clientes, setClientes] = useState([]);
@@ -43,36 +44,7 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
     return candidates[0];
   };
 
-  const defaultLojaName = (id) => {
-    const map = {
-      1: 'PEREQUE',
-      2: 'COTIA',
-      3: 'GUARUJA',
-      4: 'PERUIBE',
-      5: 'PRAIA GRANDE',
-      6: 'SANTOS',
-      7: 'PIRAJUSSARA',
-      8: 'ITANHAÉM',
-      9: 'MBOI',
-      10: 'MONGAGUA',
-      11: 'MORUMBI',
-      12: 'REGISTRO',
-      13: 'ENSEADA',
-      14: 'BERTIOGA',
-      15: 'BARUERI',
-      16: 'CAMPO LIMPO',
-    };
-    const base = map[Number(id)] || 'LOJA';
-    const suf = String(id || '').toString().padStart(2, '0');
-    return `${base} LOJA ${suf}`;
-  };
-
-  const getClienteNomeById = (id) => {
-    const c = clientes.find((x) => Number(x.id) === Number(id));
-    const suf = String(id || '').toString().padStart(2, '0');
-    if (c && c.nome) return `${String(c.nome).toUpperCase()} LOJA ${suf}`;
-    return defaultLojaName(id);
-  };
+  const getClienteNomeById = (id) => getLojaNome(id, clientes);
 
   const fetchBothTestes = React.useCallback(async () => {
     try {
@@ -117,7 +89,10 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API}/clientes/`);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API}/clientes/`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (mounted) setClientes(Array.isArray(data) ? data : []);
@@ -161,10 +136,7 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
             {(() => {
               const rows = Array.from({ length: 16 }).map((_, i) => {
                 const idx = i + 1;
-                const clienteObj = clientes.find(c => Number(c.id) === idx);
-                const lojaName = clienteObj && clienteObj.nome
-                  ? `${String(clienteObj.nome).toUpperCase()} LOJA ${String(idx).padStart(2, '0')}`
-                  : defaultLojaName(idx);
+                const lojaName = getLojaNome(idx, clientes);
                 const gerCandidate = getLatestBy(testesList, t => Number(t.cliente_id) === idx);
                 const arCandidate = getLatestBy(testesArList, t => Number(t.cliente_id) === idx);
                 const gerDays = gerCandidate ? daysSince(gerCandidate.data_teste || gerCandidate.data || gerCandidate.created_at) : null;
@@ -211,7 +183,6 @@ export default function TestesModal({ open, onClose, API = (process.env.REACT_AP
                 <ListItem key={`${r.lojaName}-${idx}`} divider sx={{ display: 'flex', alignItems: 'center' }}>
                   <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ListItemText primary={r.lojaName} />
-                    <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); navigate(`/clientes?id=${String(idx + 1)}`); }}>Abrir cliente</Button>
                   </Box>
                   <Box sx={{ width: 150, textAlign: 'center' }}>
                     {r.gerCandidate ? (

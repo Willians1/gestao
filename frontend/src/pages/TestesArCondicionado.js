@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../api';
+import { getLojaNome } from '../utils/lojas';
 
 export default function TestesArCondicionado() {
   const navigate = useNavigate();
@@ -102,7 +103,10 @@ export default function TestesArCondicionado() {
 
   const carregarClientes = async () => {
     try {
-  const response = await fetch(`${API_BASE}/clientes/`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/clientes/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setClientes(data);
@@ -325,18 +329,7 @@ export default function TestesArCondicionado() {
     setOpenDetalhesDialog(false);
   };
 
-  const getClienteNome = (clienteId) => {
-    const cliente = clientes.find(c => Number(c.id) === Number(clienteId));
-    const suf = String(clienteId || '').toString().padStart(2, '0');
-    if (cliente && cliente.nome) return `${String(cliente.nome).toUpperCase()} LOJA ${suf}`;
-    const map = {
-      1: 'PEREQUE', 2: 'COTIA', 3: 'GUARUJA', 4: 'PERUIBE', 5: 'PRAIA GRANDE',
-      6: 'SANTOS', 7: 'PIRAJUSSARA', 8: 'ITANHAÉM', 9: 'MBOI', 10: 'MONGAGUA',
-      11: 'MORUMBI', 12: 'REGISTRO', 13: 'ENSEADA', 14: 'BERTIOGA', 15: 'BARUERI', 16: 'CAMPO LIMPO'
-    };
-    const base = map[Number(clienteId)] || 'LOJA';
-    return `${base} LOJA ${suf}`;
-  };
+  const getClienteNome = (clienteId) => getLojaNome(clienteId, clientes);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -426,7 +419,7 @@ export default function TestesArCondicionado() {
               <MenuItem value="">Todos os clientes</MenuItem>
               {clientes.map((cliente) => (
                 <MenuItem key={cliente.id} value={cliente.id}>
-                  {cliente.nome}
+                  {getClienteNome(cliente.id)}
                 </MenuItem>
               ))}
             </TextField>
@@ -598,13 +591,14 @@ export default function TestesArCondicionado() {
                   <FormControl fullWidth required>
                     <InputLabel>Cliente</InputLabel>
                     <Select
-                      value={novoTeste.cliente_id}
-                      onChange={(e) => setNovoTeste(prev => ({ ...prev, cliente_id: e.target.value }))}
+                      value={String(novoTeste.cliente_id || '')}
+                      onChange={(e) => setNovoTeste(prev => ({ ...prev, cliente_id: Number(e.target.value) }))}
                       label="Cliente"
                     >
-                      {clientes.map((cliente) => (
-                        <MenuItem key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
+                      <MenuItem value="" disabled>Selecione o cliente</MenuItem>
+                      {(clientes && clientes.length > 0 ? clientes.map(c => c.id) : Array.from({ length: 16 }, (_, i) => i + 1)).map((id) => (
+                        <MenuItem key={id} value={String(id)}>
+                          {getClienteNome(id)}
                         </MenuItem>
                       ))}
                     </Select>
