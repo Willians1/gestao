@@ -8,7 +8,11 @@ export function getLojaNome(clienteId, clientes = []) {
     if (Array.isArray(clientes) && clientes.length > 0) {
       const c = clientes.find(x => Number(x.id) === idNum);
       if (c && c.nome) {
-        return `${String(c.nome).toUpperCase()} LOJA ${suf}`;
+        // Remove qualquer sufixo existente "LOJA NN" do nome vindo do backend para evitar duplicação
+        let base = String(c.nome).toUpperCase().trim();
+        // Exemplos a tratar: "PEREQUE LOJA 01", "COTIA LOJA 02 LOJA 02"
+        base = base.replace(/\s+LOJA\s+\d{1,3}(\s+LOJA\s+\d{1,3})?\s*$/i, '');
+        return `${base} LOJA ${suf}`;
       }
     }
   } catch (_) { /* noop */ }
