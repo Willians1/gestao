@@ -9,6 +9,7 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down('sm'));
   const isCompact = compact || isXs;
+  const isIconOnly = isXs; // no mobile, exibir apenas um indicador visual compacto
 
   const labelBase = () => {
     const suffix = h.latencyMs != null ? ` • ${h.latencyMs} ms` : '';
@@ -26,6 +27,15 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
       case 'degraded': return 'warning';
       case 'offline': return 'error';
       default: return 'default';
+    }
+  };
+
+  const dotColor = () => {
+    switch (h.status) {
+      case 'ok': return '#16a34a';
+      case 'degraded': return '#eab308';
+      case 'offline': return '#dc2626';
+      default: return '#6b7280';
     }
   };
 
@@ -52,12 +62,16 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
   return (
     <Tooltip title={details} arrow disableInteractive>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ cursor: 'default', flexWrap: 'wrap' }}>
-        <Chip
-          label={labelBase()}
-          color={chipColor()}
-          size={isCompact ? 'small' : 'medium'}
-          sx={{ fontWeight: 600 }}
-        />
+        {isIconOnly ? (
+          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: dotColor(), boxShadow: '0 0 0 2px rgba(0,0,0,0.08)' }} />
+        ) : (
+          <Chip
+            label={labelBase()}
+            color={chipColor()}
+            size={isCompact ? 'small' : 'medium'}
+            sx={{ fontWeight: 600 }}
+          />
+        )}
         {!isCompact && (
           <Box sx={{ opacity: 0.8 }}>
             <small>{API_BASE}</small>
