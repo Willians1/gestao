@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE } from '../api';
 import {
   Box,
@@ -590,7 +590,8 @@ export default function CadastroUsuarios() {
             <Button
               variant="outlined"
               startIcon={<AdminPanelSettings />}
-              onClick={() => navigate('/grupos-usuarios')}
+              component={Link}
+              to="/grupos-usuarios"
             >
               Grupos de Usuários
             </Button>

@@ -178,7 +178,7 @@ function App() {
               <Route
                 path="/cadastro-usuarios"
                 element={
-                  <ProtectedRoute page="/admin">
+                  <ProtectedRoute page="/cadastro-usuarios">
                     <Layout>
                       <CadastroUsuarios />
                     </Layout>
