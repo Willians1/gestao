@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../api';
 import {
 	Box,
@@ -28,7 +29,7 @@ import {
 	Divider,
 	Grid
 } from '@mui/material';
-import { Add, Delete, Edit, Save, Close, Security, LockReset } from '@mui/icons-material';
+import { Add, Delete, Edit, Save, Close, Security, LockReset, AdminPanelSettings } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -41,6 +42,7 @@ const NIVEL_OPTIONS = [
 
 export default function CadastroUsuarios() {
 	const { token, hasPermission } = useAuth();
+	const navigate = useNavigate();
 	const canCreate = hasPermission('/cadastro-usuarios', 'create');
 	const canUpdate = hasPermission('/cadastro-usuarios', 'update');
 	const canDelete = hasPermission('/cadastro-usuarios', 'delete');
@@ -388,6 +390,11 @@ export default function CadastroUsuarios() {
 						<input hidden type="file" accept=".xlsx,.xls" onChange={(e) => { const f = e.target.files?.[0]; if (f) importExcel(f); e.target.value = ''; }} />
 					</Button>
 					<Button variant="text" onClick={fetchUsers}>Recarregar</Button>
+					{hasPermission('/grupos-usuarios','read') && (
+						<Button variant="outlined" startIcon={<AdminPanelSettings />} onClick={() => navigate('/grupos-usuarios')}>
+							Grupos de Usuários
+						</Button>
+					)}
 				</Stack>
 			</Stack>
 
