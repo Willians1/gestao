@@ -1,31 +1,31 @@
 import React from 'react';
-import { Tooltip } from '@mui/material';
+import { Tooltip, Chip, Stack, Box, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import useApiHealth from '../hooks/useApiHealth';
 import { API_BASE } from '../api';
 
 export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) {
   const h = useApiHealth({ intervalMs });
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down('sm'));
+  const isCompact = compact || isXs;
 
-  const badge = () => {
-    const base = {
-      display: 'inline-block',
-      padding: '2px 8px',
-      borderRadius: 999,
-      fontWeight: 600,
-      color: '#fff',
-      fontSize: 11,
-      lineHeight: '16px',
-    };
-    const text = (label, color) => (
-      <span style={{ ...base, backgroundColor: color }}>
-        {label}{h.latencyMs != null ? ` • ${h.latencyMs} ms` : ''}
-      </span>
-    );
+  const labelBase = () => {
+    const suffix = h.latencyMs != null ? ` • ${h.latencyMs} ms` : '';
     switch (h.status) {
-      case 'ok': return text('API OK', '#16a34a');
-      case 'degraded': return text('API Lenta', '#eab308');
-      case 'offline': return text('API Offline', '#dc2626');
-      default: return text('Verificando…', '#6b7280');
+      case 'ok': return `API OK${suffix}`;
+      case 'degraded': return `API Lenta${suffix}`;
+      case 'offline': return `API Offline${suffix}`;
+      default: return `Verificando…${suffix}`;
+    }
+  };
+
+  const chipColor = () => {
+    switch (h.status) {
+      case 'ok': return 'success';
+      case 'degraded': return 'warning';
+      case 'offline': return 'error';
+      default: return 'default';
     }
   };
 
@@ -51,10 +51,15 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
 
   return (
     <Tooltip title={details} arrow disableInteractive>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'default' }}>
-        {badge()}
-        {!compact && (
-          <div style={{ opacity: 0.8 }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ cursor: 'default', flexWrap: 'wrap' }}>
+        <Chip
+          label={labelBase()}
+          color={chipColor()}
+          size={isCompact ? 'small' : 'medium'}
+          sx={{ fontWeight: 600 }}
+        />
+        {!isCompact && (
+          <Box sx={{ opacity: 0.8 }}>
             <small>{API_BASE}</small>
             {h.lastCheck && (
               <div><small style={{ opacity: 0.8 }}>Último check: {new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(h.lastCheck)}</small></div>
@@ -62,9 +67,9 @@ export default function ApiStatusBadge({ compact = false, intervalMs = 30000 }) 
             {h.message && (
               <div><small style={{ color: '#b91c1c' }}>{h.message}</small></div>
             )}
-          </div>
+          </Box>
         )}
-      </div>
+      </Stack>
     </Tooltip>
   );
 }

@@ -321,14 +321,14 @@ export default function DashboardHome() {
   return (
     <Box sx={{ minHeight: '100vh', p: 3 }}>
   <Box sx={{ maxWidth: 940, mx: 'auto', background: 'white', borderRadius: 3, p: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 4, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>Dashboard</Typography>
             <Typography variant="subtitle1" color="text.secondary">Bem-vindo, {user?.nome}!</Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <ApiStatusBadge compact />
-            <Button variant="outlined" color="error" onClick={logout}>Sair</Button>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'space-between', sm: 'flex-end' } }}>
+            <ApiStatusBadge />
+            <Button variant="outlined" color="error" onClick={logout} size="small">Sair</Button>
           </Box>
         </Box>
 
