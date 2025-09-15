@@ -28,7 +28,7 @@ import {
 	Divider,
 	Grid
 } from '@mui/material';
-import { Add, Delete, Edit, Save, Close, Security } from '@mui/icons-material';
+import { Add, Delete, Edit, Save, Close, Security, LockReset } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -64,6 +64,13 @@ export default function CadastroUsuarios() {
 	const [permUser, setPermUser] = useState(null);
 	const [permGroup, setPermGroup] = useState(null); // detalhes do grupo
 	const [permChecked, setPermChecked] = useState(new Set());
+
+	// Diálogo de Alteração de Senha
+	const [pwdOpen, setPwdOpen] = useState(false);
+	const [pwdUser, setPwdUser] = useState(null);
+	const [pwdNew, setPwdNew] = useState('');
+	const [pwdConfirm, setPwdConfirm] = useState('');
+	const [pwdLoading, setPwdLoading] = useState(false);
 
 	// Mapa das páginas x IDs de permissões (base/ler, criar, editar, excluir)
 	// Padrão: base (xx01), editar (xx02), excluir (xx03), criar (xx04)
@@ -152,6 +159,45 @@ export default function CadastroUsuarios() {
 			setSnack({ open: true, message: 'Falha ao carregar permissões', severity: 'error' });
 		} finally {
 			setPermLoading(false);
+		}
+	};
+
+	const openPasswordDialog = (user) => {
+		setPwdUser(user);
+		setPwdNew('');
+		setPwdConfirm('');
+		setPwdOpen(true);
+	};
+
+	const submitPasswordChange = async () => {
+		if (!pwdUser) { setPwdOpen(false); return; }
+		if (!pwdNew || !pwdConfirm) {
+			setSnack({ open: true, message: 'Informe a nova senha e a confirmação', severity: 'warning' });
+			return;
+		}
+		if (pwdNew !== pwdConfirm) {
+			setSnack({ open: true, message: 'Senhas não conferem', severity: 'warning' });
+			return;
+		}
+		if (pwdNew.length < 4) {
+			setSnack({ open: true, message: 'Senha muito curta (mínimo 4 caracteres)', severity: 'warning' });
+			return;
+		}
+		setPwdLoading(true);
+		try {
+			const payload = { password: pwdNew };
+			const res = await fetch(`${API_BASE}/usuarios/${pwdUser.id}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+			if (!res.ok) {
+				let msg = `Falha ao alterar senha (HTTP ${res.status})`;
+				try { const j = await res.json(); if (j?.detail) msg = j.detail; } catch {}
+				throw new Error(msg);
+			}
+			setSnack({ open: true, message: 'Senha alterada com sucesso', severity: 'success' });
+			setPwdOpen(false);
+		} catch (e) {
+			setSnack({ open: true, message: e.message || 'Erro ao alterar senha', severity: 'error' });
+		} finally {
+			setPwdLoading(false);
 		}
 	};
 
@@ -427,6 +473,7 @@ export default function CadastroUsuarios() {
 									) : (
 										<Stack direction="row" spacing={1} justifyContent="flex-end">
 											<IconButton onClick={() => openPermissionsDialog(r)} title="Permissões"><Security /></IconButton>
+											{canUpdate && (<IconButton onClick={() => openPasswordDialog(r)} title="Alterar senha"><LockReset /></IconButton>)}
 											{canUpdate && (<IconButton onClick={() => startEdit(r)} title="Editar"><Edit /></IconButton>)}
 											{canDelete && (<IconButton color="error" onClick={() => deleteUser(r.id)} title="Remover"><Delete /></IconButton>)}
 										</Stack>
@@ -465,6 +512,21 @@ export default function CadastroUsuarios() {
 				<DialogActions>
 					<Button onClick={() => setOpenNew(false)}>Cancelar</Button>
 					<Button onClick={createUser} variant="contained">Criar</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Dialog Alterar Senha */}
+			<Dialog open={pwdOpen} onClose={() => setPwdOpen(false)} maxWidth="xs" fullWidth>
+				<DialogTitle>Alterar Senha {pwdUser ? `(${pwdUser.username})` : ''}</DialogTitle>
+				<DialogContent>
+					<Stack spacing={2} sx={{ mt: 1 }}>
+						<TextField label="Nova Senha" type="password" value={pwdNew} onChange={(e) => setPwdNew(e.target.value)} required />
+						<TextField label="Confirmar Senha" type="password" value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)} required />
+					</Stack>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setPwdOpen(false)}>Cancelar</Button>
+					<Button variant="contained" onClick={submitPasswordChange} disabled={pwdLoading}>{pwdLoading ? 'Salvando...' : 'Salvar'}</Button>
 				</DialogActions>
 			</Dialog>
 
