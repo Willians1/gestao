@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  Box, Button, Paper, Typography, Chip, Stack, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle, 
+import {
+  Box, Button, Paper, Typography, Chip, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, TablePagination, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Alert, CircularProgress, IconButton,
-  TableSortLabel, InputAdornment, Menu, MenuItem, FormControl, InputLabel, Select,
-  Checkbox, Toolbar, Tooltip, Grid, CardContent, Card
+  TableSortLabel, InputAdornment, MenuItem, FormControl, InputLabel, Select,
+  Checkbox, Toolbar, Tooltip, Grid, Card
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import SortIcon from '@mui/icons-material/Sort';
+// import SortIcon from '@mui/icons-material/Sort'; // não utilizado
 import EditIcon from '@mui/icons-material/Edit';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ClearIcon from '@mui/icons-material/Clear';

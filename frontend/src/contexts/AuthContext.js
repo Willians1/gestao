@@ -96,6 +96,7 @@ export const AuthProvider = ({ children }) => {
     // Mapear páginas para IDs de permissão base
     const pageToPermId = {
       '/cadastro-usuarios': 1101,
+      '/grupos-usuarios': 1004, // Administração do Sistema
       '/clientes': 1201,
       '/fornecedores': 1301,
       '/contratos': 1401,

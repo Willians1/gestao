@@ -170,6 +170,14 @@ export default function Layout({ children }) {
     }
   };
 
+  // Destacar item ativo: trata '/' como match exato e os demais por prefixo
+  const isRouteActive = (itemRoute) => {
+    if (itemRoute === '/') {
+      return location.pathname === '/' || location.pathname === '/dashboard';
+    }
+    return location.pathname === itemRoute || location.pathname.startsWith(itemRoute + '/');
+  };
+
   const DrawerContent = () => (
     <>
       <Toolbar />
@@ -192,8 +200,8 @@ export default function Layout({ children }) {
                   borderRadius: 2,
                   py: { xs: 1, sm: 1.5 },
                   fontSize: { xs: '0.875rem', sm: '1rem' },
-      color: location.pathname === item.route || location.pathname.startsWith(item.route) ? 'primary.main' : 'text.primary',
-      backgroundColor: location.pathname === item.route || location.pathname.startsWith(item.route) ? 'action.selected' : 'transparent',
+      color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
+      backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
                   '&:hover': { backgroundColor: 'action.hover' },
                 }}
               >
@@ -226,8 +234,8 @@ export default function Layout({ children }) {
                   borderRadius: 2,
                   py: { xs: 0.75, sm: 1 },
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
-      color: location.pathname === item.route || location.pathname.startsWith(item.route) ? 'primary.main' : 'text.primary',
-      backgroundColor: location.pathname === item.route || location.pathname.startsWith(item.route) ? 'action.selected' : 'transparent',
+      color: isRouteActive(item.route) ? 'primary.main' : 'text.primary',
+      backgroundColor: isRouteActive(item.route) ? 'action.selected' : 'transparent',
                   '&:hover': { backgroundColor: 'action.hover' },
                 }}
               >
