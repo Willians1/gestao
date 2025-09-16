@@ -1583,8 +1583,14 @@ def deletar_teste_loja(teste_id: int, db: Session = Depends(get_db)):
 
 # Testes de Ar Condicionado
 @app.get("/testes-ar-condicionado/", response_model=List[TesteArCondicionadoSchema])
-def listar_testes_ar_condicionado(db: Session = Depends(get_db)):
-    return db.query(TesteArCondicionado).all()
+def listar_testes_ar_condicionado(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    allowed = _get_allowed_client_ids(db, current_user)
+    q = db.query(TesteArCondicionado)
+    if allowed is not None and len(allowed) > 0:
+        q = q.filter(TesteArCondicionado.cliente_id.in_(allowed))
+    elif allowed is not None and len(allowed) == 0:
+        return []
+    return q.all()
 
 @app.post("/testes-ar-condicionado/", response_model=TesteArCondicionadoSchema)
 async def criar_teste_ar_condicionado(
@@ -1595,8 +1601,13 @@ async def criar_teste_ar_condicionado(
     observacao: str = Form(None),
     foto: UploadFile = File(None),
     video: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
 ):
+    # Verificar permissão por cliente_id
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     # Criar teste primeiro
     novo_teste = TesteArCondicionado(
         data_teste=datetime.datetime.strptime(data_teste, "%Y-%m-%d").date(),
@@ -1644,12 +1655,17 @@ async def atualizar_teste_ar_condicionado(
     observacao: str = Form(None),
     foto: UploadFile = File(None),
     video: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
 ):
     teste_db = db.query(TesteArCondicionado).filter(TesteArCondicionado.id == teste_id).first()
     if not teste_db:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Checar acesso ao novo cliente_id
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     # Atualizar dados básicos
     teste_db.data_teste = datetime.datetime.strptime(data_teste, "%Y-%m-%d").date()
     teste_db.cliente_id = cliente_id

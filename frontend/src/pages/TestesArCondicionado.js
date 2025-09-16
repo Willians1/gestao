@@ -92,13 +92,16 @@ export default function TestesArCondicionado() {
 
   const carregarTestes = async () => {
     try {
-      const response = await fetch(`${API_BASE}/testes-ar-condicionado/`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/testes-ar-condicionado/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setTestes(data);
       }
     } catch (error) {
-      console.error('Erro ao carregar testes:', error);
+      console.error('Erro ao carregar testes de ar:', error);
     }
   };
 
@@ -157,6 +160,10 @@ export default function TestesArCondicionado() {
       const response = await fetch(url, {
         method: method,
         body: formData,
+        headers: (() => {
+          const token = localStorage.getItem('token');
+          return token ? { Authorization: `Bearer ${token}` } : undefined;
+        })(),
       });
 
       if (response.ok) {
@@ -295,6 +302,10 @@ export default function TestesArCondicionado() {
       try {
         const response = await fetch(`${API_BASE}/testes-ar-condicionado/${testeId}`, {
           method: 'DELETE',
+          headers: (() => {
+            const token = localStorage.getItem('token');
+            return token ? { Authorization: `Bearer ${token}` } : undefined;
+          })(),
         });
 
         if (response.ok) {
