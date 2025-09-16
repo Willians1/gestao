@@ -1572,10 +1572,14 @@ async def atualizar_teste_loja(
     return teste_db
 
 @app.delete("/testes-loja/{teste_id}")
-def deletar_teste_loja(teste_id: int, db: Session = Depends(get_db)):
+def deletar_teste_loja(teste_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     teste_db = db.query(TesteLoja).filter(TesteLoja.id == teste_id).first()
     if not teste_db:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
+    # Checar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste_db.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     
     db.delete(teste_db)
     db.commit()
@@ -1713,10 +1717,14 @@ async def atualizar_teste_ar_condicionado(
     return teste_db
 
 @app.delete("/testes-ar-condicionado/{teste_id}")
-def deletar_teste_ar_condicionado(teste_id: int, db: Session = Depends(get_db)):
+def deletar_teste_ar_condicionado(teste_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     teste_db = db.query(TesteArCondicionado).filter(TesteArCondicionado.id == teste_id).first()
     if not teste_db:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
+    # Checar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste_db.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     
     db.delete(teste_db)
     db.commit()
@@ -1724,12 +1732,17 @@ def deletar_teste_ar_condicionado(teste_id: int, db: Session = Depends(get_db)):
 
 # Rotas de Upload para Testes
 @app.post("/upload/testes-loja/foto/{teste_id}")
-async def upload_foto_teste_loja(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_foto_teste_loja(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     # Verificar se o teste existe
     teste = db.query(TesteLoja).filter(TesteLoja.id == teste_id).first()
     if not teste:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Verificar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
+
     # Gerar nome único para o arquivo
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -1746,12 +1759,17 @@ async def upload_foto_teste_loja(teste_id: int, file: UploadFile = File(...), db
     return {"filename": unique_filename, "message": "Foto enviada com sucesso"}
 
 @app.post("/upload/testes-loja/video/{teste_id}")
-async def upload_video_teste_loja(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_video_teste_loja(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     # Verificar se o teste existe
     teste = db.query(TesteLoja).filter(TesteLoja.id == teste_id).first()
     if not teste:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Verificar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
+
     # Gerar nome único para o arquivo
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -1768,12 +1786,17 @@ async def upload_video_teste_loja(teste_id: int, file: UploadFile = File(...), d
     return {"filename": unique_filename, "message": "Vídeo enviado com sucesso"}
 
 @app.post("/upload/testes-ar-condicionado/foto/{teste_id}")
-async def upload_foto_teste_ar_condicionado(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_foto_teste_ar_condicionado(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     # Verificar se o teste existe
     teste = db.query(TesteArCondicionado).filter(TesteArCondicionado.id == teste_id).first()
     if not teste:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Verificar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
+
     # Gerar nome único para o arquivo
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -1790,12 +1813,17 @@ async def upload_foto_teste_ar_condicionado(teste_id: int, file: UploadFile = Fi
     return {"filename": unique_filename, "message": "Foto enviada com sucesso"}
 
 @app.post("/upload/testes-ar-condicionado/video/{teste_id}")
-async def upload_video_teste_ar_condicionado(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_video_teste_ar_condicionado(teste_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     # Verificar se o teste existe
     teste = db.query(TesteArCondicionado).filter(TesteArCondicionado.id == teste_id).first()
     if not teste:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Verificar escopo de cliente
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and teste.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
+
     # Gerar nome único para o arquivo
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"

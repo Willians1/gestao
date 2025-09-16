@@ -103,7 +103,7 @@ export default function Layout({ children }) {
     },
   });
 
-  const { isAdmin, hasPermission } = useAuth();
+  const { isAdmin, hasPermission, user } = useAuth();
 
   const menuItems = [
     {
@@ -112,7 +112,14 @@ export default function Layout({ children }) {
       route: '/',
       active: location.pathname === '/' || location.pathname === '/dashboard',
     },
-    { text: 'Financeiro', icon: <AttachMoney />, route: '/financeiro' },
+    // Financeiro: ocultar para Manutenção/Visualização
+    ...( (() => {
+      const role = (user?.nivel_acesso || '').toLowerCase();
+      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
+        return [];
+      }
+      return [{ text: 'Financeiro', icon: <AttachMoney />, route: '/financeiro' }];
+    })() ),
     { text: 'Testes', icon: <Science />, route: '/testes-loja-menu' },
     { text: 'Relatórios', icon: <Assessment />, route: '/relatorios' },
     { text: 'Análises', icon: <TrendingUp />, route: '/analises' },
@@ -124,11 +131,25 @@ export default function Layout({ children }) {
     { text: 'Grupos de Usuários', icon: <AdminPanelSettings />, route: '/grupos-usuarios' },
     { text: 'Clientes', icon: <Business />, route: '/clientes' },
     { text: 'Contratos', icon: <Assignment />, route: '/contratos' },
-    { text: 'Despesas', icon: <AttachMoney />, route: '/despesas' },
+    // Despesas: ocultar para Manutenção/Visualização
+    ...( (() => {
+      const role = (user?.nivel_acesso || '').toLowerCase();
+      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
+        return [];
+      }
+      return [{ text: 'Despesas', icon: <AttachMoney />, route: '/despesas' }];
+    })() ),
     { text: 'Fornecedores', icon: <Store />, route: '/fornecedores' },
     { text: 'Orçamento de Obra', icon: <Construction />, route: '/orcamento-obra' },
     { text: 'Resumo Mensal', icon: <CalendarMonth />, route: '/resumo-mensal' },
-    { text: 'Valor Materiais', icon: <Inventory />, route: '/valor-materiais' },
+    // Valor Materiais: ocultar para Manutenção/Visualização
+    ...( (() => {
+      const role = (user?.nivel_acesso || '').toLowerCase();
+      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
+        return [];
+      }
+      return [{ text: 'Valor Materiais', icon: <Inventory />, route: '/valor-materiais' }];
+    })() ),
   ];
 
   const handleDownloadBackup = async () => {
