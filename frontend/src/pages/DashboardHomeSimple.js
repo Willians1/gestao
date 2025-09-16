@@ -323,14 +323,6 @@ export default function DashboardHome() {
       permission: '/clientes',
     },
     {
-      title: 'Financeiro',
-      description: 'Controle financeiro e despesas',
-      icon: AttachMoney,
-      color: theme.palette.success.main,
-      path: '/financeiro',
-      permission: '/financeiro',
-    },
-    {
       title: 'Testes de Loja',
       description: 'Agendamentos e registros de testes',
       icon: Storefront,
@@ -351,6 +343,10 @@ export default function DashboardHome() {
 
   const filteredCards = allDashboardCards.filter((card) => {
     if (card.adminOnly && !isAdmin()) return false;
+    const role = (user?.nivel_acesso || '').toLowerCase();
+    if (card.title === 'Financeiro' && (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao')) {
+      return false;
+    }
     return hasPermission(card.permission);
   });
 

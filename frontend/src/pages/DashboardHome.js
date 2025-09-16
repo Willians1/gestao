@@ -29,7 +29,7 @@ import {
   Inventory,
   Science,
   ExitToApp,
-, Storefront } from '@mui/icons-material';
+  Storefront } from '@mui/icons-material';
 
 
 export default function DashboardHome() {
@@ -56,9 +56,11 @@ export default function DashboardHome() {
 
   const fetchBothTestes = React.useCallback(async () => {
     try {
+      const token = localStorage.getItem('token');
+      const auth = token ? { Authorization: `Bearer ${token}` } : undefined;
       const [resGer, resAr] = await Promise.all([
-        fetch(`${API}/testes-loja/`),
-        fetch(`${API}/testes-ar-condicionado/`),
+        fetch(`${API}/testes-loja/`, { headers: auth }),
+        fetch(`${API}/testes-ar-condicionado/`, { headers: auth }),
       ]);
       const [dataGer, dataAr] = await Promise.all([
         resGer.ok ? resGer.json() : Promise.resolve([]),
@@ -97,7 +99,9 @@ export default function DashboardHome() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API}/clientes/`);
+        const token = localStorage.getItem('token');
+        const auth = token ? { Authorization: `Bearer ${token}` } : undefined;
+        const res = await fetch(`${API}/clientes/`, { headers: auth });
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
@@ -159,6 +163,11 @@ export default function DashboardHome() {
   // Filtrar cards baseado nas permissões do usuário
   const filteredCards = allDashboardCards.filter((card) => {
     if (card.adminOnly && !isAdmin()) return false;
+    // Remover card Financeiro para usuários de Manutenção/Visualização
+    const role = (user?.nivel_acesso || '').toLowerCase();
+    if (card.title === 'Financeiro' && (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao')) {
+      return false;
+    }
     return hasPermission(card.permission);
   });
 

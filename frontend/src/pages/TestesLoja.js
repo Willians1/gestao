@@ -112,7 +112,10 @@ export default function TestesLoja() {
           // tentar buscar do backend apenas esse teste
           (async () => {
             try {
-              const res = await fetch(`${API_BASE}/testes-loja/${id}`);
+              const token = localStorage.getItem('token');
+              const res = await fetch(`${API_BASE}/testes-loja/${id}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              });
               if (res.ok) {
                 const data = await res.json();
                 setTesteDetalhes(data);
