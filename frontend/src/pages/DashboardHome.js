@@ -139,6 +139,7 @@ export default function DashboardHome() {
       color: '#f59e0b',
       path: '/financeiro',
       permission: 'financeiro:read',
+      adminOnly: true,
     },
     // Removed cards: Contratos, Despesas, Fornecedores, Orçamento Obra, Valor Materiais, Resumo Mensal
     {
@@ -163,11 +164,6 @@ export default function DashboardHome() {
   // Filtrar cards baseado nas permissões do usuário
   const filteredCards = allDashboardCards.filter((card) => {
     if (card.adminOnly && !isAdmin()) return false;
-    // Remover card Financeiro para usuários de Manutenção/Visualização
-    const role = (user?.nivel_acesso || '').toLowerCase();
-    if (card.title === 'Financeiro' && (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao')) {
-      return false;
-    }
     return hasPermission(card.permission);
   });
 
@@ -179,24 +175,7 @@ export default function DashboardHome() {
     navigate(path);
   };
 
-  const daysSince = (dateStr) => {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return null;
-    return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const getLatestBy = (list, predicate) => {
-    if (!Array.isArray(list)) return null;
-    const candidates = list.filter(predicate);
-    if (!candidates.length) return null;
-    candidates.sort(
-      (a, b) =>
-        new Date(b.data_teste || b.data || b.created_at || 0) -
-        new Date(a.data_teste || a.data || a.created_at || 0)
-    );
-    return candidates[0];
-  };
+  // (Funções auxiliares removidas por não uso)
 
   return (
     <Box
