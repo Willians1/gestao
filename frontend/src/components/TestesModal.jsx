@@ -59,9 +59,11 @@ export default function TestesModal({
 
   const fetchBothTestes = React.useCallback(async () => {
     try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
       const [resGer, resAr] = await Promise.all([
-        fetch(`${API}/testes-loja/`),
-        fetch(`${API}/testes-ar-condicionado/`),
+        fetch(`${API}/testes-loja/`, { headers }),
+        fetch(`${API}/testes-ar-condicionado/`, { headers }),
       ]);
       const [dataGer, dataAr] = await Promise.all([
         resGer.ok ? resGer.json() : Promise.resolve([]),
@@ -313,7 +315,12 @@ export default function TestesModal({
                             setOpenTestDetail(true);
                           }}
                         >
-                          {r.gerDays != null ? `${r.gerDays}d` : 'SEM REGISTRO'}
+                          {formatDateTimeBr(
+                            r.gerCandidate.data_teste ||
+                              r.gerCandidate.data ||
+                              r.gerCandidate.created_at,
+                            r.gerCandidate.horario
+                          )}
                         </Button>
                       )
                     ) : (
@@ -362,7 +369,12 @@ export default function TestesModal({
                             setOpenTestDetail(true);
                           }}
                         >
-                          {r.arDays != null ? `${r.arDays}d` : 'SEM REGISTRO'}
+                          {formatDateTimeBr(
+                            r.arCandidate.data_teste ||
+                              r.arCandidate.data ||
+                              r.arCandidate.created_at,
+                            r.arCandidate.horario
+                          )}
                         </Button>
                       )
                     ) : (
