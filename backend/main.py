@@ -31,6 +31,7 @@ from models import (
     PermissaoGrupo,
     Loja,
     LojaGrupo,
+    ClienteGrupo,
 )
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
@@ -943,6 +944,7 @@ class GrupoUsuarioCreateSchema(BaseModel):
     permissoes: List[str] = []
     lojas: List[int] = []
     acesso_total_lojas: bool = False
+    clientes: List[int] = []
 
 # Permissões
 class PermissaoSistemaSchema(BaseModel):
@@ -969,6 +971,33 @@ class LojaCreateSchema(BaseModel):
     ativa: bool = True
 
 # --- CRUD Endpoints ---
+
+# Utilitários de acesso por cliente
+def _get_allowed_client_ids(db: Session, user: Usuario) -> Optional[List[int]]:
+    """Retorna lista de cliente_ids permitidos para o usuário via grupo.
+    Retorna None para acesso total (admin/willians ou sem grupo vinculado).
+    """
+    nivel = (user.nivel_acesso or "").lower()
+    if nivel in ["admin", "willians"]:
+        return None  # acesso total
+    if not user.grupo_id:
+        return None  # sem grupo específico => não filtra
+    links = db.query(ClienteGrupo).filter(ClienteGrupo.grupo_id == user.grupo_id).all()
+    ids = [lk.cliente_id for lk in links]
+    return ids
+
+class MyClientesResponse(BaseModel):
+    grupo_id: int | None
+    clientes: List[int]
+
+@app.get("/me/clientes", response_model=MyClientesResponse)
+def get_my_clientes(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    ids = _get_allowed_client_ids(db, current_user)
+    if ids is None:
+        # None significa acesso total; por compatibilidade retornamos todos IDs
+        all_ids = [c.id for c in db.query(Cliente.id).all()]
+        return {"grupo_id": current_user.grupo_id, "clientes": all_ids}
+    return {"grupo_id": current_user.grupo_id, "clientes": ids}
 
 @app.get("/usuarios/", response_model=List[UsuarioSchema])
 def listar_usuarios(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "read"))):
@@ -1148,6 +1177,14 @@ def create_grupo(grupo: GrupoUsuarioCreateSchema, db: Session = Depends(get_db),
                 acesso_total=grupo.acesso_total_lojas
             )
             db.add(db_loja_grupo)
+    # Processar clientes se fornecidos
+    if grupo.clientes:
+        for cliente_id in grupo.clientes:
+            db_cliente_grupo = ClienteGrupo(
+                grupo_id=db_grupo.id,
+                cliente_id=cliente_id,
+            )
+            db.add(db_cliente_grupo)
             
     db.commit()
     db.refresh(db_grupo)
@@ -1190,6 +1227,12 @@ def update_grupo(grupo_id: int, grupo: GrupoUsuarioCreateSchema, db: Session = D
         for loja_id in update_data["lojas"]:
             db_loja_grupo = LojaGrupo(grupo_id=grupo_id, loja_id=loja_id, acesso_total=grupo.acesso_total_lojas)
             db.add(db_loja_grupo)
+    # Atualizar clientes
+    if "clientes" in update_data:
+        db.query(ClienteGrupo).filter(ClienteGrupo.grupo_id == grupo_id).delete()
+        for cliente_id in update_data["clientes"]:
+            db_cliente_grupo = ClienteGrupo(grupo_id=grupo_id, cliente_id=cliente_id)
+            db.add(db_cliente_grupo)
 
     db.commit()
     db.refresh(db_grupo)
@@ -1252,10 +1295,17 @@ def create_loja(loja: LojaCreateSchema, db: Session = Depends(get_db)):
 # Finalizando o arquivo main.py com endpoints de clientes e outras entidades
 @app.get("/clientes/", response_model=List[ClienteSchema])
 def listar_clientes(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "read"))):
-    return db.query(Cliente).all()
+    allowed = _get_allowed_client_ids(db, current_user)
+    q = db.query(Cliente)
+    if allowed is not None and len(allowed) > 0:
+        q = q.filter(Cliente.id.in_(allowed))
+    elif allowed is not None and len(allowed) == 0:
+        return []
+    return q.all()
 
 @app.post("/clientes/", response_model=ClienteSchema)
 def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "create"))):
+    # Admin/Willians podem criar qualquer cliente; demais, apenas se pertencente ao seu escopo (após criação, será necessário associar no grupo via UI)
     novo = Cliente(**cliente.dict())
     db.add(novo)
     db.commit()
@@ -1392,8 +1442,14 @@ def criar_valor_material(material: ValorMaterialSchema, db: Session = Depends(ge
 
 # Testes de Loja
 @app.get("/testes-loja/", response_model=List[TesteLojaSchema])
-def listar_testes_loja(db: Session = Depends(get_db)):
-    return db.query(TesteLoja).all()
+def listar_testes_loja(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    allowed = _get_allowed_client_ids(db, current_user)
+    q = db.query(TesteLoja)
+    if allowed is not None and len(allowed) > 0:
+        q = q.filter(TesteLoja.cliente_id.in_(allowed))
+    elif allowed is not None and len(allowed) == 0:
+        return []
+    return q.all()
 
 @app.post("/testes-loja/", response_model=TesteLojaSchema)
 async def criar_teste_loja(
@@ -1404,8 +1460,13 @@ async def criar_teste_loja(
     observacao: str = Form(None),
     foto: UploadFile = File(None),
     video: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
 ):
+    # Verificar permissão por cliente_id
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     # Criar teste primeiro
     novo_teste = TesteLoja(
         data_teste=datetime.datetime.strptime(data_teste, "%Y-%m-%d").date(),
@@ -1453,12 +1514,17 @@ async def atualizar_teste_loja(
     observacao: str = Form(None),
     foto: UploadFile = File(None),
     video: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
 ):
     teste_db = db.query(TesteLoja).filter(TesteLoja.id == teste_id).first()
     if not teste_db:
         raise HTTPException(status_code=404, detail="Teste não encontrado")
     
+    # Checar acesso ao novo cliente_id
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
     # Atualizar dados básicos
     teste_db.data_teste = datetime.datetime.strptime(data_teste, "%Y-%m-%d").date()
     teste_db.cliente_id = cliente_id

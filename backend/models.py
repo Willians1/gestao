@@ -76,6 +76,12 @@ class LojaGrupo(Base):
     loja_id = Column(Integer, ForeignKey("lojas.id"), nullable=False)
     acesso_total = Column(Boolean, default=False)  # Se True, tem acesso a todas as lojas
 
+class ClienteGrupo(Base):
+    __tablename__ = "clientes_grupos"
+    id = Column(Integer, primary_key=True, index=True)
+    grupo_id = Column(Integer, ForeignKey("grupos_usuarios.id"), nullable=False)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
+
 class Cliente(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
