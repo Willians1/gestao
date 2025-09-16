@@ -27,6 +27,7 @@ export default function TestesModal({
   const [clientes, setClientes] = useState([]);
   const [testesList, setTestesList] = useState([]);
   const [testesArList, setTestesArList] = useState([]);
+  const [allowedClienteIds, setAllowedClienteIds] = useState([]);
   const [testesCount, setTestesCount] = useState(0);
   const [testesOkCount, setTestesOkCount] = useState(0);
   const [testesOffCount, setTestesOffCount] = useState(0);
@@ -73,11 +74,17 @@ export default function TestesModal({
       ]);
       const listGer = Array.isArray(dataGer) ? dataGer : [];
       const listAr = Array.isArray(dataAr) ? dataAr : [];
-      const allowedIds = (Array.isArray(dataMeClientes) ? dataMeClientes : [])
-        .map((c) => Number(c.id))
-        .filter((n) => Number.isFinite(n));
+      const allowedIds = Array.isArray(dataMeClientes?.clientes)
+        ? dataMeClientes.clientes.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+        : Array.isArray(dataMeClientes)
+          ? dataMeClientes
+              .map((c) => (typeof c === 'number' ? Number(c) : Number(c?.id)))
+              .filter((n) => Number.isFinite(n))
+          : [];
       const isAllowed = (t) =>
         allowedIds.length > 0 ? allowedIds.includes(Number(t.cliente_id)) : true;
+      // guardar ids permitidos para uso na renderização
+      setAllowedClienteIds(allowedIds);
       const listGerAllowed = listGer.filter(isAllowed);
       const listArAllowed = listAr.filter(isAllowed);
       const countGer = listGerAllowed.length;
@@ -124,7 +131,16 @@ export default function TestesModal({
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (mounted) setClientes(Array.isArray(data) ? data : []);
+        // A API retorna { grupo_id, clientes: [ids] }
+        const ids = Array.isArray(data?.clientes)
+          ? data.clientes.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+          : Array.isArray(data)
+          ? data
+              .map((c) => (typeof c === 'number' ? Number(c) : Number(c?.id)))
+              .filter((n) => Number.isFinite(n))
+          : [];
+        // Guardamos como objetos {id} para compatibilidade com getLojaNome
+        if (mounted) setClientes(ids.map((id) => ({ id })));
       } catch {
         if (mounted) setClientes([]);
       }
@@ -209,10 +225,21 @@ export default function TestesModal({
           <List>
             {(() => {
               // Montar a lista APENAS com os clientes permitidos retornados por /me/clientes
-              const ids = (Array.isArray(clientes) ? clientes : [])
+              // Priorizar os IDs vindos do estado `clientes`; se ainda não disponível, usar `allowedClienteIds`
+              const idsListFromState = (Array.isArray(clientes) ? clientes : [])
                 .map((c) => Number(c.id))
+                .filter((n) => Number.isFinite(n));
+              const baseIds = idsListFromState.length > 0 ? idsListFromState : allowedClienteIds;
+              let ids = (Array.isArray(baseIds) ? baseIds : [])
                 .filter((n) => Number.isFinite(n))
                 .sort((a, b) => a - b);
+              // Fallback: se ainda não temos IDs, derive dos testes já carregados
+              if (ids.length === 0) {
+                const fromTests = [...testesList, ...testesArList]
+                  .map((t) => Number(t.cliente_id))
+                  .filter((n) => Number.isFinite(n));
+                ids = Array.from(new Set(fromTests)).sort((a, b) => a - b);
+              }
 
               const rows = ids.map((idx) => {
                 const lojaName = getLojaNome(idx, clientes);
