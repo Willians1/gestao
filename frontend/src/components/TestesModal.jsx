@@ -61,29 +61,38 @@ export default function TestesModal({
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-      const [resGer, resAr] = await Promise.all([
+      const [resGer, resAr, resMeClientes] = await Promise.all([
         fetch(`${API}/testes-loja/`, { headers }),
         fetch(`${API}/testes-ar-condicionado/`, { headers }),
+        fetch(`${API}/me/clientes`, { headers }).catch(() => null),
       ]);
-      const [dataGer, dataAr] = await Promise.all([
+      const [dataGer, dataAr, dataMeClientes] = await Promise.all([
         resGer.ok ? resGer.json() : Promise.resolve([]),
         resAr.ok ? resAr.json() : Promise.resolve([]),
+        resMeClientes && resMeClientes.ok ? resMeClientes.json() : Promise.resolve([]),
       ]);
       const listGer = Array.isArray(dataGer) ? dataGer : [];
       const listAr = Array.isArray(dataAr) ? dataAr : [];
-      const countGer = listGer.length;
-      const countAr = listAr.length;
+      const allowedIds = (Array.isArray(dataMeClientes) ? dataMeClientes : [])
+        .map((c) => Number(c.id))
+        .filter((n) => Number.isFinite(n));
+      const isAllowed = (t) =>
+        allowedIds.length > 0 ? allowedIds.includes(Number(t.cliente_id)) : true;
+      const listGerAllowed = listGer.filter(isAllowed);
+      const listArAllowed = listAr.filter(isAllowed);
+      const countGer = listGerAllowed.length;
+      const countAr = listArAllowed.length;
       const total = countGer + countAr;
-      const offGer = listGer.filter(
+      const offGer = listGerAllowed.filter(
         (t) => (t.status || '').toString().toUpperCase() === 'OFF'
       ).length;
-      const offAr = listAr.filter(
+      const offAr = listArAllowed.filter(
         (t) => (t.status || '').toString().toUpperCase() === 'OFF'
       ).length;
       const off = offGer + offAr;
       const ok = Math.max(0, total - off);
-      setTestesList(listGer);
-      setTestesArList(listAr);
+      setTestesList(listGerAllowed);
+      setTestesArList(listArAllowed);
       setTestesCount(total);
       setTestesOffCount(off);
       setTestesOkCount(ok);
@@ -109,7 +118,8 @@ export default function TestesModal({
     (async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API}/clientes/`, {
+        // Buscar apenas os clientes permitidos para o usuário logado
+        const res = await fetch(`${API}/me/clientes`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) return;
@@ -198,11 +208,22 @@ export default function TestesModal({
 
           <List>
             {(() => {
-              const rows = Array.from({ length: 16 }).map((_, i) => {
-                const idx = i + 1;
+              // Montar a lista APENAS com os clientes permitidos retornados por /me/clientes
+              const ids = (Array.isArray(clientes) ? clientes : [])
+                .map((c) => Number(c.id))
+                .filter((n) => Number.isFinite(n))
+                .sort((a, b) => a - b);
+
+              const rows = ids.map((idx) => {
                 const lojaName = getLojaNome(idx, clientes);
-                const gerCandidate = getLatestBy(testesList, (t) => Number(t.cliente_id) === idx);
-                const arCandidate = getLatestBy(testesArList, (t) => Number(t.cliente_id) === idx);
+                const gerCandidate = getLatestBy(
+                  testesList,
+                  (t) => Number(t.cliente_id) === Number(idx)
+                );
+                const arCandidate = getLatestBy(
+                  testesArList,
+                  (t) => Number(t.cliente_id) === Number(idx)
+                );
                 const gerDays = gerCandidate
                   ? daysSince(
                       gerCandidate.data_teste || gerCandidate.data || gerCandidate.created_at
