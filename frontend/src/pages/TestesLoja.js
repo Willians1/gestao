@@ -49,6 +49,7 @@ export default function TestesLoja() {
   const navigate = useNavigate();
   const [testes, setTestes] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [meClientes, setMeClientes] = useState([]);
   const [filtros, setFiltros] = useState({
     dataInicio: '',
     dataFim: '',
@@ -88,7 +89,23 @@ export default function TestesLoja() {
   useEffect(() => {
     carregarTestes();
     carregarClientes();
+    carregarMeClientes();
   }, []);
+
+  const carregarMeClientes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/me/clientes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMeClientes(Array.isArray(data?.clientes) ? data.clientes : []);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  };
 
   // Abrir detalhes automaticamente se houver query param ?id=... e opcional ?tipo=gerador|ar
   const location = useLocation();
@@ -301,9 +318,11 @@ export default function TestesLoja() {
   // Função para abrir o diálogo com data e hora atuais
   const abrirDialogoNovoTeste = () => {
     setEditandoTeste(null);
+    // se houver exatamente um cliente permitido, fixar
+    const fixedClienteId = meClientes && meClientes.length === 1 ? Number(meClientes[0]) : '';
     setNovoTeste({
       data_teste: new Date().toISOString().split('T')[0],
-      cliente_id: '',
+      cliente_id: fixedClienteId,
       horario: getHorarioAtual(),
       foto: null,
       video: null,
@@ -657,28 +676,37 @@ export default function TestesLoja() {
                 />
               </Grid>
               <Grid item xs={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Cliente</InputLabel>
-                  <Select
-                    value={String(novoTeste.cliente_id || '')}
-                    onChange={(e) =>
-                      setNovoTeste((prev) => ({ ...prev, cliente_id: Number(e.target.value) }))
-                    }
+                {meClientes && meClientes.length === 1 ? (
+                  <TextField
                     label="Cliente"
-                  >
-                    <MenuItem value="" disabled>
-                      Selecione o cliente
-                    </MenuItem>
-                    {(clientes && clientes.length > 0
-                      ? clientes.map((c) => c.id)
-                      : Array.from({ length: 16 }, (_, i) => i + 1)
-                    ).map((id) => (
-                      <MenuItem key={id} value={String(id)}>
-                        {getClienteNome(id)}
+                    value={getClienteNome(Number(meClientes[0]))}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                  />
+                ) : (
+                  <FormControl fullWidth required>
+                    <InputLabel>Cliente</InputLabel>
+                    <Select
+                      value={String(novoTeste.cliente_id || '')}
+                      onChange={(e) =>
+                        setNovoTeste((prev) => ({ ...prev, cliente_id: Number(e.target.value) }))
+                      }
+                      label="Cliente"
+                    >
+                      <MenuItem value="" disabled>
+                        Selecione o cliente
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      {(clientes && clientes.length > 0
+                        ? clientes.map((c) => c.id)
+                        : Array.from({ length: 16 }, (_, i) => i + 1)
+                      ).map((id) => (
+                        <MenuItem key={id} value={String(id)}>
+                          {getClienteNome(id)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               </Grid>
               <Grid item xs={12}>
                 <FormControl fullWidth required>
