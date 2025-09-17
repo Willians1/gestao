@@ -81,6 +81,47 @@ Entidades usadas nas páginas: `cadastro_usuarios`, `clientes`, `contratos`, `de
   - Ajustes de polling de backup no Dashboard para evitar `no-use-before-define`.
 - Configuração: padronização da porta do frontend para 3001 nas tasks e `.env`.
 
+## Deploy no Render
+
+Este repositório contém um `render.yaml` com três serviços:
+
+- Backend (FastAPI): `gestao-backend` (runtime: python)
+- Frontend (React estático): `gestao-frontend` (runtime: static)
+- PHP (opcional): `gestao-php` (runtime: docker)
+
+URLs esperadas (podem variar conforme o Render provisiona):
+
+- Backend: <https://gestao-backend-XXXX.onrender.com/healthz>
+- Frontend: <https://gestao-frontend.onrender.com>
+
+Passos rápidos:
+
+1) Faça push na branch `main` (auto deploy habilitado no `render.yaml`).
+2) O Render vai executar:
+   - Backend: `pip install -r backend/requirements.txt` e iniciar `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`.
+   - Frontend: `cd frontend && npm ci && npm run build` e publicar `frontend/build`.
+3) Verifique os health checks e navegue até a URL do frontend.
+
+Variáveis de ambiente relevantes:
+
+- Backend
+  - `ALLOW_ORIGINS` inclui os domínios de dev e os domínios do Render do frontend.
+  - `SECRET_KEY`, `APP_VERSION`, `BUILD_TIME`, `RENDER_GIT_COMMIT` (preenchidos automaticamente na plataforma).
+- Frontend (serviço estático)
+  - `REACT_APP_API_URL` deve apontar para a URL pública do backend (já configurado em `render.yaml`).
+
+Observações importantes:
+
+- SQLite: o banco (`backend/gestao_obras.db`) fica no filesystem do container. Para produção com persistência, configure um Disk no Render e aponte o caminho do DB para esse volume.
+- SPA: o serviço estático já inclui rewrite `/* -> /index.html`.
+
+### Troubleshooting no Render
+
+- CORS no navegador: confira `ALLOW_ORIGINS` no backend e a URL do frontend.
+- 404 na SPA em refresh: verifique a regra de rewrite no `render.yaml` do serviço estático.
+- Frontend chama backend errado: valide `REACT_APP_API_URL` no serviço `gestao-frontend`.
+- Backend sem escrever no DB: SQLite pode estar somente leitura; use um Disk e ajuste o caminho do DB em `backend/database.py` se necessário.
+
 ## Permissões (resumo)
 
 - Páginas mapeadas e seus IDs base (leitura):
