@@ -202,6 +202,7 @@ allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
+    allow_origin_regex=r"https?://(localhost:(3000|3001|3005)|gestao-frontend[\w-]*\.onrender\.com)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -216,6 +217,12 @@ Preferimos usar um diretório de dados gravável (DATA_DIR) para evitar problema
 em plataformas com filesystem somente leitura para o código (ex.: Render).
 """
 DATA_DIR = os.getenv("DATA_DIR") or os.getenv("DB_DIR")
+# Valida o diretório informado via env; se falhar, tenta candidatos padrão
+if DATA_DIR:
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+    except Exception:
+        DATA_DIR = None  # força fallback
 if not DATA_DIR:
     # Tenta caminhos padrão
     for d in ("/var/data", "/data", os.path.join(os.path.dirname(__file__), "data"), "/tmp"):
