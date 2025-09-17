@@ -11,6 +11,8 @@ services:
       uvicorn backend.main:app --host 0.0.0.0 --port $PORT'
     autoDeploy: true
     envVars:
+      - key: DATA_DIR
+        value: /var/data
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
       - key: ALLOW_ORIGINS

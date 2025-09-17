@@ -210,8 +210,27 @@ app.add_middleware(
 # GZip para respostas mais leves
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# Configurar diretórios de upload
-UPLOAD_DIR = "uploads"
+"""Diretórios de dados graváveis
+
+Preferimos usar um diretório de dados gravável (DATA_DIR) para evitar problemas
+em plataformas com filesystem somente leitura para o código (ex.: Render).
+"""
+DATA_DIR = os.getenv("DATA_DIR") or os.getenv("DB_DIR")
+if not DATA_DIR:
+    # Tenta caminhos padrão
+    for d in ("/var/data", "/data", os.path.join(os.path.dirname(__file__), "data"), "/tmp"):
+        try:
+            os.makedirs(d, exist_ok=True)
+            DATA_DIR = d
+            break
+        except Exception:
+            continue
+if not DATA_DIR:
+    # Fallback: diretório do backend (pode falhar se for read-only)
+    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Configurar diretórios de upload (dentro do DATA_DIR)
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 TESTES_LOJA_DIR = os.path.join(UPLOAD_DIR, "testes-loja")
 TESTES_AR_CONDICIONADO_DIR = os.path.join(UPLOAD_DIR, "testes-ar-condicionado")
 
@@ -225,7 +244,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 # Diretório de backups
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
-BACKUP_DIR = os.path.join(BACKEND_DIR, "backups")
+BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 
 # Helpers de backup

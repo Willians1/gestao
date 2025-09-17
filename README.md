@@ -113,6 +113,7 @@ Variáveis de ambiente relevantes:
 Observações importantes:
 
 - SQLite: o banco (`backend/gestao_obras.db`) fica no filesystem do container. Para produção com persistência, configure um Disk no Render e aponte o caminho do DB para esse volume.
+- Diretório de dados: o backend detecta automaticamente um diretório gravável (DATA_DIR/DB_DIR, ou `/var/data`, `/data`, `backend/data`, `/tmp`). O SQLite, backups e uploads serão salvos lá. Em produção no Render, crie um Disk e exporte a variável `DATA_DIR` apontando para o mount.
 - SPA: o serviço estático já inclui rewrite `/* -> /index.html`.
 
 ### Troubleshooting no Render
