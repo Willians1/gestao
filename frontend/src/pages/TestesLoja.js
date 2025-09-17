@@ -22,13 +22,11 @@ import {
   Avatar,
   Chip,
   IconButton,
-  InputAdornment,
   Breadcrumbs,
   Link,
 } from '@mui/material';
 import {
   Add,
-  Search,
   PhotoCamera,
   CheckCircle,
   Cancel,
@@ -113,7 +111,6 @@ export default function TestesLoja() {
     try {
       const qp = new URLSearchParams(location.search);
       const id = qp.get('id');
-      const tipo = qp.get('tipo');
       if (id) {
         const found = testes.find((t) => String(t.id) === String(id));
         if (found) {
@@ -152,7 +149,7 @@ export default function TestesLoja() {
     } catch (e) {
       /* ignore */
     }
-  }, [location.search, testes]);
+  }, [location.search, location.pathname, navigate, testes]);
 
   const carregarTestes = async () => {
     try {

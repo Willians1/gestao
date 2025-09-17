@@ -22,13 +22,11 @@ import {
   Avatar,
   Chip,
   IconButton,
-  InputAdornment,
   Breadcrumbs,
   Link,
 } from '@mui/material';
 import {
   Add,
-  Search,
   PhotoCamera,
   CheckCircle,
   Cancel,

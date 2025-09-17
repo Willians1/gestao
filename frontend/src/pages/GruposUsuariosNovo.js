@@ -18,7 +18,6 @@ import {
   TextField,
   FormControlLabel,
   Checkbox,
-  useTheme,
   FormControl,
   InputLabel,
   Select,
@@ -37,16 +36,16 @@ import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 export default function GruposUsuarios() {
-  const theme = useTheme();
+  // const theme = useTheme();
   const navigate = useNavigate();
   const [grupos, setGrupos] = React.useState([]);
-  const [permissoes, setPermissoes] = React.useState([]);
+  // const [permissoes, setPermissoes] = React.useState([]);
   const [lojas, setLojas] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [openEditModal, setOpenEditModal] = React.useState(false);
   const [searchPermissao, setSearchPermissao] = React.useState('');
-  const [editingGrupo, setEditingGrupo] = React.useState(null);
+  const [, setEditingGrupo] = React.useState(null);
   const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'success' });
 
   const [form, setForm] = React.useState({
@@ -202,7 +201,7 @@ export default function GruposUsuarios() {
     { id: 1903, nome: 'Gerenciar Lojas', categoria: 'Lojas', checked: false },
   ];
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     try {
       const [gruposResp, permissoesResp, lojasResp] = await Promise.all([
         fetch(`${API}/grupos/`),
@@ -216,8 +215,8 @@ export default function GruposUsuarios() {
       }
 
       if (permissoesResp.ok) {
-        const permissoesData = await permissoesResp.json();
-        setPermissoes(permissoesData);
+        await permissoesResp.json();
+        // setPermissoes(permissoesData);
       }
 
       if (lojasResp.ok) {
@@ -227,11 +226,11 @@ export default function GruposUsuarios() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API]);
 
   React.useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleEditGrupo = async (grupo) => {
     setEditingGrupo(grupo);
@@ -455,6 +454,8 @@ export default function GruposUsuarios() {
           const permissaoCriar = permissoesSistema.find((p) => p.id === grupoBase + 4);
           if (permissaoCriar) permissoesParaAdicionar.push(permissaoCriar.id);
           break;
+        default:
+          break;
       }
     });
 
@@ -519,6 +520,8 @@ export default function GruposUsuarios() {
           // Remove apenas criar (mantém visualizar + editar + excluir)
           const permissaoCriar4 = permissoesSistema.find((p) => p.id === grupoBase + 4);
           if (permissaoCriar4) permissoesParaRemover.push(permissaoCriar4.id);
+          break;
+        default:
           break;
       }
     });

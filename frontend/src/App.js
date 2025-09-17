@@ -80,22 +80,7 @@ const LoginRoute = () => {
   }
 
   // Renderizar componente de login
-  try {
-    return <Login />;
-  } catch (error) {
-    console.error('Erro ao renderizar Login:', error);
-    return (
-      <div
-        style={{
-          padding: '20px',
-          textAlign: 'center',
-          color: 'red',
-        }}
-      >
-        Erro ao carregar página de login. Tente recarregar a página.
-      </div>
-    );
-  }
+  return <Login />;
 };
 
 function App() {

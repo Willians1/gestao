@@ -38,15 +38,15 @@ export default function Contratos() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/contratos', 'read');
+  // const canRead = hasPermission('/contratos', 'read');
   const canCreate = hasPermission('/contratos', 'create');
   const canUpdate = hasPermission('/contratos', 'update');
-  const canDelete = hasPermission('/contratos', 'delete');
+  // const canDelete = hasPermission('/contratos', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedContrato, setSelectedContrato] = React.useState(null);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [total, setTotal] = React.useState(0);
+  // const [total, setTotal] = React.useState(0);
   const [openModal, setOpenModal] = React.useState(false);
   const [form, setForm] = React.useState({
     numero: '',
@@ -126,11 +126,9 @@ export default function Contratos() {
         const data = await response.json();
         setRows(data);
         setFilteredRows(data);
-        setTotal(data.length);
       } else if (response.status === 401 || response.status === 403) {
         setRows([]);
         setFilteredRows([]);
-        setTotal(0);
       }
     } catch (error) {
       console.error('Erro ao carregar contratos:', error);
@@ -151,7 +149,7 @@ export default function Contratos() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = React.useCallback(() => {
     let filtered = [...rows];
 
     if (filters.searchText) {
@@ -203,16 +201,18 @@ export default function Contratos() {
 
     setFilteredRows(filtered);
     setPage(0);
-  };
-
-  React.useEffect(() => {
-    applyFilters();
   }, [filters, rows]);
 
   React.useEffect(() => {
-    loadPersisted();
-    loadClientes();
-  }, []);
+    applyFilters();
+  }, [applyFilters]);
+
+  const loadPersistedCb = React.useCallback(loadPersisted, [API, token]);
+  const loadClientesCb = React.useCallback(loadClientes, [API, token]);
+  React.useEffect(() => {
+    loadPersistedCb();
+    loadClientesCb();
+  }, [loadPersistedCb, loadClientesCb]);
 
   return (
     <Box

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { formatDateTimeBr } from '../utils/datetime';
 import ApiStatusBadge from '../components/ApiStatusBadge';
 import {
@@ -9,7 +9,7 @@ import {
   Typography,
   Avatar,
   Button,
-  Chip,
+  // Chip,
   Alert,
   Stack,
   Dialog,
@@ -36,13 +36,8 @@ export default function DashboardHome() {
   const { user, token, hasPermission, isAdmin, logout } = useAuth();
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const [testesCount, setTestesCount] = useState(null);
-  const [testesUrgent, setTestesUrgent] = useState(false);
-  const [testesList, setTestesList] = useState([]);
-  const [testesArList, setTestesArList] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [testesOffCount, setTestesOffCount] = useState(0);
-  const [testesOkCount, setTestesOkCount] = useState(0);
+  const [, setTestesCount] = useState(null);
+  // Contadores detalhados não exibidos nesta versão simplificada
   const [openTestesModal, setOpenTestesModal] = useState(false);
   const [hasPendentes, setHasPendentes] = useState(false);
   const [openPendentes, setOpenPendentes] = useState(false);
@@ -62,7 +57,7 @@ export default function DashboardHome() {
   });
   const [canceling, setCanceling] = useState(false);
   const [backupError, setBackupError] = useState('');
-  const isAuthenticated = useMemo(() => !!token, [token]);
+  // const isAuthenticated = useMemo(() => !!token, [token]);
 
   useEffect(() => {
     let mounted = true;
@@ -80,14 +75,11 @@ export default function DashboardHome() {
         const listGer = Array.isArray(dataGer) ? dataGer : [];
         const listAr = Array.isArray(dataAr) ? dataAr : [];
         const total = listGer.length + listAr.length;
-        const off =
-          listGer.filter((t) => (t.status || '').toString().toUpperCase() === 'OFF').length +
-          listAr.filter((t) => (t.status || '').toString().toUpperCase() === 'OFF').length;
-        const ok = Math.max(0, total - off);
+        // const ok = Math.max(0, total - off);
         setTestesCount(total);
-        setTestesOffCount(off);
-        setTestesOkCount(ok);
-        setTestesUrgent(off > 0);
+        // setTestesOffCount(off);
+        // setTestesOkCount(ok);
+        // flag visual de urgência: substituída por cálculo de pendências
 
         // Cálculo de pendências: atraso > 7 dias ou quinta-feira sem registro do dia
         const daysSince = (dateStr) => {
@@ -134,9 +126,8 @@ export default function DashboardHome() {
       } catch (e) {
         if (!mounted) return;
         setTestesCount(0);
-        setTestesOffCount(0);
-        setTestesOkCount(0);
-        setTestesUrgent(false);
+        // setTestesOffCount(0);
+        // setTestesOkCount(0);
         setHasPendentes(false);
       }
     })();
@@ -146,96 +137,7 @@ export default function DashboardHome() {
   }, [API]);
 
   // Backup: carregar status
-  const fetchBackupStatus = async () => {
-    if (!isAdmin?.()) return; // Somente admins
-    setLoadingBackup(true);
-    try {
-      const res = await fetch(`${API}/backup/status`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBackupStatus(data);
-        setBackupError('');
-        // Verifica se já existe progresso em andamento
-        try {
-          const pr = await fetch(`${API}/backup/progress`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          });
-          if (pr.ok) {
-            const jd = await pr.json();
-            if (jd?.running) {
-              setProgress(jd);
-              // inicia polling assíncrono
-              pollProgress();
-            } else if (jd?.percent >= 100 || jd?.canceled) {
-              setProgress(jd);
-            }
-          }
-        } catch {}
-      } else if (res.status === 401 || res.status === 403) {
-        setBackupStatus(null);
-        setBackupError('Você precisa estar logado como Administrador para executar backups.');
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      setLoadingBackup(false);
-    }
-  };
-
-  const fetchBackupsList = async () => {
-    try {
-      const res = await fetch(`${API}/backup/list`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBackups(Array.isArray(data) ? data : []);
-      }
-    } catch (e) {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    fetchBackupStatus();
-    // revalidar a cada 2 min
-    const t = setInterval(fetchBackupStatus, 120000);
-    return () => clearInterval(t);
-  }, [API, token]);
-
-  const runBackupNow = async () => {
-    if (runningBackup) return;
-    setRunningBackup(true);
-    try {
-      const res = await fetch(`${API}/backup/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (res.ok) {
-        // iniciar polling de progresso
-        pollProgress();
-        setBackupError('');
-      } else {
-        let msg = 'Falha ao iniciar backup';
-        try {
-          const j = await res.json();
-          if (j?.detail) msg = j.detail;
-        } catch {}
-        if (res.status === 401 || res.status === 403)
-          msg = 'Não autorizado. Faça login como Administrador.';
-        setBackupError(msg);
-      }
-    } finally {
-      setRunningBackup(false);
-    }
-  };
-
-  const pollProgress = async () => {
+  const callPollProgress = useCallback(async () => {
     setProgress({ running: true, percent: 0, processed: 0, total: 0, current: null });
     let done = false;
     while (!done) {
@@ -256,7 +158,99 @@ export default function DashboardHome() {
       } catch (e) {}
       await new Promise((r) => setTimeout(r, 800));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [API, token, backupsModalOpen]);
+
+  const fetchBackupStatus = useCallback(async () => {
+    if (!isAdmin?.()) return; // Somente admins
+    setLoadingBackup(true);
+    try {
+      const res = await fetch(`${API}/backup/status`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBackupStatus(data);
+        setBackupError('');
+        // Verifica se já existe progresso em andamento
+        try {
+          const pr = await fetch(`${API}/backup/progress`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (pr.ok) {
+            const jd = await pr.json();
+            if (jd?.running) {
+              setProgress(jd);
+              // inicia polling assíncrono
+              callPollProgress();
+            } else if (jd?.percent >= 100 || jd?.canceled) {
+              setProgress(jd);
+            }
+          }
+        } catch {}
+      } else if (res.status === 401 || res.status === 403) {
+        setBackupStatus(null);
+        setBackupError('Você precisa estar logado como Administrador para executar backups.');
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setLoadingBackup(false);
+    }
+  }, [API, token, isAdmin, callPollProgress]);
+
+  const fetchBackupsList = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/backup/list`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBackups(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [API, token]);
+
+  useEffect(() => {
+    fetchBackupStatus();
+    // revalidar a cada 2 min
+    const t = setInterval(fetchBackupStatus, 120000);
+    return () => clearInterval(t);
+  }, [fetchBackupStatus]);
+
+  const runBackupNow = async () => {
+    if (runningBackup) return;
+    setRunningBackup(true);
+    try {
+      const res = await fetch(`${API}/backup/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (res.ok) {
+        // iniciar polling de progresso
+        callPollProgress();
+        setBackupError('');
+      } else {
+        let msg = 'Falha ao iniciar backup';
+        try {
+          const j = await res.json();
+          if (j?.detail) msg = j.detail;
+        } catch {}
+        if (res.status === 401 || res.status === 403)
+          msg = 'Não autorizado. Faça login como Administrador.';
+        setBackupError(msg);
+      }
+    } finally {
+      setRunningBackup(false);
+    }
   };
+
+  // substituído por callPollProgress (acima)
 
   const cancelBackup = async () => {
     if (!progress.running || canceling) return;

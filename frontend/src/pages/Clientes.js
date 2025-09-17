@@ -31,7 +31,6 @@ export default function Clientes() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/clientes', 'read');
   const canCreate = hasPermission('/clientes', 'create');
   const canUpdate = hasPermission('/clientes', 'update');
   const canDelete = hasPermission('/clientes', 'delete');
@@ -62,7 +61,7 @@ export default function Clientes() {
   const [loading, setLoading] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const loadPersisted = async () => {
+  const loadPersisted = React.useCallback(async () => {
     setLoading(true);
     try {
       const resp = await fetch(`${API}/clientes/`, {
@@ -81,31 +80,34 @@ export default function Clientes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API, token]);
 
   // Função para filtrar clientes
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    setPage(0); // Reset para primeira página
+  const handleSearch = React.useCallback(
+    (term) => {
+      setSearchTerm(term);
+      setPage(0); // Reset para primeira página
 
-    if (!term.trim()) {
-      setFilteredRows(rows);
-      setTotal(rows.length);
-      return;
-    }
+      if (!term.trim()) {
+        setFilteredRows(rows);
+        setTotal(rows.length);
+        return;
+      }
 
-    const filtered = rows.filter((cliente) => {
-      const searchLower = term.toLowerCase();
-      return (
-        cliente.id?.toString().includes(searchLower) ||
-        cliente.nome?.toLowerCase().includes(searchLower) ||
-        cliente.cnpj?.toLowerCase().includes(searchLower)
-      );
-    });
+      const filtered = rows.filter((cliente) => {
+        const searchLower = term.toLowerCase();
+        return (
+          cliente.id?.toString().includes(searchLower) ||
+          cliente.nome?.toLowerCase().includes(searchLower) ||
+          cliente.cnpj?.toLowerCase().includes(searchLower)
+        );
+      });
 
-    setFilteredRows(filtered);
-    setTotal(filtered.length);
-  };
+      setFilteredRows(filtered);
+      setTotal(filtered.length);
+    },
+    [rows]
+  );
 
   const clearSearch = () => {
     setSearchTerm('');
@@ -215,14 +217,14 @@ export default function Clientes() {
 
   React.useEffect(() => {
     loadPersisted();
-  }, []);
+  }, [loadPersisted]);
 
   // Atualizar pesquisa quando os dados mudarem
   React.useEffect(() => {
     if (searchTerm) {
       handleSearch(searchTerm);
     }
-  }, [rows]);
+  }, [rows, searchTerm, handleSearch]);
 
   // Cabeçalho e ações responsivos
   return (

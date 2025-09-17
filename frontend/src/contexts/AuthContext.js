@@ -112,12 +112,6 @@ export const AuthProvider = ({ children }) => {
     const baseId = pageToPermId[page];
     if (!baseId) return true; // se não mapeado, liberar por ora
     const ids = permissions.ids || new Set();
-    const need = {
-      read: baseId,
-      update: baseId + 1, // seguir convenção: +2 editar, +3 excluir, +4 criar no layout atual, porém manter leitura no base
-      delete: baseId + 2,
-      create: baseId + 3,
-    };
     // Ajuste para convenção do arquivo de grupos (base, +2 editar, +3 excluir, +4 criar)
     const actionMap = {
       read: baseId,

@@ -105,6 +105,13 @@ export default function Layout({ children }) {
 
   const { isAdmin, hasPermission, user } = useAuth();
 
+  const role = (user?.nivel_acesso || '').toLowerCase();
+  const isRestricted =
+    role === 'manutenção' ||
+    role === 'manutencao' ||
+    role === 'visualização' ||
+    role === 'visualizacao';
+
   const menuItems = [
     {
       text: 'Dashboard',
@@ -113,13 +120,7 @@ export default function Layout({ children }) {
       active: location.pathname === '/' || location.pathname === '/dashboard',
     },
     // Financeiro: ocultar para Manutenção/Visualização
-    ...( (() => {
-      const role = (user?.nivel_acesso || '').toLowerCase();
-      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
-        return [];
-      }
-      return [{ text: 'Financeiro', icon: <AttachMoney />, route: '/financeiro' }];
-    })() ),
+    ...(!isRestricted ? [{ text: 'Financeiro', icon: <AttachMoney />, route: '/financeiro' }] : []),
     { text: 'Testes', icon: <Science />, route: '/testes-loja-menu' },
     { text: 'Relatórios', icon: <Assessment />, route: '/relatorios' },
     { text: 'Análises', icon: <TrendingUp />, route: '/analises' },
@@ -132,24 +133,14 @@ export default function Layout({ children }) {
     { text: 'Clientes', icon: <Business />, route: '/clientes' },
     { text: 'Contratos', icon: <Assignment />, route: '/contratos' },
     // Despesas: ocultar para Manutenção/Visualização
-    ...( (() => {
-      const role = (user?.nivel_acesso || '').toLowerCase();
-      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
-        return [];
-      }
-      return [{ text: 'Despesas', icon: <AttachMoney />, route: '/despesas' }];
-    })() ),
+    ...(!isRestricted ? [{ text: 'Despesas', icon: <AttachMoney />, route: '/despesas' }] : []),
     { text: 'Fornecedores', icon: <Store />, route: '/fornecedores' },
     { text: 'Orçamento de Obra', icon: <Construction />, route: '/orcamento-obra' },
     { text: 'Resumo Mensal', icon: <CalendarMonth />, route: '/resumo-mensal' },
     // Valor Materiais: ocultar para Manutenção/Visualização
-    ...( (() => {
-      const role = (user?.nivel_acesso || '').toLowerCase();
-      if (role === 'manutenção' || role === 'manutencao' || role === 'visualização' || role === 'visualizacao') {
-        return [];
-      }
-      return [{ text: 'Valor Materiais', icon: <Inventory />, route: '/valor-materiais' }];
-    })() ),
+    ...(!isRestricted
+      ? [{ text: 'Valor Materiais', icon: <Inventory />, route: '/valor-materiais' }]
+      : []),
   ];
 
   const handleDownloadBackup = async () => {

@@ -32,10 +32,10 @@ export default function OrcamentoObra() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/orcamento-obra', 'read');
+  // const canRead = hasPermission('/orcamento-obra', 'read');
   const canCreate = hasPermission('/orcamento-obra', 'create');
-  const canUpdate = hasPermission('/orcamento-obra', 'update');
-  const canDelete = hasPermission('/orcamento-obra', 'delete');
+  // const canUpdate = hasPermission('/orcamento-obra', 'update');
+  // const canDelete = hasPermission('/orcamento-obra', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedOrcamento, setSelectedOrcamento] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -55,7 +55,7 @@ export default function OrcamentoObra() {
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const loadPersisted = async () => {
+  const loadPersisted = React.useCallback(async () => {
     try {
       const resp = await fetch(`${API}/orcamento_obra/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -68,9 +68,9 @@ export default function OrcamentoObra() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API, token]);
 
-  const loadClientes = async () => {
+  const loadClientes = React.useCallback(async () => {
     try {
       const response = await fetch(`${API}/clientes/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -82,12 +82,12 @@ export default function OrcamentoObra() {
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
-  };
+  }, [API, token]);
 
   React.useEffect(() => {
     loadPersisted();
     loadClientes();
-  }, []);
+  }, [loadPersisted, loadClientes]);
 
   return (
     <Box

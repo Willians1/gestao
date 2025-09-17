@@ -45,11 +45,11 @@ function Despesas() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
-  const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/despesas', 'read');
-  const canCreate = hasPermission('/despesas', 'create');
-  const canUpdate = hasPermission('/despesas', 'update');
-  const canDelete = hasPermission('/despesas', 'delete');
+  const { token } = useAuth();
+  // const canRead = hasPermission('/despesas', 'read');
+  // const canCreate = hasPermission('/despesas', 'create');
+  // const canUpdate = hasPermission('/despesas', 'update');
+  // const canDelete = hasPermission('/despesas', 'delete');
 
   // Estados principais
   const [despesas, setDespesas] = React.useState([]);
@@ -57,8 +57,8 @@ function Despesas() {
 
   // Estados para modais
   const [openModal, setOpenModal] = React.useState(false);
-  const [openEditModal, setOpenEditModal] = React.useState(false);
-  const [editingDespesa, setEditingDespesa] = React.useState(null);
+  // const [openEditModal, setOpenEditModal] = React.useState(false);
+  // const [editingDespesa, setEditingDespesa] = React.useState(null);
 
   // Estados para upload de Excel
   const [openUploadModal, setOpenUploadModal] = React.useState(false);
@@ -84,7 +84,7 @@ function Despesas() {
   });
 
   // Carregar despesas
-  const loadDespesas = async () => {
+  const loadDespesas = React.useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/despesas`, {
@@ -105,11 +105,11 @@ function Despesas() {
       });
     }
     setLoading(false);
-  };
+  }, [token]);
 
   React.useEffect(() => {
     loadDespesas();
-  }, []);
+  }, [loadDespesas]);
 
   // Handlers do formulário
   const handleInputChange = (e) => {

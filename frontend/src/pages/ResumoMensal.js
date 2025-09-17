@@ -28,10 +28,10 @@ export default function ResumoMensal() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/resumo-mensal', 'read');
+  // const canRead = hasPermission('/resumo-mensal', 'read');
   const canCreate = hasPermission('/resumo-mensal', 'create');
-  const canUpdate = hasPermission('/resumo-mensal', 'update');
-  const canDelete = hasPermission('/resumo-mensal', 'delete');
+  // const canUpdate = hasPermission('/resumo-mensal', 'update');
+  // const canDelete = hasPermission('/resumo-mensal', 'delete');
   const [rows, setRows] = React.useState([]);
   const [selectedResumo, setSelectedResumo] = React.useState(null);
   const [page, setPage] = React.useState(0);
@@ -42,7 +42,7 @@ export default function ResumoMensal() {
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const loadPersisted = async () => {
+  const loadPersisted = React.useCallback(async () => {
     try {
       const resp = await fetch(`${API}/resumo_mensal/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -55,11 +55,11 @@ export default function ResumoMensal() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API, token]);
 
   React.useEffect(() => {
     loadPersisted();
-  }, []);
+  }, [loadPersisted]);
 
   return (
     <Box

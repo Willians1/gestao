@@ -42,7 +42,7 @@ export default function Fornecedores() {
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const loadPersisted = async () => {
+  const loadPersisted = React.useCallback(async () => {
     try {
       const resp = await fetch(`${API}/fornecedores/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -55,11 +55,11 @@ export default function Fornecedores() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API, token]);
 
   React.useEffect(() => {
     loadPersisted();
-  }, []);
+  }, [loadPersisted]);
 
   return (
     <Box

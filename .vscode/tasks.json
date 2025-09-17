@@ -15,9 +15,9 @@
 			"group": "build"
 		},
 		{
-			"label": "Frontend: start (porta 3005)",
+			"label": "Frontend: start (porta 3001)",
 			"type": "shell",
-			"command": "cd frontend; $env:PORT=3000; npm start",
+			"command": "cd frontend; $env:PORT=3001; npm start",
 			"isBackground": true,
 			"group": "build"
 		},
@@ -32,7 +32,7 @@
 			"label": "dev: all",
 			"dependsOn": [
 				"Backend: uvicorn (venv)",
-				"Frontend: start (porta 3005)"
+				"Frontend: start (porta 3001)"
 			],
 			"dependsOrder": "parallel"
 		}

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { API_BASE } from '../api';
 import {
   Box,
@@ -23,11 +23,8 @@ import {
   Stack,
   Snackbar,
   Alert,
-  FormGroup,
-  FormControlLabel,
   Checkbox,
   Divider,
-  Grid,
 } from '@mui/material';
 import {
   Add,
@@ -51,7 +48,6 @@ const NIVEL_OPTIONS = [
 
 export default function CadastroUsuarios() {
   const { token, hasPermission } = useAuth();
-  const navigate = useNavigate();
   const canCreate = hasPermission('/cadastro-usuarios', 'create');
   const canUpdate = hasPermission('/cadastro-usuarios', 'update');
   const canDelete = hasPermission('/cadastro-usuarios', 'delete');
@@ -148,7 +144,7 @@ export default function CadastroUsuarios() {
     [token]
   );
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -172,14 +168,14 @@ export default function CadastroUsuarios() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   // Carrega usuários apenas quando houver token para evitar 401 na primeira renderização
   useEffect(() => {
     if (token) {
       fetchUsers();
     }
-  }, [token]);
+  }, [token, fetchUsers]);
 
   const openPermissionsDialog = async (user) => {
     if (!user.grupo_id) {

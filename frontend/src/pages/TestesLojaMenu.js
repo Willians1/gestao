@@ -10,12 +10,10 @@ import {
   Breadcrumbs,
   Link,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { Science, AcUnit, Home, NavigateNext } from '@mui/icons-material';
 
 export default function TestesLojaMenu() {
-  const theme = useTheme();
   const navigate = useNavigate();
 
   const testesCards = [

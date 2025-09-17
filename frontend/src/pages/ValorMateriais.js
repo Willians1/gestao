@@ -51,7 +51,7 @@ export default function ValorMateriais() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { token, hasPermission } = useAuth();
-  const canRead = hasPermission('/valor-materiais', 'read');
+  // const canRead = hasPermission('/valor-materiais', 'read');
   const canCreate = hasPermission('/valor-materiais', 'create');
   const canUpdate = hasPermission('/valor-materiais', 'update');
   const canDelete = hasPermission('/valor-materiais', 'delete');
@@ -107,7 +107,7 @@ export default function ValorMateriais() {
 
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-  const loadPersisted = async () => {
+  const loadPersisted = React.useCallback(async () => {
     try {
       const resp = await fetch(`${API}/valor_materiais/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -194,9 +194,9 @@ export default function ValorMateriais() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API, token, busca, filtros, ordenacao]);
 
-  const loadImportedFiles = async () => {
+  const loadImportedFiles = React.useCallback(async () => {
     try {
       const resp = await fetch(`${API}/uploads?entidade=valor_materiais`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -207,9 +207,9 @@ export default function ValorMateriais() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [API, token]);
 
-  const loadClientes = async () => {
+  const loadClientes = React.useCallback(async () => {
     try {
       const response = await fetch(`${API}/clientes/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -221,7 +221,7 @@ export default function ValorMateriais() {
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
-  };
+  }, [API, token]);
 
   const handleFileUpload = async () => {
     if (!selectedFile) {
@@ -370,17 +370,17 @@ export default function ValorMateriais() {
   // Efeito para recarregar dados quando busca, filtros ou ordenação mudam
   React.useEffect(() => {
     loadPersisted();
-  }, [busca, filtros, ordenacao]);
+  }, [loadPersisted]);
 
   // Carregar clientes na inicialização
   React.useEffect(() => {
     loadClientes();
-  }, []);
+  }, [loadClientes]);
 
   React.useEffect(() => {
     loadPersisted();
     loadImportedFiles();
-  }, []);
+  }, [loadPersisted, loadImportedFiles]);
 
   // Voltar na navegação
 

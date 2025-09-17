@@ -135,10 +135,10 @@ export default function TestesModal({
         const ids = Array.isArray(data?.clientes)
           ? data.clientes.map((n) => Number(n)).filter((n) => Number.isFinite(n))
           : Array.isArray(data)
-          ? data
-              .map((c) => (typeof c === 'number' ? Number(c) : Number(c?.id)))
-              .filter((n) => Number.isFinite(n))
-          : [];
+            ? data
+                .map((c) => (typeof c === 'number' ? Number(c) : Number(c?.id)))
+                .filter((n) => Number.isFinite(n))
+            : [];
         // Guardamos como objetos {id} para compatibilidade com getLojaNome
         if (mounted) setClientes(ids.map((id) => ({ id })));
       } catch {
