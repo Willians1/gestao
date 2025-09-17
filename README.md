@@ -24,7 +24,7 @@ Aplicação full-stack para gestão (Cadastros, Clientes, Contratos, Despesas, F
 Usando tasks do VS Code:
 
 1) Terminal > Run Task… > `Instalar backend (venv)`
-2) Terminal > Run Task… > `dev: all` (sobe backend em 8000 e frontend em 3005)
+2) Terminal > Run Task… > `dev: all` (sobe backend em 8000 e frontend em 3001)
 
 Ou manualmente:
 
@@ -36,12 +36,12 @@ uvicorn backend.main:app --reload
 
 # Frontend (em outro terminal)
 cd frontend
-$env:PORT=3005; npm start
+$env:PORT=3001; npm start
 ```
 
 URLs:
 
-- Frontend: <http://localhost:3005>
+- Frontend: <http://localhost:3001>
 - API docs: <http://localhost:8000/docs>
 
 ## Funcionalidades prontas
@@ -69,6 +69,17 @@ Entidades usadas nas páginas: `cadastro_usuarios`, `clientes`, `contratos`, `de
 - CORS configurado para `http://localhost:3000`, `3001` e `3005` (dev) e domínios Render.
 - O frontend usa `REACT_APP_API_URL` definido em `frontend/.env` (padrão: `http://localhost:8000`).
 - Login de teste: usuário `admin`, senha `admin`. Este usuário possui nível que libera todas as permissões.
+
+## Changelog
+
+### 2025-09-17
+
+- Frontend: limpeza completa de warnings (ESLint/Prettier) nas páginas principais (Dashboard, Usuários, Grupos, Clientes, Contratos, Despesas, Fornecedores, Orçamento de Obra, Resumo Mensal, Valor Materiais, Testes) com:
+  - Padronização de loaders com `useCallback` e ajustes das dependências de `useEffect`.
+  - Remoção de imports/variáveis não utilizados e pequenos ajustes de formatação.
+  - Correção de casos `switch` com `default` em `GruposUsuariosNovo`.
+  - Ajustes de polling de backup no Dashboard para evitar `no-use-before-define`.
+- Configuração: padronização da porta do frontend para 3001 nas tasks e `.env`.
 
 ## Permissões (resumo)
 
