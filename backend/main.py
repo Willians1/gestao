@@ -235,6 +235,42 @@ ensure_willians_user()
 
 app = FastAPI()
 
+# Seed opcional de clientes e lojas (loja01..loja16) no start do app
+def _ensure_min_clients(n: int = 16):
+    db = SessionLocal()
+    try:
+        count = db.query(Cliente).count()
+        to_create = max(0, n - count)
+        if to_create > 0:
+            start_idx = count + 1
+            for i in range(start_idx, start_idx + to_create):
+                nome = f"Cliente {i:02d}"
+                db.add(Cliente(nome=nome))
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+def ensure_lojas_users():
+    """Garante usuários loja01..loja16 e grupos/vínculos correspondentes.
+
+    Controlado por SEED_LOJAS ("1" por padrão). Em produção, defina SEED_LOJAS=0
+    para evitar alterações automáticas.
+    """
+    if os.getenv("SEED_LOJAS", "1") != "1":
+        return
+    try:
+        _ensure_min_clients(16)
+        # Import tardio para evitar custo no tempo de import e dependências circulares
+        from seed_manutencao_lojas import run as seed_lojas_run  # type: ignore
+        seed_lojas_run()
+    except Exception:
+        # Não derruba o app se o seed falhar
+        pass
+
+ensure_lojas_users()
+
 # Registro de início da aplicação para cálculo de uptime
 APP_START_TIME_UTC = datetime.datetime.utcnow()
 
