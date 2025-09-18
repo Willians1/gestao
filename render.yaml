@@ -26,6 +26,12 @@ services:
         value: 1.0.0
     healthCheckPath: /healthz
 
+databases:
+  - name: gestao-postgres
+    databaseName: gestao
+    plan: free
+    user: gestao
+
   - type: web
     name: gestao-php
     runtime: docker

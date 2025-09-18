@@ -193,3 +193,24 @@ postgresql+psycopg://postgres:postgres@localhost:5432/gestao_local
 ```
 
 Sem `DATABASE_URL`, o app usa SQLite automaticamente.
+
+### Migração de dados: SQLite → PostgreSQL
+
+O repositório inclui um script para migrar dados do SQLite para o Postgres preservando IDs e ajustando sequences:
+
+1) Garanta que o Postgres de destino esteja acessível e que `DATABASE_URL` aponte para ele.
+2) Rode a migração informando o arquivo SQLite de origem (se não informar, o script tenta descobrir automaticamente):
+
+```powershell
+$env:DATABASE_URL = "postgresql+psycopg://<user>:<pass>@<host>:<port>/<db>"
+python backend/migrate_sqlite_to_postgres.py --sqlite backend/gestao_obras.db --truncate
+```
+
+Notas:
+
+- Use `--truncate` quando quiser limpar o destino antes de inserir (recomendado em bancos vazios ou recém-criados).
+- Após a migração, valide no backend (em produção/local) se os usuários padrão existem e conseguem logar:
+  - admin/admin
+  - willians/willians
+  - loja01/loja01 … loja16/loja16
+- Se necessário, execute também: `python backend/seed_initial_users_and_clients.py` para garantir 16 clientes e os usuários de manutenção.
