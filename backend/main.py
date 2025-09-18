@@ -156,6 +156,46 @@ def ensure_system_permissions():
 
 ensure_system_permissions()
 
+# Garante existência do usuário admin no mesmo DB do backend
+def ensure_admin_user():
+    db = SessionLocal()
+    try:
+        admin = db.query(Usuario).filter(Usuario.username == "admin").first()
+        desired_hash = hashlib.sha256("admin".encode()).hexdigest()
+        allow_reset = (os.getenv("SEED_ADMIN", "1") == "1")
+        if not admin:
+            # Criar admin padrão para ambiente de desenvolvimento
+            admin = Usuario(
+                username="admin",
+                hashed_password=desired_hash,
+                nome="Administrador",
+                email="admin@thors.com",
+                nivel_acesso="Admin",
+                ativo=True,
+            )
+            db.add(admin)
+            db.commit()
+        else:
+            # Garantir que esteja ativo e com nível adequado; se senha diferente, alinhar para facilitar login
+            changed = False
+            if not admin.ativo:
+                admin.ativo = True; changed = True
+            # Normalizar nível de acesso
+            if (admin.nivel_acesso or "").lower() not in {"admin", "willians"}:
+                admin.nivel_acesso = "Admin"; changed = True
+            # Se a senha não for 'admin', ajustar para permitir acesso imediato (ambiente dev)
+            if allow_reset and admin.hashed_password != desired_hash:
+                admin.hashed_password = desired_hash; changed = True
+            if changed:
+                db.add(admin)
+                db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+ensure_admin_user()
+
 app = FastAPI()
 
 # Registro de início da aplicação para cálculo de uptime
