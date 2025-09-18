@@ -70,6 +70,20 @@ Entidades usadas nas páginas: `cadastro_usuarios`, `clientes`, `contratos`, `de
 - O frontend usa `REACT_APP_API_URL` definido em `frontend/.env` (padrão: `http://localhost:8000`).
 - Login de teste: usuário `admin`, senha `admin`. Este usuário possui nível que libera todas as permissões.
 
+### Usuários padrão (seed)
+
+Para agilizar o start em desenvolvimento, o backend garante os seguintes usuários no mesmo banco usado pela API:
+
+- admin / admin — nível Admin (acesso total)
+- willians / willians — nível Willians (tratado como admin)
+- loja01 … loja16 — senhas iguais ao próprio login (ex.: loja07/loja07), nível "Manutenção", vinculados a clientes 1..16
+
+Notas:
+
+- A criação/normalização do usuário admin é controlada pela variável de ambiente `SEED_ADMIN` ("1" por padrão em dev). Em produção, defina `SEED_ADMIN=0` para evitar reset de senha automático.
+- A criação/normalização do usuário `willians` é controlada por `SEED_WILLIANS` ("1" por padrão). Defina `SEED_WILLIANS=0` se não desejar esse usuário automático.
+- As lojas 01..16 são criadas/atualizadas pelo script `backend/seed_initial_users_and_clients.py`, que também garante 16 clientes de exemplo e os respectivos grupos de manutenção.
+
 ## Changelog
 
 ### 2025-09-17

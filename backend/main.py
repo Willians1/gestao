@@ -196,6 +196,43 @@ def ensure_admin_user():
 
 ensure_admin_user()
 
+# Garante existência do usuário Willians (nível especial tratado como admin)
+def ensure_willians_user():
+    if os.getenv("SEED_WILLIANS", "1") != "1":
+        return
+    db = SessionLocal()
+    try:
+        user = db.query(Usuario).filter(Usuario.username == "willians").first()
+        desired_hash = hashlib.sha256("willians".encode()).hexdigest()
+        if not user:
+            user = Usuario(
+                username="willians",
+                hashed_password=desired_hash,
+                nome="Willians",
+                email="willians@thors.com",
+                nivel_acesso="willians",  # tratado como admin nas verificações
+                ativo=True,
+            )
+            db.add(user)
+            db.commit()
+        else:
+            changed = False
+            if not user.ativo:
+                user.ativo = True; changed = True
+            if (user.nivel_acesso or "").lower() != "willians":
+                user.nivel_acesso = "willians"; changed = True
+            if user.hashed_password != desired_hash:
+                user.hashed_password = desired_hash; changed = True
+            if changed:
+                db.add(user)
+                db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+ensure_willians_user()
+
 app = FastAPI()
 
 # Registro de início da aplicação para cálculo de uptime
