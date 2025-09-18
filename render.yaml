@@ -14,6 +14,10 @@ services:
     envVars:
       - key: DATA_DIR
         value: /var/data
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gestao-postgres
+          property: connectionString
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
       - key: ALLOW_ORIGINS

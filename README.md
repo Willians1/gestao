@@ -156,3 +156,40 @@ No backend, endpoints GET exigem ao menos o ID base (leitura). Endpoints POST/PU
 - Importação de linhas para as tabelas de domínio (endpoints batch)
 - Autenticação no frontend e proteção de rotas
 - Testes automatizados e lint/format (ESLint/Prettier)
+
+---
+
+## PostgreSQL (produção e sync local)
+
+O backend também funciona com `DATABASE_URL` (PostgreSQL), com fallback automático para SQLite quando a variável não está definida. No Render, o `render.yaml` já injeta `DATABASE_URL` via serviço de banco `gestao-postgres`.
+
+Dump/restore usando Docker (sem instalar psql):
+
+```powershell
+# 1) Dump de produção para arquivo prod.dump
+$env:PGHOST = 'SEU_HOST'
+$env:PGUSER = 'SEU_USER'
+$env:PGPASSWORD = 'SEU_PASS'
+$env:PGDATABASE = 'SEU_DB'
+
+docker run --rm -v ${PWD}:/backup -e PGPASSWORD=$env:PGPASSWORD postgres:16 `
+  pg_dump -h $env:PGHOST -U $env:PGUSER -d $env:PGDATABASE -Fc -f /backup/prod.dump
+
+# 2) Restore no Postgres local
+$env:LOCAL_DB = 'gestao_local'
+$env:LOCAL_USER = 'postgres'
+$env:LOCAL_PASS = 'postgres'
+
+docker run --rm -v ${PWD}:/backup -e PGPASSWORD=$env:LOCAL_PASS postgres:16 `
+  sh -c "dropdb -h host.docker.internal -U $env:LOCAL_USER --if-exists $env:LOCAL_DB && `
+         createdb -h host.docker.internal -U $env:LOCAL_USER $env:LOCAL_DB && `
+         pg_restore -h host.docker.internal -U $env:LOCAL_USER -d $env:LOCAL_DB --clean --no-owner /backup/prod.dump"
+```
+
+Para desenvolver localmente com Postgres, defina `DATABASE_URL` (por exemplo):
+
+```text
+postgresql+psycopg://postgres:postgres@localhost:5432/gestao_local
+```
+
+Sem `DATABASE_URL`, o app usa SQLite automaticamente.
