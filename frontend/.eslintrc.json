@@ -1,11 +1,7 @@
 {
   "root": true,
   "env": { "browser": true, "es2021": true, "node": true },
-  "extends": [
-    "react-app",
-    "react-app/jest",
-    "plugin:prettier/recommended"
-  ],
+  "extends": ["react-app", "react-app/jest", "plugin:prettier/recommended"],
   "settings": { "react": { "version": "detect" } },
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],

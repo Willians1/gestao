@@ -1,4 +1,8 @@
 from fastapi import File, UploadFile, FastAPI, Depends, HTTPException, status, Form, BackgroundTasks
+import io
+from typing import Optional, List
+import datetime
+from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
@@ -34,9 +38,6 @@ from models import (
     ClienteGrupo,
 )
 from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
-from jose import jwt, JWTError
-import datetime
 import asyncio
 import os
 import pandas as pd
@@ -865,6 +866,13 @@ class TabelaImportadaSchema(BaseModel):
     criado_em: Optional[datetime.datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
+# --- Schemas para Uploads ---
+class UploadResult(BaseModel):
+    upload_id: int
+    filename: str
+    entidade: str
+    records_imported: int = 0
+
 class TesteLojaSchema(BaseModel):
     id: int | None = None
     data_teste: datetime.date
@@ -1252,6 +1260,95 @@ def get_current_user_info(current_user: Usuario = Depends(get_current_user)):
         is_admin=(current_user.nivel_acesso.lower() in ["admin", "willians"])
     )
 
+# --- Uploads genéricos de arquivos (Excel e outros) ---
+@app.post("/uploads/{entidade}", response_model=UploadResult)
+async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    # Persistir arquivo no banco (ArquivosImportados)
+    content = await file.read()
+    up = ArquivoImportado(
+        nome=file.filename,
+        entidade=entidade,
+        conteudo=content,
+        tamanho=len(content),
+    )
+    db.add(up)
+    db.commit()
+    db.refresh(up)
+
+    # Opcional: se for valor_materiais, tentar parse simples (CSV/XLSX)
+    imported = 0
+    if entidade == "valor_materiais" and file.filename.lower().endswith((".csv", ".xlsx", ".xls")):
+        try:
+            import pandas as pd  # type: ignore
+            buf = io.BytesIO(content)
+            if file.filename.lower().endswith('.csv'):
+                df = pd.read_csv(buf)
+            else:
+                df = pd.read_excel(buf)
+            # Normalização de colunas esperadas
+            cols = {c.lower().strip(): c for c in df.columns}
+            def pick(row, key, default=None):
+                # aceita chave exata ou variações comuns
+                candidates = [key, key.replace('_', ' '), key.replace('_', ''), key.replace('_', '-')]
+                for k in candidates:
+                    if k in cols:
+                        return row[cols[k]]
+                return default
+            for _, row in df.iterrows():
+                vm = ValorMaterial(
+                    cliente_id=None,
+                    descricao_produto=str(pick(row, 'descricao_produto', pick(row, 'descricao', '')) or ''),
+                    marca=str(pick(row, 'marca', '') or ''),
+                    unidade_medida=str(pick(row, 'unidade_medida', pick(row, 'unidade', '')) or ''),
+                    valor_unitario=float(pick(row, 'valor_unitario', pick(row, 'valor', 0)) or 0),
+                    estoque_atual=int(pick(row, 'estoque_atual', 0) or 0),
+                    estoque_minimo=int(pick(row, 'estoque_minimo', 0) or 0),
+                    data_ultima_entrada=str(pick(row, 'data_ultima_entrada', '') or ''),
+                    responsavel=str(pick(row, 'responsavel', '') or ''),
+                    fornecedor=str(pick(row, 'fornecedor', '') or ''),
+                    valor=float(pick(row, 'valor', 0) or 0),
+                    localizacao=str(pick(row, 'localizacao', '') or ''),
+                    observacoes=str(pick(row, 'observacoes', '') or ''),
+                )
+                db.add(vm)
+                imported += 1
+            db.commit()
+        except Exception:
+            # Se falhar o parse, não impede o upload; apenas segue com 0 importados
+            db.rollback()
+            imported = 0
+
+    return UploadResult(upload_id=up.id, filename=up.nome, entidade=up.entidade, records_imported=imported)
+
+@app.get("/uploads")
+def list_uploads(entidade: Optional[str] = None, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    q = db.query(ArquivoImportado)
+    if entidade:
+        q = q.filter(ArquivoImportado.entidade == entidade)
+    items = q.order_by(ArquivoImportado.id.desc()).all()
+    return [
+        {
+            "id": it.id,
+            "nome": it.nome,
+            "entidade": it.entidade,
+            "tamanho": it.tamanho,
+            "criado_em": it.criado_em,
+        }
+        for it in items
+    ]
+
+@app.get("/uploads/{upload_id}/download")
+def download_upload(upload_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    up = db.query(ArquivoImportado).filter(ArquivoImportado.id == upload_id).first()
+    if not up:
+        raise HTTPException(status_code=404, detail="Upload não encontrado")
+    headers = {"Content-Disposition": f"attachment; filename={up.nome}"}
+    return StreamingResponse(io.BytesIO(up.conteudo), headers=headers)
+
+# Compat de rota específica usada no frontend para valor_materiais
+@app.post("/upload_valor_materiais", response_model=UploadResult)
+async def upload_valor_materiais(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    return await upload_entidade("valor_materiais", file, db, current_user)
 @app.get("/me/permissoes")
 def get_my_permissions(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retorna permissões efetivas do usuário (via grupo)."""

@@ -26,7 +26,9 @@ export default function Login() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Usuário ou senha inválidos' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ detail: 'Usuário ou senha inválidos' }));
         throw new Error(errorData.detail);
       }
 
@@ -138,7 +140,9 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           {error && <p style={styles.error}>{error}</p>}
           <div style={styles.inputGroup}>
-            <label htmlFor="username" style={styles.label}>Usuário</label>
+            <label htmlFor="username" style={styles.label}>
+              Usuário
+            </label>
             <input
               id="username"
               type="text"
@@ -149,7 +153,9 @@ export default function Login() {
             />
           </div>
           <div style={styles.inputGroup}>
-            <label htmlFor="password" style={styles.label}>Senha</label>
+            <label htmlFor="password" style={styles.label}>
+              Senha
+            </label>
             <input
               id="password"
               type="password"

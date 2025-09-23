@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React, { useEffect, useState, useCallback } from 'react';
 import { formatDateTimeBr } from '../utils/datetime';
 import ApiStatusBadge from '../components/ApiStatusBadge';
@@ -9,9 +10,6 @@ import {
   Typography,
   Avatar,
   Button,
-  // Chip,
-  Alert,
-  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -20,8 +18,6 @@ import {
   ListItem,
   ListItemText,
   Checkbox,
-  CircularProgress,
-  LinearProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -35,6 +31,29 @@ export default function DashboardHome() {
   const navigate = useNavigate();
   const { user, token, hasPermission, isAdmin, logout } = useAuth();
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  // Tamanho fixo dos cards 150x150 px
+  const CARD_HEIGHT = 150;
+  // Área de ação bem compacta para caber no card 150x150 com avatar 75
+  const ACTION_AREA_HEIGHT = { xs: 14, sm: 14 };
+  // Ajuste dinâmico de fonte para títulos longos (2 linhas)
+  const getTitleSx = (title) => {
+    const len = (title || '').length;
+    let fontSize = { xs: '1.1rem', sm: '1.2rem' };
+    if (len > 14) fontSize = { xs: '1.05rem', sm: '1.15rem' };
+    if (len > 22) fontSize = { xs: '1rem', sm: '1.1rem' };
+    return {
+      fontWeight: 800,
+      fontSize,
+      lineHeight: 1.2,
+      display: '-webkit-box',
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+  // Altura do título reduzida para acomodar avatar 75 e margin 20
+  height: { xs: 28, sm: 28 },
+  textAlign: 'center',
+    };
+  };
 
   const [, setTestesCount] = useState(null);
   // Contadores detalhados não exibidos nesta versão simplificada
@@ -42,21 +61,21 @@ export default function DashboardHome() {
   const [hasPendentes, setHasPendentes] = useState(false);
   const [openPendentes, setOpenPendentes] = useState(false);
   // Backup
-  const [backupStatus, setBackupStatus] = useState(null);
-  const [loadingBackup, setLoadingBackup] = useState(false);
+  const [_backupStatus, setBackupStatus] = useState(null);
+  const [_loadingBackup, setLoadingBackup] = useState(false);
   const [backupsModalOpen, setBackupsModalOpen] = useState(false);
   const [backups, setBackups] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState(new Set());
-  const [runningBackup, setRunningBackup] = useState(false);
-  const [progress, setProgress] = useState({
+  const [_runningBackup, _setRunningBackup] = useState(false);
+  const [_progress, _setProgress] = useState({
     running: false,
     percent: 0,
     processed: 0,
     total: 0,
     current: null,
   });
-  const [canceling, setCanceling] = useState(false);
-  const [backupError, setBackupError] = useState('');
+  const [_canceling, _setCanceling] = useState(false);
+  const [_backupError, _setBackupError] = useState('');
   // const isAuthenticated = useMemo(() => !!token, [token]);
 
   useEffect(() => {
@@ -74,19 +93,12 @@ export default function DashboardHome() {
         if (!mounted) return;
         const listGer = Array.isArray(dataGer) ? dataGer : [];
         const listAr = Array.isArray(dataAr) ? dataAr : [];
-        const total = listGer.length + listAr.length;
-        // const ok = Math.max(0, total - off);
-        setTestesCount(total);
-        // setTestesOffCount(off);
-        // setTestesOkCount(ok);
-        // flag visual de urgência: substituída por cálculo de pendências
-
-        // Cálculo de pendências: atraso > 7 dias ou quinta-feira sem registro do dia
-        const daysSince = (dateStr) => {
-          if (!dateStr) return null;
-          const d = new Date(dateStr);
-          if (isNaN(d.getTime())) return null;
-          return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+        const daysSince = (dateOrStr) => {
+          if (!dateOrStr) return null;
+          const d = new Date(dateOrStr);
+          if (Number.isNaN(d.getTime())) return null;
+          const diffMs = Date.now() - d.getTime();
+          return Math.floor(diffMs / (1000 * 60 * 60 * 24));
         };
         const sameDay = (a, b) =>
           a.getFullYear() === b.getFullYear() &&
@@ -96,14 +108,14 @@ export default function DashboardHome() {
           if (!Array.isArray(list)) return null;
           const candidates = list.filter(predicate);
           if (!candidates.length) return null;
-          candidates.sort(
-            (a, b) =>
+          candidates.sort((a, b) => {
+            return (
               new Date(b.data_teste || b.data || b.created_at || 0) -
               new Date(a.data_teste || a.data || a.created_at || 0)
-          );
+            );
+          });
           return candidates[0];
         };
-
         const today = new Date();
         const isThursday = today.getDay() === 4; // 0-dom, 4-qui
         let pendentes = 0;
@@ -117,7 +129,6 @@ export default function DashboardHome() {
           const gerOk = gerDays !== null && gerDays <= 7;
           const arOk = arDays !== null && arDays <= 7;
           const hasToday = [gerDate, arDate].some((d) => d && sameDay(d, today));
-          // Pendente se qualquer um dos dois não estiver ok (ausente ou >7d), ou quinta-feira sem registro hoje
           const overdue = !(gerOk && arOk);
           const pendenteHoje = isThursday && !hasToday;
           if (overdue || pendenteHoje) pendentes++;
@@ -138,7 +149,7 @@ export default function DashboardHome() {
 
   // Backup: carregar status
   const callPollProgress = useCallback(async () => {
-    setProgress({ running: true, percent: 0, processed: 0, total: 0, current: null });
+    _setProgress({ running: true, percent: 0, processed: 0, total: 0, current: null });
     let done = false;
     while (!done) {
       try {
@@ -147,7 +158,7 @@ export default function DashboardHome() {
         });
         if (res.ok) {
           const data = await res.json();
-          setProgress(data);
+          _setProgress(data);
           if (!data.running && (data.percent >= 100 || data.canceled)) {
             done = true;
             await fetchBackupStatus();
@@ -171,7 +182,7 @@ export default function DashboardHome() {
       if (res.ok) {
         const data = await res.json();
         setBackupStatus(data);
-        setBackupError('');
+        _setBackupError('');
         // Verifica se já existe progresso em andamento
         try {
           const pr = await fetch(`${API}/backup/progress`, {
@@ -180,17 +191,17 @@ export default function DashboardHome() {
           if (pr.ok) {
             const jd = await pr.json();
             if (jd?.running) {
-              setProgress(jd);
+              _setProgress(jd);
               // inicia polling assíncrono
               callPollProgress();
             } else if (jd?.percent >= 100 || jd?.canceled) {
-              setProgress(jd);
+              _setProgress(jd);
             }
           }
         } catch {}
       } else if (res.status === 401 || res.status === 403) {
         setBackupStatus(null);
-        setBackupError('Você precisa estar logado como Administrador para executar backups.');
+        _setBackupError('Você precisa estar logado como Administrador para executar backups.');
       }
     } catch (e) {
       // ignore
@@ -220,53 +231,7 @@ export default function DashboardHome() {
     return () => clearInterval(t);
   }, [fetchBackupStatus]);
 
-  const runBackupNow = async () => {
-    if (runningBackup) return;
-    setRunningBackup(true);
-    try {
-      const res = await fetch(`${API}/backup/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (res.ok) {
-        // iniciar polling de progresso
-        callPollProgress();
-        setBackupError('');
-      } else {
-        let msg = 'Falha ao iniciar backup';
-        try {
-          const j = await res.json();
-          if (j?.detail) msg = j.detail;
-        } catch {}
-        if (res.status === 401 || res.status === 403)
-          msg = 'Não autorizado. Faça login como Administrador.';
-        setBackupError(msg);
-      }
-    } finally {
-      setRunningBackup(false);
-    }
-  };
-
-  // substituído por callPollProgress (acima)
-
-  const cancelBackup = async () => {
-    if (!progress.running || canceling) return;
-    setCanceling(true);
-    try {
-      await fetch(`${API}/backup/cancel`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-    } finally {
-      setCanceling(false);
-    }
-  };
+  // Ações diretas de backup removidas (uso via modal/diálogo)
 
   const toggleFile = (name) => {
     setSelectedFiles((prev) => {
@@ -334,7 +299,7 @@ export default function DashboardHome() {
       permission: '/testes-loja-menu',
     },
     {
-      title: 'Administrador',
+      title: 'Admin',
       description: 'Administração do sistema',
       icon: ExitToApp,
       color: theme.palette.grey[600],
@@ -350,7 +315,7 @@ export default function DashboardHome() {
   });
 
   // Forçar ordem desejada: Obras acima de Clientes
-  const desiredOrder = ['Obras', 'Clientes', 'Financeiro', 'Testes de Loja', 'Administrador'];
+  const desiredOrder = ['Obras', 'Clientes', 'Financeiro', 'Testes de Loja', 'Admin'];
   const sortedCards = [...filteredCards].sort((a, b) => {
     const ia = desiredOrder.indexOf(a.title);
     const ib = desiredOrder.indexOf(b.title);
@@ -408,259 +373,97 @@ export default function DashboardHome() {
           </Box>
         </Box>
 
-        <Grid
-          container
-          spacing={{ xs: 2, sm: 3, md: 3 }}
-          alignItems="stretch"
-          justifyContent="center"
-        >
-          {sortedCards.map((card, index) => (
-            <Grid item xs={12} sm={12} key={index}>
-              <Card
-                role="button"
-                tabIndex={0}
-                onClick={() => handleCardClick(card.path, card.title)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleCardClick(card.path, card.title);
-                  }
-                }}
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  borderRadius: 6,
-                  boxShadow: '0 28px 80px rgba(0,0,0,0.14)',
-                  '&:hover': {
-                    transform: 'translateY(-12px)',
-                    boxShadow: '0 40px 120px rgba(0,0,0,0.18)',
-                  },
-                  maxWidth: 940,
-                  mx: 'auto',
-                  minHeight: { xs: 210, sm: 240 },
-                }}
-              >
-                <CardContent
+        <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="stretch" justifyContent="center">
+          {sortedCards.map((card, index) => {
+            return (
+              <Grid item xs={'auto'} sm={'auto'} md={'auto'} key={index}>
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleCardClick(card.path, card.title)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCardClick(card.path, card.title);
+                    }
+                  }}
                   sx={{
-                    p: { xs: 4, sm: 5 },
-                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    borderRadius: 4,
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.12)',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: '0 24px 60px rgba(0,0,0,0.16)',
+                    },
+                    width: 150,
+                    height: CARD_HEIGHT,
+                    boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
                   }}
                 >
-                  <Avatar
+                  <CardContent
                     sx={{
-                      width: { xs: 86, sm: 108 },
-                      height: { xs: 86, sm: 108 },
-                      mx: 'auto',
-                      mb: 3,
-                      bgcolor: card.color,
+                      p: 0, // sem padding para aproveitar totalmente os 150x150
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexGrow: 1,
+                      width: '100%',
+                      gap: 0,
                     }}
                   >
-                    <card.icon sx={{ fontSize: { xs: 35, sm: 45 }, color: 'white' }} />
-                  </Avatar>
-                  <Typography
-                    variant="h4"
-                    sx={{ fontWeight: 800, fontSize: { xs: '1.4rem', sm: '1.7rem' } }}
-                  >
-                    {card.title}
-                  </Typography>
-                  {card.title === 'Testes de Loja' &&
-                    (hasPendentes ? (
-                      <Box sx={{ mt: 2 }}>
+                    <Avatar
+                      sx={{
+                        width: 75,
+                        height: 75,
+                        mb: '20px', // solicitado
+                        bgcolor: card.color,
+                        alignSelf: 'center',
+                      }}
+                    >
+                      <card.icon sx={{ fontSize: 36, color: 'white' }} />
+                    </Avatar>
+                    <Typography component="div" sx={{ ...getTitleSx(card.title), px: 1 }}>
+                      {card.title}
+                    </Typography>
+                    {/* Área de ação padronizada: reserva espaço fixo para o botão */}
+                    <Box
+                      sx={{
+                        height: ACTION_AREA_HEIGHT,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mt: 0.25,
+                        px: 1,
+                      }}
+                    >
+                      {card.title === 'Testes de Loja' ? (
                         <Button
+                          size="small"
                           variant="contained"
-                          color="error"
+                          color={hasPendentes ? 'error' : 'success'}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setOpenPendentes(true);
+                            setOpenPendentes(hasPendentes);
                             setOpenTestesModal(true);
                           }}
                         >
-                          Lojas pendentes
+                          {hasPendentes ? 'PENDÊNCIAS' : 'LOJAS OK'}
                         </Button>
-                      </Box>
-                    ) : (
-                      <Box sx={{ mt: 2 }}>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenPendentes(false);
-                            setOpenTestesModal(true);
-                          }}
-                        >
-                          LOJAS OK
-                        </Button>
-                      </Box>
-                    ))}
-                  {card.title === 'Administrador' && isAdmin?.() && (
-                    <Box sx={{ mt: 2, width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                      {loadingBackup && <CircularProgress size={22} />}
-                      {!loadingBackup && (
-                        <Stack spacing={1} sx={{ alignItems: 'center' }}>
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate('/cadastro-usuarios');
-                            }}
-                            sx={{ alignSelf: 'stretch' }}
-                          >
-                            Acessar Cadastro de Usuários
-                          </Button>
-                          {backupError && (
-                            <Alert severity="error" sx={{ width: '100%' }}>
-                              {backupError}
-                            </Alert>
-                          )}
-                          {backupStatus && backupStatus?.pending ? (
-                            <Alert
-                              severity="warning"
-                              sx={{ width: '100%' }}
-                              action={
-                                <Button
-                                  color="inherit"
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    runBackupNow();
-                                  }}
-                                  disabled={progress.running}
-                                >
-                                  {progress.running
-                                    ? `${progress.percent?.toFixed?.(0) || 0}%`
-                                    : 'Fazer backup agora'}
-                                </Button>
-                              }
-                            >
-                              {backupStatus?.hours_since != null
-                                ? `Backup pendente há ${backupStatus.hours_since}h`
-                                : 'Backup pendente'}
-                            </Alert>
-                          ) : backupStatus ? (
-                            <Alert
-                              severity="success"
-                              sx={{ width: '100%' }}
-                              action={
-                                <Button
-                                  color="inherit"
-                                  size="small"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    runBackupNow();
-                                  }}
-                                  disabled={progress.running}
-                                >
-                                  {progress.running
-                                    ? `${progress.percent?.toFixed?.(0) || 0}%`
-                                    : 'Criar agora'}
-                                </Button>
-                              }
-                            >
-                              {backupStatus?.last_backup_at
-                                ? `Último backup: ${formatDateTimeBr(backupStatus.last_backup_at)}`
-                                : 'Sem histórico de backup'}
-                            </Alert>
-                          ) : (
-                            <Alert
-                              severity="info"
-                              sx={{ width: '100%' }}
-                              action={
-                                <Button
-                                  color="inherit"
-                                  size="small"
-                                  onClick={() => navigate('/login')}
-                                >
-                                  Entrar
-                                </Button>
-                              }
-                            >
-                              Backup indisponível. Faça login como Administrador.
-                            </Alert>
-                          )}
-                          {(progress.running || progress.percent > 0) && (
-                            <Box
-                              sx={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 1,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  noWrap
-                                  maxWidth={240}
-                                >
-                                  {progress.current ||
-                                    (progress.running
-                                      ? 'Preparando…'
-                                      : progress.canceled
-                                        ? 'Cancelado'
-                                        : 'Concluído')}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {progress.processed}/{progress.total}
-                                </Typography>
-                              </Box>
-                              <LinearProgress
-                                variant="determinate"
-                                value={Math.min(100, progress.percent || 0)}
-                              />
-                              {progress.running && (
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                  <Button
-                                    size="small"
-                                    color="inherit"
-                                    onClick={cancelBackup}
-                                    disabled={canceling}
-                                  >
-                                    {canceling ? 'Cancelando…' : 'Cancelar'}
-                                  </Button>
-                                </Box>
-                              )}
-                            </Box>
-                          )}
-                          {(backupStatus?.over_limit || (backupStatus?.backups_count || 0) > 7) && (
-                            <Alert
-                              severity="info"
-                              sx={{ width: '100%' }}
-                              action={
-                                <Button
-                                  color="inherit"
-                                  size="small"
-                                  onClick={async () => {
-                                    setBackupsModalOpen(true);
-                                    await fetchBackupsList();
-                                  }}
-                                >
-                                  Gerenciar
-                                </Button>
-                              }
-                            >
-                              Você tem {backupStatus?.backups_count} backups. Mantenha apenas 7.
-                            </Alert>
-                          )}
-                        </Stack>
+                      ) : (
+                        // Placeholder invisível para manter a mesma altura
+                        <Box sx={{ height: ACTION_AREA_HEIGHT }} />
                       )}
                     </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
 
         <Box

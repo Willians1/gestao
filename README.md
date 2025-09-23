@@ -44,6 +44,22 @@ URLs:
 - Frontend: <http://localhost:3001>
 - API docs: <http://localhost:8000/docs>
 
+### Smoke test local (opcional)
+
+Para validar rapidamente login, listagem de uploads e envio de um CSV de exemplo para `valor_materiais`, você pode executar o script de smoke test:
+
+```powershell
+# Em um terminal com o backend rodando (porta 8000) e o venv ativo
+python backend/scripts/smoke_test_api.py
+```
+
+Saída esperada (resumo):
+
+- Login OK (token JWT gerado)
+- Listagem de uploads responde 200
+- Upload `teste.csv` para entidade `valor_materiais` retorna `{ records_imported: 1 }`
+- Nova listagem filtrada por `valor_materiais` exibida
+
 ## Funcionalidades prontas
 
 - Layout com sidebar persistente em PT-BR

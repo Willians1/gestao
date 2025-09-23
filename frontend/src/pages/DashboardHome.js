@@ -1,37 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  Button,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useState } from 'react';
+import { Box, Grid, Card, CardContent, Typography, Avatar, Button, Chip } from '@mui/material';
 import TestesModal from '../components/TestesModal';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  Construction,
-  People,
-  AttachMoney,
-  Inventory,
-  Science,
-  ExitToApp,
-  Storefront } from '@mui/icons-material';
-
-
+import { Construction, People, AttachMoney, ExitToApp, Storefront } from '@mui/icons-material';
 export default function DashboardHome() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -39,19 +12,40 @@ export default function DashboardHome() {
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const [testesCount, setTestesCount] = useState(null);
   const [testesUrgent, setTestesUrgent] = useState(false);
-  const [testesList, setTestesList] = useState([]); // Gerador
-  const [testesArList, setTestesArList] = useState([]); // Ar Condicionado
-  const [clientes, setClientes] = useState([]);
-  const [testesOffCount, setTestesOffCount] = useState(0);
-  const [testesOkCount, setTestesOkCount] = useState(0);
+  const [_testesList, setTestesList] = useState([]); // Gerador (utilizado apenas para contagem)
+  const [_testesArList, setTestesArList] = useState([]); // Ar Condicionado (não exibido diretamente)
+  const [_clientes, setClientes] = useState([]);
+  // métricas internas (não exibidas neste layout)
+  const [_testesOffCount, setTestesOffCount] = useState(0);
+  const [_testesOkCount, setTestesOkCount] = useState(0);
   const [openTestesModal, setOpenTestesModal] = useState(false);
-  const [testesFilter, setTestesFilter] = useState('all'); // all | ok | alerta | sem
-  const [testesSortOverdue, setTestesSortOverdue] = useState(false);
-  const [selectedTest, setSelectedTest] = useState(null);
-  const [openTestDetail, setOpenTestDetail] = useState(false);
-  const getClienteNomeById = (id) => {
-    const c = clientes.find((x) => Number(x.id) === Number(id));
-    return c ? c.nome : `Cliente ${id ?? ''}`;
+  // estados abaixo não são utilizados neste layout, removidos para evitar warnings
+  // const [testesFilter, setTestesFilter] = useState('all');
+  // const [testesSortOverdue, setTestesSortOverdue] = useState(false);
+  // const [selectedTest, setSelectedTest] = useState(null);
+  // const [openTestDetail, setOpenTestDetail] = useState(false);
+  // const getClienteNomeById = (id) => {
+  //   const c = clientes.find((x) => Number(x.id) === Number(id));
+  //   return c ? c.nome : `Cliente ${id ?? ''}`;
+  // };
+
+  // Ajuste dinâmico de fonte para títulos longos e altura fixa para manter uniformidade
+  const getTitleSx = (title) => {
+    const len = (title || '').length;
+    let fontSize = { xs: '1rem', sm: '1.05rem', md: '1.1rem' };
+    if (len > 18) fontSize = { xs: '0.95rem', sm: '1rem', md: '1.05rem' };
+    if (len > 26) fontSize = { xs: '0.9rem', sm: '0.95rem', md: '1rem' };
+    if (len > 34) fontSize = { xs: '0.85rem', sm: '0.9rem', md: '0.95rem' };
+    return {
+      fontSize,
+      display: '-webkit-box',
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+      minHeight: { xs: 40, sm: 44, md: 48 }, // reserva espaço de até 2 linhas
+      lineHeight: 1.2,
+      textAlign: 'center',
+    };
   };
 
   const fetchBothTestes = React.useCallback(async () => {
@@ -268,7 +262,7 @@ export default function DashboardHome() {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  height: '100%',
+                  height: { xs: 200, sm: 230, md: 250 }, // altura fixa para todos os cards
                 }}
                 onClick={() => handleCardClick(card.path)}
               >
@@ -280,7 +274,6 @@ export default function DashboardHome() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     flexGrow: 1,
-                    minHeight: { xs: 160, sm: 200, md: 240 },
                   }}
                 >
                   <Avatar
@@ -288,7 +281,7 @@ export default function DashboardHome() {
                       width: { xs: 56, sm: 64 },
                       height: { xs: 56, sm: 64 },
                       mx: 'auto',
-                      mb: 2,
+                      mb: 1.5,
                       bgcolor: card.color,
                       boxShadow: `0 8px 24px ${card.color}40`,
                     }}
@@ -301,15 +294,14 @@ export default function DashboardHome() {
                     sx={{
                       fontWeight: 700,
                       color: theme.palette.text.primary,
-                      mb: 1,
-                      fontSize: { xs: '1rem', sm: '1.05rem', md: '1.1rem' },
-                      textAlign: 'center',
+                      mb: 0.5,
+                      ...getTitleSx(card.title),
                     }}
                   >
                     {card.title}
                   </Typography>
                   {card.title === 'Testes de Loja' && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 0.5 }}>
                       <Chip
                         label={testesCount === null ? '...' : String(testesCount)}
                         size="small"
@@ -341,12 +333,13 @@ export default function DashboardHome() {
                       color: theme.palette.text.secondary,
                       lineHeight: 1.4,
                       fontSize: { xs: '0.78rem', sm: '0.9rem' },
-                      mt: 1,
+                      mt: 0.5,
                       textAlign: 'center',
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
+                      minHeight: { xs: 32, sm: 36 }, // altura reservada p/ 2 linhas
                     }}
                     title={card.description}
                   >

@@ -13,20 +13,20 @@
 - [x] Personalize o projeto
 	- UI em Português. Ações (Novo, Pesquisar, Importar Excel). DataGrid com busca e edição inline.
 
-- [ ] Instale extensões necessárias (se houver)
+- [x] Instale extensões necessárias (se houver)
 	- Sugeridas: ms-python.python, ms-toolsai.jupyter, esbenp.prettier-vscode, dbaeumer.vscode-eslint.
 
-- [ ] Compile o projeto
+- [x] Compile o projeto
 	- Backend: instalar requirements e iniciar uvicorn (porta 8000).
 	- Frontend: instalar deps e iniciar dev server (porta 3001).
 
-- [ ] Crie e execute tarefas
+- [x] Crie e execute tarefas
 	- Adicionar tasks.json para start do backend e frontend em paralelo (opcional).
 
-- [ ] Lance o projeto
+- [x] Lance o projeto
 	- Validar upload em todas as páginas e listagem de arquivos importados.
 
-- [ ] Garanta documentação completa
+- [x] Garanta documentação completa
 	- Atualizar README com instruções de setup, execução e endpoints.
 
 Notas de progresso:
