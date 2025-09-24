@@ -82,9 +82,10 @@ export default function DashboardHome() {
     let mounted = true;
     (async () => {
       try {
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
         const [resGer, resAr] = await Promise.all([
-          fetch(`${API}/testes-loja/`),
-          fetch(`${API}/testes-ar-condicionado/`),
+          fetch(`${API}/testes-loja/`, { headers: authHeaders }),
+          fetch(`${API}/testes-ar-condicionado/`, { headers: authHeaders }),
         ]);
         const [dataGer, dataAr] = await Promise.all([
           resGer.ok ? resGer.json() : Promise.resolve([]),
@@ -145,7 +146,7 @@ export default function DashboardHome() {
     return () => {
       mounted = false;
     };
-  }, [API]);
+  }, [API, token]);
 
   // Backup: carregar status
   const callPollProgress = useCallback(async () => {
