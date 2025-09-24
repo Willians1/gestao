@@ -452,6 +452,18 @@ export default function DashboardHome() {
                             setOpenPendentes(hasPendentes);
                             setOpenTestesModal(true);
                           }}
+                          sx={{
+                            fontSize: '0.60rem', // reduz fonte
+                            lineHeight: 1.1,
+                            px: 0.6, // padding horizontal reduzido
+                            py: 0.25, // padding vertical menor
+                            minHeight: 16, // cerca de 1/3 menor que ~24 padrão
+                            minWidth: 60, // largura enxuta
+                            borderRadius: 1.2,
+                            fontWeight: 700,
+                            letterSpacing: 0.3,
+                            '& .MuiButton-startIcon,& .MuiButton-endIcon': { m: 0 },
+                          }}
                         >
                           {hasPendentes ? 'PENDÊNCIAS' : 'LOJAS OK'}
                         </Button>
