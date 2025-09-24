@@ -41,6 +41,25 @@ export default function ResumoMensal() {
   const [form, setForm] = React.useState({ nome: '', valor_total: '', data: '' });
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API}/templates/resumo_mensal`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_resumo_mensal.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar modelo de resumo mensal');
+    }
+  };
 
   const loadPersisted = React.useCallback(async () => {
     try {
@@ -85,6 +104,14 @@ export default function ResumoMensal() {
           </Typography>
           <Chip label={total} color="primary" sx={{ fontWeight: 700, fontSize: 16 }} />
           <Box sx={{ flex: 1 }} />
+          <Button
+            variant="text"
+            onClick={handleDownloadTemplate}
+            sx={{ mr: 1 }}
+            title="Use este modelo para importar"
+          >
+            Baixar modelo
+          </Button>
           <Button variant="contained" color="success" sx={{ mr: 2 }}>
             Filtrar
           </Button>

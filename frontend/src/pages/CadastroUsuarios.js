@@ -170,6 +170,26 @@ export default function CadastroUsuarios() {
     }
   }, [token]);
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/templates/usuarios`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_usuarios.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      setSnack({ open: true, message: 'Falha ao baixar modelo de usuários', severity: 'error' });
+    }
+  };
+
   // Carrega usuários apenas quando houver token para evitar 401 na primeira renderização
   useEffect(() => {
     if (token) {
@@ -566,6 +586,9 @@ export default function CadastroUsuarios() {
               Novo
             </Button>
           )}
+          <Button variant="text" onClick={handleDownloadTemplate}>
+            Baixar modelo
+          </Button>
           <Button variant="outlined" component="label">
             Importar Excel
             <input

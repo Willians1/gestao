@@ -230,7 +230,7 @@ export default function DashboardHome() {
     // revalidar a cada 2 min
     const t = setInterval(fetchBackupStatus, 120000);
     return () => clearInterval(t);
-  }, [fetchBackupStatus]);
+  }, [fetchBackupStatus, token]);
 
   // Ações diretas de backup removidas (uso via modal/diálogo)
 

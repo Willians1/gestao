@@ -54,6 +54,25 @@ export default function OrcamentoObra() {
   const [clientes, setClientes] = React.useState([]); // Lista de clientes para o dropdown
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API}/templates/orcamento_obra`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_orcamento_obra.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar modelo de orçamento de obra');
+    }
+  };
 
   const loadPersisted = React.useCallback(async () => {
     try {
@@ -115,6 +134,14 @@ export default function OrcamentoObra() {
           <Box sx={{ flex: 1 }} />
           <Button variant="contained" color="success" sx={{ mr: 2 }}>
             Filtrar
+          </Button>
+          <Button
+            variant="text"
+            onClick={handleDownloadTemplate}
+            sx={{ mr: 1 }}
+            title="Use este modelo para importar"
+          >
+            Baixar modelo
           </Button>
           {canCreate && (
             <Button variant="contained" color="primary" onClick={() => setOpenModal(true)}>

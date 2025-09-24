@@ -61,6 +61,25 @@ export default function Clientes() {
   const [loading, setLoading] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
   const fileInputRef = React.useRef(null);
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API}/templates/clientes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_clientes.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar modelo de clientes');
+    }
+  };
 
   const loadPersisted = React.useCallback(async () => {
     setLoading(true);
@@ -378,6 +397,19 @@ export default function Clientes() {
                 }}
               >
                 {window.innerWidth < 600 ? 'Importar' : 'Importar Excel'}
+              </Button>
+              <Button
+                variant="text"
+                color="inherit"
+                onClick={handleDownloadTemplate}
+                title="Use este modelo para importar"
+                size={window.innerWidth < 600 ? 'small' : 'medium'}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
+                Baixar modelo
               </Button>
             </Stack>
           )}

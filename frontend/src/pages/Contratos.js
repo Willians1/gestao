@@ -77,6 +77,57 @@ export default function Contratos() {
     dataFimFim: '',
   });
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const importInputRef = React.useRef(null);
+
+  const handleImportClick = () => importInputRef.current && importInputRef.current.click();
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const resp = await fetch(`${API}/uploads/contratos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+      if (!resp.ok) {
+        let msg = 'Falha ao importar contratos. Certifique-se de usar o modelo.';
+        try {
+          const data = await resp.json();
+          if (data && (data.detail || data.message)) msg = data.detail || data.message;
+        } catch {}
+        throw new Error(msg);
+      }
+      const result = await resp.json();
+      await loadPersisted();
+      alert(`Importação concluída. Registros processados: ${result.records_imported || 0}.`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao importar contratos');
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API}/templates/contratos`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_contratos.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar modelo de contratos');
+    }
+  };
 
   const handleDownloadAnexo = async (contratoId, filename) => {
     try {
@@ -275,6 +326,33 @@ export default function Contratos() {
               size={isMobile ? 'small' : 'medium'}
             >
               Filtros
+            </Button>
+            {canCreate && (
+              <>
+                <input
+                  type="file"
+                  ref={importInputRef}
+                  onChange={handleImportFile}
+                  accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleImportClick}
+                  size={isMobile ? 'small' : 'medium'}
+                  title="Importe um Excel exatamente no padrão do modelo"
+                >
+                  Importar Excel
+                </Button>
+              </>
+            )}
+            <Button
+              variant="text"
+              onClick={handleDownloadTemplate}
+              size={isMobile ? 'small' : 'medium'}
+              title="Use este modelo para importar"
+            >
+              Baixar modelo
             </Button>
           </Stack>
         </Box>

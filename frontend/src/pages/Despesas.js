@@ -46,6 +46,25 @@ function Despesas() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const { token } = useAuth();
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/templates/despesas`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_despesas.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Falha ao baixar modelo de despesas', severity: 'error' });
+    }
+  };
   // const canRead = hasPermission('/despesas', 'read');
   // const canCreate = hasPermission('/despesas', 'create');
   // const canUpdate = hasPermission('/despesas', 'update');
@@ -266,6 +285,13 @@ function Despesas() {
               size={isMobile ? 'small' : 'medium'}
             >
               Importar Excel
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleDownloadTemplate}
+              size={isMobile ? 'small' : 'medium'}
+            >
+              Baixar modelo
             </Button>
             <Button
               variant="contained"

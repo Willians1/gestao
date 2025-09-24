@@ -41,6 +41,25 @@ export default function Fornecedores() {
   const [form, setForm] = React.useState({ nome: '', cnpj: '', telefone: '' });
   const [saving, setSaving] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const handleDownloadTemplate = async () => {
+    try {
+      const resp = await fetch(`${API}/templates/fornecedores`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error('Erro ao baixar modelo');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_fornecedores.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Falha ao baixar modelo de fornecedores');
+    }
+  };
 
   const loadPersisted = React.useCallback(async () => {
     try {
@@ -142,6 +161,18 @@ export default function Fornecedores() {
               }}
             >
               Filtrar
+            </Button>
+            <Button
+              variant="text"
+              size={isMobile ? 'small' : 'medium'}
+              onClick={handleDownloadTemplate}
+              title="Use este modelo para importar"
+              sx={{
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                py: { xs: 1, sm: 1.5 },
+              }}
+            >
+              Baixar modelo
             </Button>
             {canCreate && (
               <Button

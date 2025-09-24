@@ -47,6 +47,7 @@ import json
 import hashlib
 import zipfile
 from pathlib import Path
+from fastapi.responses import Response
 
 
 # App e DB
@@ -1506,6 +1507,136 @@ async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Sessi
             db.rollback()
             imported = 0
 
+    elif entidade == "contratos":
+        # Importação ESTRITA via modelo: aceita somente .xlsx/.xls com colunas exatamente iguais ao template
+        try:
+            if not file.filename.lower().endswith((".xlsx", ".xls")):
+                raise HTTPException(status_code=400, detail="Apenas arquivos Excel (.xlsx/.xls) são aceitos para contratos.")
+            import pandas as pd  # type: ignore
+            buf = io.BytesIO(content)
+            df = pd.read_excel(buf)
+
+            expected = [
+                "numero",
+                "cliente_id",
+                "valor",
+                "dataInicio",
+                "dataFim",
+                "tipo",
+                "situacao",
+                "prazoPagamento",
+                "quantidadeParcelas",
+            ]
+            # Normalizar nomes (case-insensitive), mas exigir conjunto exato de colunas
+            norm = [str(c).strip() for c in df.columns]
+            if set(norm) != set(expected) or len(norm) != len(expected):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Colunas inválidas. Use exatamente estas colunas: {', '.join(expected)}",
+                )
+
+            # Helper de datas
+            from datetime import date, datetime as dt
+
+            def to_date(v):
+                if pd.isna(v) or v is None or v == "":
+                    return None
+                if isinstance(v, (dt, date)):
+                    return v.date() if isinstance(v, dt) else v
+                # tentar parse a partir de string
+                try:
+                    return pd.to_datetime(v).date()
+                except Exception:
+                    return None
+
+            errors: list[str] = []
+            new_count = 0
+
+            # Validar todas as linhas antes (transação all-or-nothing)
+            rows_data = []
+            for idx, row in df.iterrows():
+                numero = str(row.get("numero", "")).strip()
+                cliente_id = row.get("cliente_id", None)
+                valor = row.get("valor", None)
+                dataInicio = to_date(row.get("dataInicio", None))
+                dataFim = to_date(row.get("dataFim", None))
+                tipo = str(row.get("tipo", "")).strip() or None
+                situacao = str(row.get("situacao", "")).strip() or None
+                prazoPagamento = str(row.get("prazoPagamento", "")).strip() or None
+                quantidadeParcelas = str(row.get("quantidadeParcelas", "")).strip() or None
+
+                if not numero:
+                    errors.append(f"Linha {idx+2}: campo 'numero' é obrigatório.")
+                try:
+                    cliente_id_int = int(cliente_id)
+                except Exception:
+                    errors.append(f"Linha {idx+2}: 'cliente_id' inválido.")
+                    cliente_id_int = None  # type: ignore
+                try:
+                    valor_num = float(valor)
+                except Exception:
+                    errors.append(f"Linha {idx+2}: 'valor' inválido.")
+                    valor_num = None  # type: ignore
+                # Datas: se informadas e parse falhar, erro
+                if row.get("dataInicio", None) not in (None, "") and dataInicio is None:
+                    errors.append(f"Linha {idx+2}: 'dataInicio' inválida.")
+                if row.get("dataFim", None) not in (None, "") and dataFim is None:
+                    errors.append(f"Linha {idx+2}: 'dataFim' inválida.")
+
+                # FK cliente
+                if isinstance(cliente_id_int, int):
+                    cli = db.query(Cliente).filter(Cliente.id == cliente_id_int).first()
+                    if not cli:
+                        errors.append(f"Linha {idx+2}: cliente_id {cliente_id_int} não existe.")
+
+                rows_data.append(
+                    {
+                        "numero": numero,
+                        "cliente_id": cliente_id_int,
+                        "valor": valor_num,
+                        "dataInicio": dataInicio,
+                        "dataFim": dataFim,
+                        "tipo": tipo,
+                        "situacao": situacao,
+                        "prazoPagamento": prazoPagamento,
+                        "quantidadeParcelas": quantidadeParcelas,
+                    }
+                )
+
+            if errors:
+                # Rollback total e retornar erros (aceitar somente se 100% válido)
+                db.rollback()
+                # Limitar quantidade de erros na resposta
+                preview = "; ".join(errors[:10])
+                if len(errors) > 10:
+                    preview += f" (+{len(errors)-10} erros)"
+                raise HTTPException(status_code=400, detail=f"Erros de validação: {preview}")
+
+            # Inserir (upsert por numero)
+            for data in rows_data:
+                existing = db.query(Contrato).filter(Contrato.numero == data["numero"]).first()
+                if existing:
+                    existing.cliente_id = data["cliente_id"]
+                    existing.valor = data["valor"]
+                    existing.dataInicio = data["dataInicio"]
+                    existing.dataFim = data["dataFim"]
+                    existing.tipo = data["tipo"]
+                    existing.situacao = data["situacao"]
+                    existing.prazoPagamento = data["prazoPagamento"]
+                    existing.quantidadeParcelas = data["quantidadeParcelas"]
+                    db.add(existing)
+                else:
+                    novo = Contrato(**data)
+                    db.add(novo)
+                new_count += 1
+            db.commit()
+            imported = new_count
+        except HTTPException:
+            raise
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Falha ao importar contratos: {e}")
+
     return UploadResult(upload_id=up.id, filename=up.nome, entidade=up.entidade, records_imported=imported)
 
 @app.get("/uploads")
@@ -1532,6 +1663,150 @@ def download_upload(upload_id: int, db: Session = Depends(get_db), current_user:
         raise HTTPException(status_code=404, detail="Upload não encontrado")
     headers = {"Content-Disposition": f"attachment; filename={up.nome}"}
     return StreamingResponse(io.BytesIO(up.conteudo), headers=headers)
+
+# ------------------------
+# Modelos Excel (Templates)
+# ------------------------
+def _build_template_workbook(entidade: str):
+    """Gera um workbook Excel em memória com colunas e uma linha de exemplo para a entidade informada.
+
+    Retorna bytes do arquivo .xlsx.
+    """
+    try:
+        from openpyxl import Workbook  # type: ignore
+    except Exception as e:
+        # Segurança: se openpyxl não estiver disponível, retorna 500 claro
+        raise HTTPException(status_code=500, detail=f"Biblioteca openpyxl não disponível: {e}")
+
+    entidade_norm = (entidade or "").strip().lower()
+
+    # Definições por entidade (colunas e exemplo)
+    templates: dict[str, dict[str, list]] = {
+        "clientes": {
+            "columns": ["id", "nome", "cnpj", "email", "contato", "endereco"],
+            "example": ["", "Cliente Exemplo LTDA", "12.345.678/0001-99", "contato@exemplo.com", "Maria", "Rua A, 123"],
+        },
+        "valor_materiais": {
+            # Observação: o import aceita variações (descricao, unidade, valor), mas sugerimos as colunas abaixo
+            "columns": [
+                "descricao_produto",
+                "marca",
+                "unidade_medida",
+                "valor_unitario",
+                "estoque_atual",
+                "estoque_minimo",
+                "data_ultima_entrada",
+                "responsavel",
+                "fornecedor",
+                "localizacao",
+                "observacoes",
+            ],
+            "example": [
+                "Parafuso 1/2",
+                "ACME",
+                "un",
+                2.5,
+                100,
+                10,
+                "2025-01-10",
+                "João",
+                "Ferros XYZ",
+                "Prateleira 3",
+                "Lote novo",
+            ],
+        },
+        "despesas": {
+            "columns": ["id_cliente", "servico", "valor", "data", "categoria", "status", "observacoes"],
+            "example": [1, "Manutenção preventiva", 1500.0, "2025-02-01", "Manutenção", "Pendente", "Troca de filtros"],
+        },
+        "fornecedores": {
+            "columns": ["id", "nome", "cnpj", "contato"],
+            "example": ["", "Fornecedor ABC", "23.456.789/0001-00", "Carlos"],
+        },
+        "contratos": {
+            "columns": [
+                "numero",
+                "cliente_id",
+                "valor",
+                "dataInicio",
+                "dataFim",
+                "tipo",
+                "situacao",
+                "prazoPagamento",
+                "quantidadeParcelas",
+            ],
+            "example": [
+                "CT-2025-001",
+                1,
+                50000.0,
+                "2025-03-01",
+                "2025-09-30",
+                "Obra",
+                "Vigente",
+                "30 dias",
+                "6",
+            ],
+        },
+        "orcamento_obra": {
+            "columns": ["cliente_id", "etapa", "descricao", "unidade", "quantidade", "custo_unitario", "data"],
+            "example": [1, "Alvenaria", "Tijolo cerâmico 8 furos", "m2", 120.0, 35.0, "2025-03-15"],
+        },
+        "resumo_mensal": {
+            "columns": ["cliente_id", "mes", "ano", "total_despesas", "total_orcamento"],
+            "example": [1, "Março", 2025, 12500.0, 20000.0],
+        },
+        "usuarios": {
+            "columns": ["username", "password", "nome", "email", "nivel_acesso", "ativo", "grupo_id"],
+            "example": ["usuario1", "senha123", "Usuário 1", "u1@dominio.com", "visualizacao", True, ""],
+        },
+    }
+
+    cfg = templates.get(entidade_norm)
+    if not cfg:
+        # fallback: retorna apenas uma planilha vazia com instruções
+        cfg = {"columns": ["coluna1", "coluna2"], "example": ["", ""]}
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "dados"
+    # Cabeçalhos
+    for j, col in enumerate(cfg["columns"], start=1):
+        ws.cell(row=1, column=j, value=col)
+    # Linha de exemplo
+    for j, val in enumerate(cfg["example"], start=1):
+        ws.cell(row=2, column=j, value=val)
+
+    # Segunda aba com instruções
+    readme = wb.create_sheet("LEIA-ME")
+    instrucoes = [
+        f"Modelo de importação para a entidade: {entidade_norm}",
+        "Preencha a aba 'dados' com uma linha por registro.",
+        "Não altere os nomes das colunas da primeira linha (cabeçalho).",
+        "Colunas marcadas como opcionais podem ficar em branco.",
+        "Datas devem estar no formato ISO (YYYY-MM-DD).",
+        "Números devem usar ponto como separador decimal (ex.: 1234.56).",
+        "Para Clientes: 'nome' é obrigatório; 'id' é opcional para atualizar registros existentes.",
+        "Para Valor Materiais: utilize as colunas do template; variações como 'descricao' e 'unidade' também são aceitas no import.",
+        "Para Despesas: use 'id_cliente' numérico existente no sistema.",
+    ]
+    for i, line in enumerate(instrucoes, start=1):
+        readme.cell(row=i, column=1, value=line)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+@app.get("/templates/{entidade}")
+def download_template(entidade: str, current_user: Usuario = Depends(get_current_user)):
+    data = _build_template_workbook(entidade)
+    filename = f"template_{entidade.lower()}.xlsx"
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 # Compat de rota específica usada no frontend para valor_materiais
 @app.post("/upload_valor_materiais", response_model=UploadResult)
