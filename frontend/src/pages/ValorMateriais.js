@@ -106,25 +106,6 @@ export default function ValorMateriais() {
   const [formFile, setFormFile] = React.useState(null);
 
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-  const handleDownloadTemplate = async () => {
-    try {
-      const resp = await fetch(`${API}/templates/valor_materiais`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!resp.ok) throw new Error('Erro ao baixar modelo');
-      const blob = await resp.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'template_valor_materiais.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (e) {
-      alert('Falha ao baixar modelo de Valor de Materiais');
-    }
-  };
 
   const loadPersisted = React.useCallback(async () => {
     try {
@@ -291,7 +272,7 @@ export default function ValorMateriais() {
 
   const handleDownloadFile = async (fileId, filename) => {
     try {
-      const resp = await fetch(`${API}/uploads/${fileId}/download`, {
+      const resp = await fetch(`${API}/api/uploads/${fileId}/download`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!resp.ok) throw new Error('Erro ao baixar arquivo');
@@ -623,25 +604,6 @@ export default function ValorMateriais() {
                   }}
                 >
                   {window.innerWidth < 600 ? 'Excel' : 'Importar Excel'}
-                </Button>
-              )}
-
-              {canCreate && (
-                <Button
-                  variant="text"
-                  color="inherit"
-                  startIcon={
-                    <DownloadIcon fontSize={window.innerWidth < 600 ? 'small' : 'medium'} />
-                  }
-                  onClick={handleDownloadTemplate}
-                  title="Use este modelo para importar"
-                  size={window.innerWidth < 600 ? 'small' : 'medium'}
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                    px: { xs: 1, sm: 2 },
-                  }}
-                >
-                  Baixar modelo
                 </Button>
               )}
 

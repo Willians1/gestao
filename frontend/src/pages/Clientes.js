@@ -143,7 +143,7 @@ export default function Clientes() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await fetch(`${API}/uploads/clientes`, {
+      const resp = await fetch(`${API}/api/uploads/clientes`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

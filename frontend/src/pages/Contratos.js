@@ -86,7 +86,7 @@ export default function Contratos() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await fetch(`${API}/uploads/contratos`, {
+      const resp = await fetch(`${API}/api/uploads/contratos`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,

@@ -1371,7 +1371,10 @@ def get_current_user_info(current_user: Usuario = Depends(get_current_user)):
     )
 
 # --- Uploads genéricos de arquivos (Excel e outros) ---
+# Nota: mantemos endpoints legacy sob "/uploads/*" MAS adicionamos aliases em "/api/uploads/*"
+# para evitar conflito com StaticFiles montado em "/uploads" (usado para servir mídias).
 @app.post("/uploads/{entidade}", response_model=UploadResult)
+@app.post("/api/uploads/{entidade}", response_model=UploadResult)
 async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     # Persistir arquivo no banco (ArquivosImportados)
     content = await file.read()
@@ -1640,6 +1643,7 @@ async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Sessi
     return UploadResult(upload_id=up.id, filename=up.nome, entidade=up.entidade, records_imported=imported)
 
 @app.get("/uploads")
+@app.get("/api/uploads")
 def list_uploads(entidade: Optional[str] = None, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     q = db.query(ArquivoImportado)
     if entidade:
@@ -1657,6 +1661,7 @@ def list_uploads(entidade: Optional[str] = None, db: Session = Depends(get_db), 
     ]
 
 @app.get("/uploads/{upload_id}/download")
+@app.get("/api/uploads/{upload_id}/download")
 def download_upload(upload_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     up = db.query(ArquivoImportado).filter(ArquivoImportado.id == upload_id).first()
     if not up:
