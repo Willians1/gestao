@@ -60,6 +60,7 @@ export default function Clientes() {
   const [saving, setSaving] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const fileInputRef = React.useRef(null);
 
   const loadPersisted = React.useCallback(async () => {
     setLoading(true);
@@ -114,6 +115,34 @@ export default function Clientes() {
     setFilteredRows(rows);
     setTotal(rows.length);
     setPage(0);
+  };
+
+  const handleImportClick = () => fileInputRef.current && fileInputRef.current.click();
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const resp = await fetch(`${API}/uploads/clientes`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(err);
+      }
+      const result = await resp.json();
+      await loadPersisted();
+      alert(`Importação concluída: ${result.records_imported || 0} registros processados.`);
+    } catch (err) {
+      console.error(err);
+      alert('Falha ao importar clientes. Verifique o arquivo (CSV/XLSX) e tente novamente.');
+    } finally {
+      // limpar o input para permitir o mesmo arquivo novamente
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleCreateCliente = async () => {
@@ -318,18 +347,39 @@ export default function Clientes() {
           </Box>
           <Box sx={{ flex: 1 }} />
           {canCreate && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setOpenModal(true)}
-              size={window.innerWidth < 600 ? 'small' : 'medium'}
-              sx={{
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                width: { xs: '100%', sm: 'auto' },
-              }}
-            >
-              {window.innerWidth < 600 ? 'Novo Cliente' : 'Criar novo cliente'}
-            </Button>
+            <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setOpenModal(true)}
+                size={window.innerWidth < 600 ? 'small' : 'medium'}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
+                {window.innerWidth < 600 ? 'Novo Cliente' : 'Criar novo cliente'}
+              </Button>
+              <input
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                ref={fileInputRef}
+                onChange={handleImportFile}
+                style={{ display: 'none' }}
+              />
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleImportClick}
+                size={window.innerWidth < 600 ? 'small' : 'medium'}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  width: { xs: '100%', sm: 'auto' },
+                }}
+              >
+                {window.innerWidth < 600 ? 'Importar' : 'Importar Excel'}
+              </Button>
+            </Stack>
           )}
         </Box>
 

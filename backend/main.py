@@ -1384,7 +1384,7 @@ async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Sessi
     db.commit()
     db.refresh(up)
 
-    # Opcional: se for valor_materiais, tentar parse simples (CSV/XLSX)
+    # Opcional: se for valor_materiais ou clientes, tentar parse simples (CSV/XLSX)
     imported = 0
     if entidade == "valor_materiais" and file.filename.lower().endswith((".csv", ".xlsx", ".xls")):
         try:
@@ -1424,6 +1424,85 @@ async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Sessi
             db.commit()
         except Exception:
             # Se falhar o parse, não impede o upload; apenas segue com 0 importados
+            db.rollback()
+            imported = 0
+    elif entidade == "clientes" and file.filename.lower().endswith((".csv", ".xlsx", ".xls")):
+        try:
+            import pandas as pd  # type: ignore
+            buf = io.BytesIO(content)
+            if file.filename.lower().endswith('.csv'):
+                df = pd.read_csv(buf)
+            else:
+                df = pd.read_excel(buf)
+
+            # Normalização de colunas esperadas
+            cols = {str(c).strip().lower(): c for c in df.columns}
+
+            def col(row, key, default=None):
+                variants = [
+                    key,
+                    key.replace('_', ' '),
+                    key.replace('_', ''),
+                    key.replace('_', '-'),
+                ]
+                for k in variants:
+                    if k in cols:
+                        return row[cols[k]]
+                return default
+
+            for _, row in df.iterrows():
+                _id = col(row, 'id')
+                nome = str(col(row, 'nome', '') or '').strip()
+                cnpj = str(col(row, 'cnpj', '') or '').strip()
+                email = str(col(row, 'email', '') or '').strip()
+                contato = str(col(row, 'contato', '') or '').strip()
+                endereco = str(col(row, 'endereco', col(row, 'endereço', '')) or '').strip()
+
+                # Pular linhas sem nome
+                if not nome:
+                    continue
+
+                # Estratégia de upsert: tenta localizar por ID, depois por CNPJ, depois por nome
+                existing = None
+                if _id not in (None, "", float('nan')):
+                    try:
+                        _id_int = int(_id)
+                        existing = db.query(Cliente).filter(Cliente.id == _id_int).first()
+                    except Exception:
+                        existing = None
+                if not existing and cnpj:
+                    existing = db.query(Cliente).filter(Cliente.cnpj == cnpj).first()
+                if not existing and nome:
+                    existing = db.query(Cliente).filter(Cliente.nome == nome).first()
+
+                if existing:
+                    # Atualiza campos conhecidos
+                    changed = False
+                    if cnpj and existing.cnpj != cnpj:
+                        existing.cnpj = cnpj; changed = True
+                    if email and existing.email != email:
+                        existing.email = email; changed = True
+                    if contato and existing.contato != contato:
+                        existing.contato = contato; changed = True
+                    if endereco and existing.endereco != endereco:
+                        existing.endereco = endereco; changed = True
+                    if changed:
+                        db.add(existing)
+                        imported += 1
+                else:
+                    novo = Cliente(
+                        nome=nome,
+                        cnpj=cnpj or None,
+                        email=email or None,
+                        contato=contato or None,
+                        endereco=endereco or None,
+                    )
+                    db.add(novo)
+                    imported += 1
+            db.commit()
+        except Exception as e:
+            # Em caso de erro, faz rollback e segue
+            print(f"[UPLOAD clientes] Erro ao importar: {e}")
             db.rollback()
             imported = 0
 
