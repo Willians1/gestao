@@ -406,6 +406,7 @@ export default function DashboardHome() {
                   <CardContent
                     sx={{
                       p: 0, // sem padding para aproveitar totalmente os 150x150
+                      pt: '10px', // padding superior solicitado para afastar o avatar do topo
                       textAlign: 'center',
                       display: 'flex',
                       flexDirection: 'column',
