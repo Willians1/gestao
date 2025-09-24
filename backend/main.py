@@ -275,6 +275,66 @@ ensure_lojas_users()
 # Registro de início da aplicação para cálculo de uptime
 APP_START_TIME_UTC = datetime.datetime.utcnow()
 
+# --- Bootstrap opcional de dados para Postgres ---
+def _bootstrap_sqlite_to_postgres_if_needed():
+    """Se a aplicação estiver usando Postgres e a env BOOTSTRAP_FROM_SQLITE=1,
+    tenta migrar dados de um arquivo SQLite local (gestao_obras.db) apenas uma vez.
+
+    Usa um arquivo de marca em DATA_DIR/backups/.bootstrap_done para evitar repetição.
+    """
+    try:
+        from database import SQLALCHEMY_DATABASE_URL as _URL  # type: ignore
+    except Exception:
+        return
+    if not _URL.startswith("postgresql+"):
+        return  # só relevante se destino for Postgres
+    if os.getenv("BOOTSTRAP_FROM_SQLITE", "0") != "1":
+        return
+    marker_dir = DATA_DIR or "."
+    marker_path = os.path.join(marker_dir, "backups", ".bootstrap_done")
+    try:
+        if os.path.exists(marker_path):
+            return
+    except Exception:
+        pass
+    # Localiza arquivo SQLite de origem
+    sqlite_candidates = [
+        os.path.join(os.path.dirname(__file__), "gestao_obras.db"),
+        os.path.join(os.path.dirname(__file__), "..", "gestao_obras.db"),
+    ]
+    sqlite_path = None
+    for c in sqlite_candidates:
+        if os.path.exists(c):
+            sqlite_path = c
+            break
+    if not sqlite_path:
+        return
+    try:
+        # Importa função migrate dinamicamente para evitar custo se não usado
+        import importlib.util
+        script_path = os.path.join(os.path.dirname(__file__), "migrate_sqlite_to_postgres.py")
+        if not os.path.exists(script_path):
+            return
+        spec = importlib.util.spec_from_file_location("_migrate_mod", script_path)
+        if not spec or not spec.loader:
+            return
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore
+        print("[BOOTSTRAP] Migrando dados iniciais do SQLite para Postgres...")
+        # Chama migrate(sqlite_path, pg_url, do_truncate=False) - não trunca destino
+        mod.migrate(sqlite_path, _URL, do_truncate=False)  # type: ignore
+        # Marca como concluído
+        try:
+            os.makedirs(os.path.dirname(marker_path), exist_ok=True)
+            with open(marker_path, "w", encoding="utf-8") as f:
+                f.write("ok")
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"[BOOTSTRAP][WARN] Falha ao migrar dados iniciais: {e}")
+
+_bootstrap_sqlite_to_postgres_if_needed()
+
 def _get_build_meta():
     """Coleta metadados de build a partir de variáveis de ambiente.
 
