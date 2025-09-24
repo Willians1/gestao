@@ -35,6 +35,12 @@
 				"Frontend: start (porta 3001)"
 			],
 			"dependsOrder": "parallel"
+		},
+		{
+			"label": "Teste: upload contratos (produção)",
+			"type": "shell",
+			"command": "$ErrorActionPreference = 'Stop'; $base='https://gestao-backend-lbab.onrender.com'; $token = (Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}').access_token; $tmp = New-Item -ItemType Directory -Path \"$env:TEMP/ctimport\" -Force; $xlsx = \"$env:TEMP/ctimport/template_contratos.xlsx\"; Invoke-WebRequest -Headers @{ Authorization = \"Bearer $token\" } -Uri \"$base/templates/contratos\" -OutFile $xlsx; $form = @{}; $fileBytes = [System.IO.File]::ReadAllBytes($xlsx); $fileContent = New-Object System.Byte[] $fileBytes.Length; [Array]::Copy($fileBytes, $fileContent, $fileBytes.Length); $filePart = @{ file = New-Object System.IO.MemoryStream(,$fileContent) }; $filePart.file.Position = 0; $filePart.fileName = 'template_contratos.xlsx'; $filePart.ContentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; $resp = Invoke-RestMethod -Method Post -Uri \"$base/uploads/contratos\" -Headers @{ Authorization = \"Bearer $token\" } -Form $filePart; Write-Host (\"Upload result: entidade=\" + $resp.entidade + \", imported=\" + $resp.records_imported)",
+			"group": "build"
 		}
 	]
 }

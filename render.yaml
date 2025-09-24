@@ -35,21 +35,6 @@ services:
         value: 1.0.0
     healthCheckPath: /healthz
 
-databases:
-  - name: gestao-postgres
-    databaseName: gestao
-    plan: free
-    user: gestao
-
-  - type: web
-    name: gestao-php
-    runtime: docker
-    plan: free
-    region: oregon
-    autoDeploy: true
-    dockerfilePath: ./php/Dockerfile
-    dockerContext: ./php
-
   - type: web
     name: gestao-frontend
     runtime: static
@@ -63,3 +48,9 @@ databases:
     envVars:
       - key: REACT_APP_API_URL
         value: https://gestao-backend-lbab.onrender.com
+
+databases:
+  - name: gestao-postgres
+    databaseName: gestao
+    plan: free
+    user: gestao
