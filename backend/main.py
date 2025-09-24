@@ -290,10 +290,12 @@ def _bootstrap_sqlite_to_postgres_if_needed():
         return  # só relevante se destino for Postgres
     if os.getenv("BOOTSTRAP_FROM_SQLITE", "0") != "1":
         return
+    force = os.getenv("BOOTSTRAP_FORCE", "0") == "1"
     marker_dir = DATA_DIR or "."
     marker_path = os.path.join(marker_dir, "backups", ".bootstrap_done")
     try:
-        if os.path.exists(marker_path):
+        if os.path.exists(marker_path) and not force:
+            print("[BOOTSTRAP] Já executado anteriormente (marker encontrado). Use BOOTSTRAP_FORCE=1 para forçar.")
             return
     except Exception:
         pass
@@ -320,14 +322,16 @@ def _bootstrap_sqlite_to_postgres_if_needed():
             return
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)  # type: ignore
-        print("[BOOTSTRAP] Migrando dados iniciais do SQLite para Postgres...")
-        # Chama migrate(sqlite_path, pg_url, do_truncate=False) - não trunca destino
-        mod.migrate(sqlite_path, _URL, do_truncate=False)  # type: ignore
+
+        print(f"[BOOTSTRAP] Migrando dados iniciais do SQLite para Postgres (force={force})...")
+        # Se force ativo, truncar destino para cópia integral
+        mod.migrate(sqlite_path, _URL, do_truncate=force)  # type: ignore
+
         # Marca como concluído
         try:
             os.makedirs(os.path.dirname(marker_path), exist_ok=True)
             with open(marker_path, "w", encoding="utf-8") as f:
-                f.write("ok")
+                f.write(f"ok force={force}\n")
         except Exception:
             pass
     except Exception as e:
