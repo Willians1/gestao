@@ -291,8 +291,18 @@ def _bootstrap_sqlite_to_postgres_if_needed():
     if os.getenv("BOOTSTRAP_FROM_SQLITE", "0") != "1":
         return
     force = os.getenv("BOOTSTRAP_FORCE", "0") == "1"
-    marker_dir = DATA_DIR or "."
-    marker_path = os.path.join(marker_dir, "backups", ".bootstrap_done")
+    # Determina um diretório gravável para o marker sem depender de variáveis globais
+    try:
+        marker_base = (
+            os.getenv("DATA_DIR")
+            or os.getenv("DB_DIR")
+            or os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+            or "/tmp"
+        )
+        os.makedirs(marker_base, exist_ok=True)
+    except Exception:
+        marker_base = "."
+    marker_path = os.path.join(marker_base, "backups", ".bootstrap_done")
     try:
         if os.path.exists(marker_path) and not force:
             print("[BOOTSTRAP] Já executado anteriormente (marker encontrado). Use BOOTSTRAP_FORCE=1 para forçar.")

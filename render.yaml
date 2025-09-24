@@ -8,7 +8,6 @@ services:
     startCommand: >-
       bash -lc 'export BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
       export COMMIT_SHA=${RENDER_GIT_COMMIT:-${COMMIT_SHA:-}};
-      python backend/seed_initial_users_and_clients.py || true;
       uvicorn backend.main:app --host 0.0.0.0 --port $PORT'
     autoDeploy: true
     envVars:
@@ -20,6 +19,16 @@ services:
           property: connectionString
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
+      - key: BOOTSTRAP_FROM_SQLITE
+        value: "1"
+      - key: BOOTSTRAP_FORCE
+        value: "1" # Altere para "0" após confirmar migração em /debug/stats
+      - key: SEED_ADMIN
+        value: "0"
+      - key: SEED_WILLIANS
+        value: "0"
+      - key: SEED_LOJAS
+        value: "0"
       - key: ALLOW_ORIGINS
         value: http://localhost:3000,http://localhost:3001,http://localhost:3005,https://gestao-frontend.onrender.com,https://gestao-frontend-ttgd.onrender.com
       - key: APP_VERSION
