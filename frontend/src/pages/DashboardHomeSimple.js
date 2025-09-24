@@ -467,6 +467,30 @@ export default function DashboardHome() {
                         >
                           {hasPendentes ? 'PENDÊNCIAS' : 'LOJAS OK'}
                         </Button>
+                      ) : card.title === 'Admin' ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // abrir modal de backups
+                            setBackupsModalOpen(true);
+                          }}
+                          sx={{
+                            fontSize: '0.60rem',
+                            lineHeight: 1.1,
+                            px: 0.6,
+                            py: 0.25,
+                            minHeight: 16,
+                            minWidth: 60,
+                            borderRadius: 1.2,
+                            fontWeight: 700,
+                            letterSpacing: 0.3,
+                          }}
+                        >
+                          BACKUP
+                        </Button>
                       ) : (
                         // Placeholder invisível para manter a mesma altura
                         <Box sx={{ height: ACTION_AREA_HEIGHT }} />
