@@ -350,6 +350,41 @@ def _get_build_meta():
         "build_time": os.getenv("BUILD_TIME"),  # ISO 8601 recomendado
     }
 
+# Debug: estatísticas rápidas do banco
+class StatsResponse(BaseModel):
+    usuarios: int
+    clientes: int
+    testes_loja: int
+    testes_ar: int
+    contratos: int
+    valor_materiais: int
+    resumo_mensal: int
+    generated_at: str
+
+@app.get("/debug/stats", response_model=StatsResponse)
+def debug_stats(db: Session = Depends(get_db)):
+    try:
+        usuarios = db.query(Usuario).count()
+        clientes = db.query(Cliente).count()
+        testes_loja = db.query(TesteLoja).count()
+        testes_ar = db.query(TesteArCondicionado).count()
+        contratos = db.query(Contrato).count()
+        valor_materiais = db.query(ValorMaterial).count()
+        resumo_mensal = db.query(ResumoMensal).count()
+    except Exception:
+        # Em caso de erro de schema, retorna -1
+        usuarios = clientes = testes_loja = testes_ar = contratos = valor_materiais = resumo_mensal = -1
+    return StatsResponse(
+        usuarios=usuarios,
+        clientes=clientes,
+        testes_loja=testes_loja,
+        testes_ar=testes_ar,
+        contratos=contratos,
+        valor_materiais=valor_materiais,
+        resumo_mensal=resumo_mensal,
+        generated_at=datetime.datetime.utcnow().isoformat() + "Z",
+    )
+
 # Health check super-rápido (sem tocar no banco)
 @app.get("/healthz")
 def healthz():
