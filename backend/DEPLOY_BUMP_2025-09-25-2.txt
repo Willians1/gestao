@@ -1,0 +1,1 @@
+Trigger redeploy at 2025-09-25T00:00:00Z (placeholder). This file exists solely to bump the backend and ensure Render rebuilds with the latest routes (/api/uploads/* and /import/contratos).

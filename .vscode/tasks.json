@@ -63,5 +63,13 @@
 			"isBackground": false,
 			"group": "build"
 		}
+		,
+		{
+			"label": "Monitorar deploy e testar upload (prod)",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/monitor_deploy_and_test.ps1",
+			"isBackground": true,
+			"group": "build"
+		}
 	]
 }
