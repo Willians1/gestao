@@ -469,8 +469,13 @@ TESTES_AR_CONDICIONADO_DIR = os.path.join(UPLOAD_DIR, "testes-ar-condicionado")
 os.makedirs(TESTES_LOJA_DIR, exist_ok=True)
 os.makedirs(TESTES_AR_CONDICIONADO_DIR, exist_ok=True)
 
-# Configurar arquivos estáticos
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+# Configurar arquivos estáticos APENAS para subrotas de mídia (evita conflito com /uploads/{entidade})
+app.mount("/uploads/testes-loja", StaticFiles(directory=TESTES_LOJA_DIR), name="uploads_testes_loja")
+app.mount(
+    "/uploads/testes-ar-condicionado",
+    StaticFiles(directory=TESTES_AR_CONDICIONADO_DIR),
+    name="uploads_testes_ar",
+)
 
 # Diretório de backups
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
