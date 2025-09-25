@@ -1,0 +1,1 @@
+Trigger deploy: 2025-09-25T00:00:00Z. Purpose: redeploy backend to expose /api/uploads/* and /import/contratos aliases.
