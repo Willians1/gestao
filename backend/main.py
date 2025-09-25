@@ -1822,6 +1822,11 @@ def download_template(entidade: str, current_user: Usuario = Depends(get_current
 @app.post("/upload_valor_materiais", response_model=UploadResult)
 async def upload_valor_materiais(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     return await upload_entidade("valor_materiais", file, db, current_user)
+
+# Alias explícito para importação de contratos sem colisão com static files
+@app.post("/import/contratos", response_model=UploadResult)
+async def import_contratos(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    return await upload_entidade("contratos", file, db, current_user)
 @app.get("/me/permissoes")
 def get_my_permissions(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     """Retorna permissões efetivas do usuário (via grupo)."""
