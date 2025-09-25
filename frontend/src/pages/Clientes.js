@@ -143,11 +143,16 @@ export default function Clientes() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await fetch(`${API}/api/uploads/clientes`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
+      const tryUpload = async (url) =>
+        fetch(url, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
+        });
+      let resp = await tryUpload(`${API}/api/uploads/clientes`);
+      if (!resp.ok && (resp.status === 404 || resp.status === 405)) {
+        resp = await tryUpload(`${API}/uploads/clientes`);
+      }
       if (!resp.ok) {
         const err = await resp.text();
         throw new Error(err);

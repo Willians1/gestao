@@ -2165,6 +2165,16 @@ def listar_testes_loja(db: Session = Depends(get_db), current_user: Usuario = De
         return []
     return q.all()
 
+@app.get("/testes-loja/{teste_id}", response_model=TesteLojaSchema)
+def obter_teste_loja(teste_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    teste = db.query(TesteLoja).filter(TesteLoja.id == teste_id).first()
+    if not teste:
+        raise HTTPException(status_code=404, detail="Teste não encontrado")
+    allowed = _get_allowed_client_ids(db, current_user)
+    if allowed is not None and len(allowed) > 0 and teste.cliente_id not in allowed:
+        raise HTTPException(status_code=403, detail="Sem acesso a este cliente")
+    return teste
+
 @app.post("/testes-loja/", response_model=TesteLojaSchema)
 async def criar_teste_loja(
     data_teste: str = Form(...),

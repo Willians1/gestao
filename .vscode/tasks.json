@@ -41,6 +41,27 @@
 			"type": "shell",
 			"command": "$ErrorActionPreference = 'Stop'; $base='https://gestao-backend-lbab.onrender.com'; $token = (Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}').access_token; $tmp = New-Item -ItemType Directory -Path \"$env:TEMP/ctimport\" -Force; $xlsx = \"$env:TEMP/ctimport/template_contratos.xlsx\"; Invoke-WebRequest -Headers @{ Authorization = \"Bearer $token\" } -Uri \"$base/templates/contratos\" -OutFile $xlsx; $form = @{}; $fileBytes = [System.IO.File]::ReadAllBytes($xlsx); $fileContent = New-Object System.Byte[] $fileBytes.Length; [Array]::Copy($fileBytes, $fileContent, $fileBytes.Length); $filePart = @{ file = New-Object System.IO.MemoryStream(,$fileContent) }; $filePart.file.Position = 0; $filePart.fileName = 'template_contratos.xlsx'; $filePart.ContentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; $resp = Invoke-RestMethod -Method Post -Uri \"$base/uploads/contratos\" -Headers @{ Authorization = \"Bearer $token\" } -Form $filePart; Write-Host (\"Upload result: entidade=\" + $resp.entidade + \", imported=\" + $resp.records_imported)",
 			"group": "build"
+		},
+		{
+			"label": "Teste: upload contratos (produção, robusto)",
+			"type": "shell",
+			"command": "$ErrorActionPreference = 'Stop';\n$base='https://gestao-backend-lbab.onrender.com';\n# Login\n$login = Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}';\n$token = $login.access_token;\nif (-not $token) { throw 'Falha ao obter token'; }\n$headers = @{ Authorization = \"Bearer $token\" };\n\n# Baixar template para TEMP seguro\n$tmpDir = Join-Path $env:TEMP 'ctimport'; New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null;\n$xlsx = Join-Path $tmpDir 'template_contratos.xlsx';\nInvoke-WebRequest -Headers $headers -Uri \"$base/templates/contratos\" -OutFile $xlsx;\nif (-not (Test-Path $xlsx)) { throw 'Falha ao baixar template'; }\n\n# Preparar multipart\n$fileBytes = [System.IO.File]::ReadAllBytes($xlsx);\n$ms = New-Object System.IO.MemoryStream(,$fileBytes);\n$form = @{ file = $ms };\n\n# Helper: tenta rota e retorna resposta\nfunction Invoke-Upload($url){\n  try { return Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Form $form -ErrorAction Stop }\n  catch { return $_.Exception.Response }\n}\n\n# Tenta /api/uploads/contratos -> /import/contratos -> /uploads/contratos\n$urls = @(\n  \"$base/api/uploads/contratos\",\n  \"$base/import/contratos\",\n  \"$base/uploads/contratos\"\n)\n$response = $null\n$status = 0\nforeach ($u in $urls) {\n  Write-Host (\"Tentando: \" + $u)\n  $r = Invoke-Upload $u\n  if ($r -is [System.Net.HttpWebResponse]) { $status = [int]$r.StatusCode; Write-Host (\"HTTP \" + $status) }\n  else { $response = $r; break }\n}\n\nif ($null -eq $response) {\n  throw (\"Falha nas rotas de upload. Último status: \" + $status)\n}\n\nWrite-Host (\"Upload result: entidade=\" + $response.entidade + \", imported=\" + $response.records_imported)\n",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Script: test_upload_prod.ps1",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_upload_prod.ps1",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Script: test_upload_prod.ps1 (run)",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_upload_prod.ps1",
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }

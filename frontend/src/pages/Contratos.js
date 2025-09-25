@@ -86,11 +86,21 @@ export default function Contratos() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await fetch(`${API}/api/uploads/contratos`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData,
-      });
+      const tryUpload = async (url) =>
+        fetch(url, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: formData,
+        });
+
+      // Tenta /api/uploads/contratos, depois /import/contratos, por fim /uploads/contratos
+      let resp = await tryUpload(`${API}/api/uploads/contratos`);
+      if (!resp.ok && (resp.status === 404 || resp.status === 405)) {
+        resp = await tryUpload(`${API}/import/contratos`);
+      }
+      if (!resp.ok && (resp.status === 404 || resp.status === 405)) {
+        resp = await tryUpload(`${API}/uploads/contratos`);
+      }
       if (!resp.ok) {
         let msg = 'Falha ao importar contratos. Certifique-se de usar o modelo.';
         try {

@@ -239,6 +239,26 @@ export default function TestesLoja() {
         // Tentar capturar o erro detalhado do backend
         const errorData = await response.text();
         console.error('Erro da API:', response.status, errorData);
+        // Se credenciais inválidas, limpar sessão e redirecionar
+        try {
+          const errorJson = JSON.parse(errorData);
+          if (
+            response.status === 401 &&
+            (errorJson?.detail || '').includes('Could not validate credentials')
+          ) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setSnackbar({
+              open: true,
+              message: 'Sua sessão expirou. Faça login novamente.',
+              severity: 'warning',
+            });
+            setTimeout(() => (window.location.href = '/login'), 1200);
+            return;
+          }
+        } catch (_) {
+          /* ignore */
+        }
         let errorMessage = editandoTeste ? 'Erro ao atualizar teste' : 'Erro ao salvar teste';
         try {
           const errorJson = JSON.parse(errorData);
@@ -379,7 +399,28 @@ export default function TestesLoja() {
           });
           carregarTestes();
         } else {
-          throw new Error('Erro ao deletar teste');
+          // Tratar sessão expirada
+          const errorData = await response.text();
+          try {
+            const errorJson = JSON.parse(errorData);
+            if (
+              response.status === 401 &&
+              (errorJson?.detail || '').includes('Could not validate credentials')
+            ) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              setSnackbar({
+                open: true,
+                message: 'Sua sessão expirou. Faça login novamente.',
+                severity: 'warning',
+              });
+              setTimeout(() => (window.location.href = '/login'), 1200);
+              return;
+            }
+          } catch (_) {
+            /* ignore */
+          }
+          throw new Error('Erro ao deletar teste: ' + errorData);
         }
       } catch (error) {
         setSnackbar({
