@@ -30,7 +30,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU (optional for cross-platform)
+        uses: docker/setup-qemu-action@v3
 
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          install: true
       - name: Define image name (ghcr.io/willians1/gestao)
         id: img
         run: |
@@ -53,10 +61,9 @@ jobs:
       - name: Build and push (Dockerfile na raiz)
         uses: docker/build-push-action@v6
         with:
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

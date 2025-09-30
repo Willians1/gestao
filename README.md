@@ -230,3 +230,85 @@ Notas:
   - willians/willians
   - loja01/loja01 … loja16/loja16
 - Se necessário, execute também: `python backend/seed_initial_users_and_clients.py` para garantir 16 clientes e os usuários de manutenção.
+
+---
+
+## Deploy do Frontend no Netlify (Opção B)
+
+Para reduzir o consumo de pipeline no Render, você pode publicar o frontend React no Netlify e manter o backend no Render.
+
+Arquivos já adicionados:
+
+- `netlify.toml` na raiz, configurado com:
+  - base: `frontend`
+  - publish: `build`
+  - command: `npm ci && npm run build`
+- `frontend/public/_redirects` com `/* /index.html 200` para suportar SPA (React Router) em refresh.
+
+Passo a passo:
+
+1. Acessar o Netlify → Add new site → Import an existing project → selecione este repositório.
+1. Configure Build settings (caso não leia do netlify.toml):
+
+- Base directory: `frontend`
+- Build command: `npm ci && npm run build`
+- Publish directory: `build`
+
+1. Variáveis de ambiente (Netlify):
+
+- `REACT_APP_API_URL`: URL pública do backend no Render (ex.: `https://gestao-backend-lbab.onrender.com`).
+
+1. Backend (Render) — CORS:
+
+- Inclua a URL do Netlify (ex.: `https://<seusite>.netlify.app`) em `ALLOW_ORIGINS`.
+
+1. Deploy:
+
+- Cada push na branch configurada dispara apenas o build do frontend no Netlify (sem usar pipeline do Render).
+
+1. Testes:
+
+- Acesse a URL do Netlify e valide login, navegação e uploads. Os requests irão para o backend do Render via `REACT_APP_API_URL`.
+
+Observação: Se você usa `BrowserRouter`, os redirects adicionados evitam 404 ao recarregar rotas internas.
+
+---
+
+## Deploy gratuito tudo-em-um (backend + frontend)
+
+Se preferir hospedar ambos no mesmo lugar e sem custo, você pode usar um PaaS com plano free (ex.: Koyeb, Fly.io).
+
+O repositório inclui um `Dockerfile` multi-stage que:
+
+- constrói o frontend (React) e copia o build para a imagem final;
+- executa o backend (FastAPI) servindo a SPA diretamente.
+
+Como funciona:
+
+- Variáveis padrão na imagem:
+  - `DATA_DIR=/var/data` (uploads/DB temporários)
+  - `FRONTEND_DIST_DIR=/app/frontend_build` (onde o React build fica)
+- O backend monta a SPA na raiz `/` automaticamente quando `FRONTEND_DIST_DIR` existe.
+- A API permanece acessível pelas rotas `/healthz`, `/login/`, `/uploads/*`, etc.
+
+Passo a passo (Koyeb exemplo):
+
+1. Crie uma conta no Koyeb (plano free) e clique em Deploy → "Deploy a Docker image".
+
+1. Construa e publique sua imagem no GitHub Container Registry (GHCR) localmente ou via GitHub Actions.
+
+- Tag sugerida: `ghcr.io/<seu-user>/<repo>:latest`.
+
+1. No Koyeb, informe a imagem (pública) e porta 8000.
+
+1. Variáveis de ambiente:
+
+- `SECRET_KEY` (uma chave aleatória)
+- `ALLOW_ORIGINS` (inclua seu domínio público, se desejar)
+- `DATABASE_URL` (opcional; sem isso usa SQLite em `DATA_DIR`)
+
+1. Health check HTTP em `/healthz`.
+
+1. Deploy e teste: a raiz `/` deve servir o frontend; a API permanece funcional.
+
+Fly.io é similar: `fly launch` → configure porta 8000 → defina volumes se quiser persistência.

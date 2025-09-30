@@ -1,0 +1,76 @@
+name: Deploy to Render
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Qual serviço publicar"
+        required: false
+        default: both
+        type: choice
+        options: [both, backend, frontend]
+      timeoutMinutes:
+        description: "Timeout (min) para aguardar rotas no backend"
+        required: false
+        default: "15"
+        type: string
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "render.yaml"
+      - ".github/workflows/deploy-render.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK_URL }}
+      FRONTEND_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
+      BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Definir BASE do backend
+        run: |
+          echo "BASE=${BACKEND_BASE_URL:-https://gestao-backend-lbab.onrender.com}" >> $GITHUB_ENV
+
+      - name: Disparar deploy no Render (backend)
+        if: inputs.target != 'frontend'
+        run: |
+          if [ -z "$BACKEND_HOOK" ]; then
+            echo "[warn] RENDER_BACKEND_DEPLOY_HOOK_URL não configurado como Secret. Pulando backend.";
+            exit 0;
+          fi
+          echo "POST $BACKEND_HOOK"
+          curl -fsSL -X POST "$BACKEND_HOOK"
+
+      - name: Disparar deploy no Render (frontend)
+        if: inputs.target != 'backend'
+        run: |
+          if [ -z "$FRONTEND_HOOK" ]; then
+            echo "[warn] RENDER_FRONTEND_DEPLOY_HOOK_URL não configurado como Secret. Pulando frontend.";
+            exit 0;
+          fi
+          echo "POST $FRONTEND_HOOK"
+          curl -fsSL -X POST "$FRONTEND_HOOK"
+
+      - name: Aguardar backend publicar rotas novas
+        if: inputs.target != 'frontend'
+        run: |
+          set -e
+          TIMEOUT_MINUTES="${{ inputs.timeoutMinutes }}"
+          [ -z "$TIMEOUT_MINUTES" ] && TIMEOUT_MINUTES=15
+          echo "Aguardando até $TIMEOUT_MINUTES minutos por /api/uploads e /import/contratos em $BASE/openapi.json"
+          end=$((SECONDS+TIMEOUT_MINUTES*60))
+          until [ $SECONDS -ge $end ]; do
+            spec=$(curl -sS "$BASE/openapi.json" || true)
+            if echo "$spec" | jq -e '.paths["/api/uploads/{entidade}"]' >/dev/null 2>&1 && \
+               echo "$spec" | jq -e '.paths["/import/contratos"]' >/dev/null 2>&1; then
+              echo "Rotas detectadas no OpenAPI."; exit 0
+            fi
+            echo "Ainda não publicado. Aguardando..."; sleep 10
+          done
+          echo "Timeout aguardando rotas novas no backend"; exit 1

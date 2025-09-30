@@ -402,15 +402,25 @@ def healthz():
     meta = _get_build_meta()
     # Cálculo de uptime em segundos (desde o start do processo)
     uptime_seconds = (datetime.datetime.utcnow() - APP_START_TIME_UTC).total_seconds()
+    # Info CORS (preenchido após carga do módulo; aqui usamos globals().get para evitar NameError)
+    cors_info = {
+        "allow_origins": globals().get("allow_origins", []),
+        "allow_origin_regex": globals().get("allow_origin_regex", None),
+        "netlify_url": globals().get("NETLIFY_ORIGIN", None),
+    }
     return {
         "status": "ok",
         "version": meta.get("version"),
         "commit_sha": meta.get("commit_sha"),
         "build_time": meta.get("build_time"),
         "uptime_seconds": int(uptime_seconds),
+        "cors": cors_info,
     }
 
 # CORS
+# Inclui automaticamente o domínio do Netlify se informado por env e também aceita qualquer subdomínio *.netlify.app via regex.
+NETLIFY_ORIGIN = os.getenv("FRONTEND_NETLIFY_URL") or os.getenv("NETLIFY_URL") or os.getenv("NETLIFY_SITE_URL")
+
 origins_env = os.getenv(
     "ALLOW_ORIGINS",
     ",".join([
@@ -423,10 +433,19 @@ origins_env = os.getenv(
     ]),
 )
 allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+# Se um domínio específico do Netlify foi fornecido por env, inclua-o explicitamente na lista
+if NETLIFY_ORIGIN and NETLIFY_ORIGIN not in allow_origins:
+    allow_origins.append(NETLIFY_ORIGIN)
+
+# Regex padrão aceita localhost, onrender e qualquer subdomínio *.netlify.app; pode ser sobrescrita por ALLOW_ORIGIN_REGEX
+allow_origin_regex = os.getenv(
+    "ALLOW_ORIGIN_REGEX",
+    r"https?://((localhost:(3000|3001|3005))|([a-z0-9-]+\.netlify\.app)|gestao-frontend[\w-]*\.onrender\.com)$",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
-    allow_origin_regex=r"https?://(localhost:(3000|3001|3005)|gestao-frontend[\w-]*\.onrender\.com)$",
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -468,6 +487,25 @@ TESTES_AR_CONDICIONADO_DIR = os.path.join(UPLOAD_DIR, "testes-ar-condicionado")
 # Criar diretórios se não existirem
 os.makedirs(TESTES_LOJA_DIR, exist_ok=True)
 os.makedirs(TESTES_AR_CONDICIONADO_DIR, exist_ok=True)
+
+# Servir frontend (SPA) diretamente pelo backend, opcional
+# Se FRONTEND_DIST_DIR apontar para o build do React, montamos na raiz
+FRONTEND_DIST_DIR = os.getenv("FRONTEND_DIST_DIR")
+if not FRONTEND_DIST_DIR:
+    # Defaults razoáveis: caminho usado na imagem Docker e caminho local do repositório
+    docker_front = "/app/frontend_build"
+    local_front = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build")
+    if os.path.isdir(docker_front):
+        FRONTEND_DIST_DIR = docker_front
+    elif os.path.isdir(local_front):
+        FRONTEND_DIST_DIR = local_front
+
+if FRONTEND_DIST_DIR and os.path.isdir(FRONTEND_DIST_DIR):
+    try:
+        app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend_spa")
+    except Exception:
+        # Se falhar por algum motivo (ex.: permissões), apenas segue com API
+        pass
 
 # Configurar arquivos estáticos APENAS para subrotas de mídia (evita conflito com /uploads/{entidade})
 app.mount("/uploads/testes-loja", StaticFiles(directory=TESTES_LOJA_DIR), name="uploads_testes_loja")

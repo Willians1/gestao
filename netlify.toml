@@ -1,0 +1,13 @@
+# Netlify config for React (CRA) app in subfolder frontend/
+# Avoid Render build usage: Netlify will build only the frontend.
+
+[build]
+  base = "frontend"
+  publish = "build"
+  command = "npm ci && npm run build"
+
+# SPA fallback: route all requests to index.html so React Router works on refresh
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

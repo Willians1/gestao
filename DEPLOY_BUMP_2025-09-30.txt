@@ -1,0 +1,2 @@
+Deploy bump 2025-09-30
+Trigger CI/CD pipeline to build and publish fullstack Docker image to GHCR.
