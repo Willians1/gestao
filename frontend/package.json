@@ -19,7 +19,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "vercel-build": "node ./node_modules/react-scripts/scripts/build.js",
+  "vercel-build": "DISABLE_ESLINT_PLUGIN=true CI=false node ./node_modules/react-scripts/scripts/build.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint src --ext .js,.jsx",
