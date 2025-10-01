@@ -1376,6 +1376,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+@app.post("/login", response_model=Token)
 @app.post("/login/", response_model=Token)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.username == request.username).first()
