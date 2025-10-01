@@ -1,0 +1,1 @@
+Deploy bump 2025-10-01  — força redeploy no Render.
