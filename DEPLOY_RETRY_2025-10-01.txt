@@ -1,0 +1,9 @@
+trigger: Retry GHCR build after workflow failure - 2025-10-01 14:20
+
+Debugging workflow failure:
+- Dockerfile exists at root ✅
+- Workflow file exists ✅  
+- Previous build failed with "conclusion: failure"
+- Retrying build with clean trigger
+
+Expected GHCR image: ghcr.io/willians1/gestao:latest
