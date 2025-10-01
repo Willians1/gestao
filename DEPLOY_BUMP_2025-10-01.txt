@@ -1,0 +1,7 @@
+trigger: GHCR build and publish - 2025-10-01
+
+Deploy fullstack Docker image to GHCR:
+- Frontend React + Backend FastAPI
+- Multi-stage Dockerfile
+- Auto-publish to ghcr.io/willians1/gestao
+- Ready for Koyeb/Fly.io deployment
