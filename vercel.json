@@ -1,51 +1,33 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/build",
+  "devCommand": "cd frontend && npm start",
+  "installCommand": "pip install -r requirements.txt && cd frontend && npm install",
+  "framework": null,
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "source": "/api/:path*",
+      "destination": "/api/index.py"
     },
     {
-      "src": "frontend/package.json", 
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
+      "source": "/uploads/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/login",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/templates/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/build/index.html"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/healthz",
-      "dest": "/api/index.py"  
-    },
-    {
-      "src": "/login",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/templates/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg))",
-      "dest": "/frontend/build/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/build/index.html"
-    }
-  ],
-  "env": {
-    "SECRET_KEY": "@secret_key",
-    "DATABASE_URL": "@database_url",
-    "ALLOW_ORIGINS": "https://*.vercel.app,http://localhost:3000,http://localhost:3001"
-  }
+  ]
 }
