@@ -350,6 +350,49 @@ def _bootstrap_sqlite_to_postgres_if_needed():
 
 _bootstrap_sqlite_to_postgres_if_needed()
 
+# --- Bootstrap opcional: migrar Postgres -> SQLite ---
+def _bootstrap_postgres_to_sqlite_if_needed():
+    """Se MIGRATE_PG_TO_SQLITE=1, lê do Postgres (DATABASE_URL) e escreve em um
+    arquivo SQLite no DATA_DIR (ou similar). Útil para descontinuar Postgres e passar a usar SQLite.
+
+    Usa backend/migrate_postgres_to_sqlite.py. Não altera a conexão ativa do app;
+    apenas materializa o arquivo SQLite destino.
+    """
+    if os.getenv("MIGRATE_PG_TO_SQLITE", "0") != "1":
+        return
+    try:
+        from database import SQLALCHEMY_DATABASE_URL as _URL  # type: ignore
+    except Exception:
+        return
+    if not _URL.startswith("postgresql+"):
+        # Só faz sentido se a API estiver conectada hoje em Postgres
+        return
+    # Determina destino SQLite no DATA_DIR
+    try:
+        data_dir = DATA_DIR
+        os.makedirs(data_dir, exist_ok=True)
+        sqlite_path = os.path.join(data_dir, "gestao_obras.db")
+    except Exception:
+        return
+    # Invoca script de migração
+    try:
+        import importlib.util
+        script_path = os.path.join(os.path.dirname(__file__), "migrate_postgres_to_sqlite.py")
+        if not os.path.exists(script_path):
+            return
+        spec = importlib.util.spec_from_file_location("_migrate_pg2sqlite", script_path)
+        if not spec or not spec.loader:
+            return
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore
+        print("[BOOTSTRAP] Migrando dados do Postgres para SQLite (truncate destino)...")
+        mod.migrate(_URL, sqlite_path, do_truncate=True)  # type: ignore
+        print(f"[BOOTSTRAP] Arquivo SQLite gerado em: {sqlite_path}")
+    except Exception as e:
+        print(f"[BOOTSTRAP][WARN] Falha ao migrar Postgres -> SQLite: {e}")
+
+_bootstrap_postgres_to_sqlite_if_needed()
+
 def _get_build_meta():
     """Coleta metadados de build a partir de variáveis de ambiente.
 

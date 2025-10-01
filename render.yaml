@@ -13,10 +13,15 @@ services:
     envVars:
       - key: DATA_DIR
         value: /var/data
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gestao-postgres
-          property: connectionString
+      # Para executar uma migração Postgres -> SQLite, habilite MIGRATE_PG_TO_SQLITE=1 temporariamente
+      # e mantenha o DATABASE_URL neste deploy; após gerar o arquivo SQLite, remova DATABASE_URL
+      # e desative MIGRATE_PG_TO_SQLITE.
+      # - key: MIGRATE_PG_TO_SQLITE
+      #   value: "1"
+      # - key: DATABASE_URL
+      #   fromDatabase:
+      #     name: gestao-postgres
+      #     property: connectionString
       - key: SECRET_KEY
         value: secret-key-thors-gestor-2025
       - key: BOOTSTRAP_FROM_SQLITE
