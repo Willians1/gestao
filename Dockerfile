@@ -7,11 +7,12 @@ WORKDIR /app
 
 # Install dependencies
 COPY frontend/package*.json ./
-RUN npm ci --only=production --no-audit
+RUN npm ci
 
 # Copy source and build
 COPY frontend/ ./
-RUN chmod +x node_modules/.bin/* && npm run build
+ENV CI=false
+RUN npm run build
 
 # ---------- Backend runtime ----------
 FROM python:3.11-slim AS backend
