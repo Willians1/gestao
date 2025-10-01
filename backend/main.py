@@ -490,10 +490,13 @@ TESTES_AR_CONDICIONADO_DIR = os.path.join(UPLOAD_DIR, "testes-ar-condicionado")
 os.makedirs(TESTES_LOJA_DIR, exist_ok=True)
 os.makedirs(TESTES_AR_CONDICIONADO_DIR, exist_ok=True)
 
-# Servir frontend (SPA) diretamente pelo backend, opcional
-# Se FRONTEND_DIST_DIR apontar para o build do React, montamos na raiz
+# Servir frontend (SPA) diretamente pelo backend, opcional e desativado por padrão
+# Para evitar conflitos com as rotas da API (ex.: POST /login/ retornando 405 quando o SPA está montado
+# na raiz), só montamos o SPA se SERVE_FRONTEND=1.
+SERVE_FRONTEND = os.getenv("SERVE_FRONTEND", "0") == "1"
+# Se FRONTEND_DIST_DIR apontar para o build do React, montamos na raiz quando habilitado
 FRONTEND_DIST_DIR = os.getenv("FRONTEND_DIST_DIR")
-if not FRONTEND_DIST_DIR:
+if SERVE_FRONTEND and not FRONTEND_DIST_DIR:
     # Defaults razoáveis: caminho usado na imagem Docker e caminho local do repositório
     docker_front = "/app/frontend_build"
     local_front = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build")
@@ -502,7 +505,7 @@ if not FRONTEND_DIST_DIR:
     elif os.path.isdir(local_front):
         FRONTEND_DIST_DIR = local_front
 
-if FRONTEND_DIST_DIR and os.path.isdir(FRONTEND_DIST_DIR):
+if SERVE_FRONTEND and FRONTEND_DIST_DIR and os.path.isdir(FRONTEND_DIST_DIR):
     try:
         app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend_spa")
     except Exception:
