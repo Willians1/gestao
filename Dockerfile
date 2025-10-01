@@ -3,12 +3,15 @@
 
 # ---------- Frontend build ----------
 FROM node:20-alpine AS frontend
-WORKDIR /repo
-COPY frontend/package*.json frontend/
-WORKDIR /repo/frontend
-RUN npm ci
-COPY frontend/ /repo/frontend/
-RUN npm run build
+WORKDIR /app
+
+# Install dependencies
+COPY frontend/package*.json ./
+RUN npm ci --only=production --no-audit
+
+# Copy source and build
+COPY frontend/ ./
+RUN chmod +x node_modules/.bin/* && npm run build
 
 # ---------- Backend runtime ----------
 FROM python:3.11-slim AS backend
@@ -30,7 +33,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 COPY backend/ /app/backend/
 
 # Frontend build output
-COPY --from=frontend /repo/frontend/build /app/frontend_build
+COPY --from=frontend /app/build /app/frontend_build
 
 # Data dir
 ENV DATA_DIR=/var/data \
