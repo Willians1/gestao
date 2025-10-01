@@ -2,16 +2,24 @@
 # build bump: 2025-09-30
 
 # ---------- Frontend build ----------
-FROM node:20-alpine AS frontend
+FROM node:18-alpine AS frontend
+
+# Install necessary packages for node-gyp and building
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# Install dependencies
+# Copy package files and install dependencies
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 
-# Copy source and build
+# Copy source code
 COPY frontend/ ./
+
+# Build with explicit environment
+ENV NODE_ENV=production
 ENV CI=false
+ENV GENERATE_SOURCEMAP=false
 RUN npm run build
 
 # ---------- Backend runtime ----------
