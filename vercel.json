@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json", 
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/healthz",
+      "dest": "/api/index.py"  
+    },
+    {
+      "src": "/login",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/templates/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg))",
+      "dest": "/frontend/build/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/build/index.html"
+    }
+  ],
+  "env": {
+    "SECRET_KEY": "@secret_key",
+    "DATABASE_URL": "@database_url",
+    "ALLOW_ORIGINS": "https://*.vercel.app,http://localhost:3000,http://localhost:3001"
+  }
+}
