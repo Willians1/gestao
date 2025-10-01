@@ -1,0 +1,15 @@
+# Excluir grandes diretórios/arquivos do pacote da função (caso use Vercel no futuro)
+node_modules/
+frontend/
+uploads/
+uploads__restore/
+**/*.zip
+**/*.db
+backups/
+.venv/
+.cache/
+__pycache__/
+.DS_Store
+
+# Logs
+*.log
