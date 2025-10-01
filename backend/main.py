@@ -418,8 +418,9 @@ def healthz():
     }
 
 # CORS
-# Inclui automaticamente o domínio do Netlify se informado por env e também aceita qualquer subdomínio *.netlify.app via regex.
+# Inclui automaticamente domínios do Netlify/Vercel informados por env e também aceita subdomínios via regex.
 NETLIFY_ORIGIN = os.getenv("FRONTEND_NETLIFY_URL") or os.getenv("NETLIFY_URL") or os.getenv("NETLIFY_SITE_URL")
+VERCEL_ORIGIN = os.getenv("FRONTEND_VERCEL_URL") or os.getenv("VERCEL_URL")
 
 origins_env = os.getenv(
     "ALLOW_ORIGINS",
@@ -433,14 +434,15 @@ origins_env = os.getenv(
     ]),
 )
 allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
-# Se um domínio específico do Netlify foi fornecido por env, inclua-o explicitamente na lista
-if NETLIFY_ORIGIN and NETLIFY_ORIGIN not in allow_origins:
-    allow_origins.append(NETLIFY_ORIGIN)
+# Se domínios específicos foram fornecidos por env, inclua-os explicitamente na lista
+for extra in (NETLIFY_ORIGIN, VERCEL_ORIGIN):
+    if extra and extra not in allow_origins:
+        allow_origins.append(extra)
 
-# Regex padrão aceita localhost, onrender e qualquer subdomínio *.netlify.app; pode ser sobrescrita por ALLOW_ORIGIN_REGEX
+# Regex padrão aceita localhost, onrender e qualquer subdomínio *.netlify.app e *.vercel.app; pode ser sobrescrita por ALLOW_ORIGIN_REGEX
 allow_origin_regex = os.getenv(
     "ALLOW_ORIGIN_REGEX",
-    r"https?://((localhost:(3000|3001|3005))|([a-z0-9-]+\.netlify\.app)|gestao-frontend[\w-]*\.onrender\.com)$",
+    r"https?://((localhost:(3000|3001|3005))|([a-z0-9-]+\.netlify\.app)|([a-z0-9-]+\.vercel\.app)|gestao-frontend[\w-]*\.onrender\.com)$",
 )
 app.add_middleware(
     CORSMiddleware,
