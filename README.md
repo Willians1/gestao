@@ -209,6 +209,103 @@ Para backup:
 Copy-Item backend/gestao_obras.db backups/gestao_obras_$(Get-Date -Format 'yyyyMMdd_HHmmss').db
 ```
 
+### Persistência em Produção (Render) + Bootstrap Automático
+
+**Problema comum:** Se você não configurar persistência, cada deploy recria o container com um SQLite vazio, perdendo todos os dados.
+
+**Solução (Opção A - Recomendada):**
+
+1. **Criar Disk no Render**
+   - No painel do serviço backend, adicione um Disk (ex.: `/var/data/gestao`)
+   - Tamanho mínimo: 1GB
+
+2. **Configurar variável de ambiente**
+   - Defina `DB_DIR=/var/data/gestao` no Render
+   - Alternativamente: `DATA_DIR=/var/data/gestao`
+
+3. **Preparar template seed (primeira vez)**
+   
+   Localmente, com seus dados já populados:
+   ```powershell
+   # Ativa VS Code task "Preparar seed template"
+   # OU execute manualmente:
+   .venv\Scripts\Activate.ps1
+   python backend/scripts/prepare_seed_template.py
+   ```
+   
+   Isso irá:
+   - Validar seu DB local
+   - Gerar backup de segurança
+   - Copiar para `backend/seed_template/gestao_obras_seed.db`
+   - Garantir usuários admin/willians com senhas padrão
+   - Validar o template gerado
+
+4. **Commit e deploy**
+   ```powershell
+   git add backend/seed_template/gestao_obras_seed.db
+   git commit -m "feat: adicionar template seed para bootstrap produção"
+   git push origin main
+   ```
+
+5. **Bootstrap automático no primeiro start**
+   - O backend detecta que `DB_PATH` não existe
+   - Se `BOOTSTRAP_SEED_TEMPLATE=1` (padrão) e o template existe
+   - Copia automaticamente o template para o local correto
+   - Próximos deploys mantêm os dados (persistidos no Disk)
+
+**Variáveis de ambiente relevantes:**
+
+- `DB_DIR` ou `DATA_DIR`: **obrigatório** — diretório montado do Disk
+- `DB_FILE`: opcional — nome do arquivo (default: `gestao_obras.db`)
+- `BOOTSTRAP_SEED_TEMPLATE`: opcional — `1` (padrão) habilita cópia automática do template
+
+**Fluxo típico após configuração inicial:**
+
+```text
+Local (populado) 
+  → Preparar seed template (script)
+  → Commit template 
+  → Push para main 
+  → Deploy no Render
+  → Bootstrap automático (primeira vez)
+  → Disk persiste dados
+  → Próximos deploys mantêm DB intacto
+```
+
+**Alternativa (upload manual):**
+
+Se o template for muito grande (>100MB) ou contiver dados sensíveis:
+
+1. Baixe seu DB local via endpoint `/admin/backup/sqlite`
+2. Acesse shell do serviço no Render
+3. Copie manualmente para `$DB_DIR/gestao_obras.db`
+4. Reinicie o serviço
+
+**Validação pós-deploy:**
+
+Verifique se o bootstrap funcionou:
+```bash
+curl https://sua-api.render.com/debug/dbinfo \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Resposta esperada:
+```json
+{
+  "db_path": "/var/data/gestao/gestao_obras.db",
+  "exists": true
+}
+```
+
+**Troubleshooting:**
+
+- `exists: false` → DB não foi criado; verifique `DB_DIR` e permissões do Disk
+- `db_path: "/tmp/..."` → Disk não montado corretamente; dados serão perdidos
+- Bootstrap não aconteceu → Verifique se `backend/seed_template/gestao_obras_seed.db` existe no repositório
+- Erros de permissão → Garanta que o Disk tem permissão de escrita
+
+Para mais detalhes, veja `backend/seed_template/README.md`.
+
 ## Deploy do Frontend no Netlify (Opção B)
 
 Para reduzir o consumo de pipeline no Render, você pode publicar o frontend React no Netlify e manter o backend no Render.

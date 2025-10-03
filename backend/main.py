@@ -399,6 +399,49 @@ def _bootstrap_postgres_to_sqlite_if_needed():
 
 _bootstrap_postgres_to_sqlite_if_needed()
 
+# --- Bootstrap opcional: copiar template seed se DB não existir ---
+def _bootstrap_seed_template_if_needed():
+    """Se o arquivo SQLite principal não existir e houver um template em
+    backend/seed_template/gestao_obras_seed.db, copia-o para o local correto.
+
+    Garante que a aplicação nunca inicie com DB vazio em produção.
+    Controlado por BOOTSTRAP_SEED_TEMPLATE (padrão: 1).
+    """
+    if os.getenv("BOOTSTRAP_SEED_TEMPLATE", "1") != "1":
+        return
+    try:
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        return
+    if not DB_PATH:
+        return
+    # Se DB já existe, nada a fazer
+    if os.path.exists(DB_PATH):
+        return
+    # Procura template seed
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    template_candidates = [
+        os.path.join(base_dir, "seed_template", "gestao_obras_seed.db"),
+        os.path.join(base_dir, "seed_template", "gestao_obras.db"),
+    ]
+    template_path = None
+    for t in template_candidates:
+        if os.path.exists(t):
+            template_path = t
+            break
+    if not template_path:
+        print("[BOOTSTRAP_SEED] Template não encontrado; continuando com DB vazio.")
+        return
+    # Copia template para DB_PATH
+    try:
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        shutil.copy2(template_path, DB_PATH)
+        print(f"[BOOTSTRAP_SEED] Copiado template seed para {DB_PATH}")
+    except Exception as e:
+        print(f"[BOOTSTRAP_SEED][WARN] Falha ao copiar template: {e}")
+
+_bootstrap_seed_template_if_needed()
+
 def _get_build_meta():
     """Coleta metadados de build a partir de variáveis de ambiente.
 
@@ -1327,28 +1370,25 @@ def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
         LOCAL_DB_PATH = None
     return {"db_path": LOCAL_DB_PATH, "exists": bool(LOCAL_DB_PATH and os.path.exists(LOCAL_DB_PATH))}
 
-@app.get("/admin/backup/sqlite/list", summary="Lista os arquivos de backup existentes")
-def admin_list_backups(current_user: Usuario = Depends(get_current_user)):
-    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
-        raise HTTPException(status_code=403, detail="Apenas admin pode listar backups")
-    root = Path(__file__).resolve().parent.parent
-    backups_dir = root / "backups"
-    if not backups_dir.exists():
-        return {"count": 0, "files": []}
-    files = []
-    for p in backups_dir.iterdir():
-        if not p.is_file():
-            continue
-        if not (p.name.endswith('.db') or p.name.endswith('.zip')):
-            continue
-        stat = p.stat()
-        files.append({
-            "name": p.name,
-            "size": stat.st_size,
-            "modified": datetime.datetime.fromtimestamp(stat.st_mtime).isoformat(),
-        })
-    files.sort(key=lambda x: x["modified"], reverse=True)
-    return {"count": len(files), "files": files}
+@app.get("/debug/dbbootstrap")
+def debug_dbbootstrap(current_user: Usuario = Depends(get_current_user)):
+    """Mostra se o arquivo DB foi criado e se há seed template disponível.
+    Útil para verificar comportamento da Opção A em produção.
+    """
+    try:
+        from database import DB_PATH as LOCAL_DB_PATH  # type: ignore
+    except Exception:
+        LOCAL_DB_PATH = None
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    seed_default = os.path.join(base_dir, "seed_template", "gestao_obras_seed.db")
+    return {
+        "db_path": LOCAL_DB_PATH,
+        "db_exists": bool(LOCAL_DB_PATH and os.path.exists(LOCAL_DB_PATH)),
+        "seed_default_path": seed_default,
+        "seed_default_exists": os.path.exists(seed_default),
+        "SQLITE_BOOTSTRAP": os.getenv("SQLITE_BOOTSTRAP", "1"),
+        "SQLITE_SEED_FILE": os.getenv("SQLITE_SEED_FILE"),
+    }
 
 # --- CRUD Endpoints ---
 # Usuários
@@ -1776,6 +1816,9 @@ async def upload_entidade(entidade: str, file: UploadFile = File(...), db: Sessi
                     if contato and existing.contato != contato:
                         existing.contato = contato; changed = True
                     if endereco and existing.endereco != endereco:
+                        existing.endereco = endereco; changed = True
+                    if changed:
+                        db.add(existing)
                         existing.endereco = endereco; changed = True
                     if changed:
                         db.add(existing)

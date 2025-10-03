@@ -173,6 +173,12 @@
 			"type": "shell",
 			"command": ".venv\\Scripts\\Activate.ps1; python backend/scripts/backup_sqlite.py --zip",
 			"group": "build"
+		},
+		{
+			"label": "Preparar seed template",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python backend/scripts/prepare_seed_template.py",
+			"group": "build"
 		}
 	],
 	"inputs": [
