@@ -179,6 +179,13 @@
 			"type": "shell",
 			"command": ".venv\\Scripts\\Activate.ps1; python backend/scripts/prepare_seed_template.py",
 			"group": "build"
+		},
+		{
+			"label": "Teste: bootstrap Render (validar DB)",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_bootstrap_render.ps1 -BaseUrl https://gestao-backend-lbab.onrender.com",
+			"isBackground": false,
+			"group": "build"
 		}
 	],
 	"inputs": [
