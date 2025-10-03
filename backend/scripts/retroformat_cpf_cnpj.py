@@ -1,56 +1,84 @@
-"""Retroformata todos os campos clientes.cnpj armazenados apenas com dígitos
-para o formato padrão:
- - CPF: ###.###.###-##
- - CNPJ: ##.###.###/####-##
-Ignora valores já formatados (contendo pontuação) e tamanhos diferentes de 11/14.
-Uso:
-  python backend/scripts/retroformat_cpf_cnpj.py
+"""Retroformata/normaliza documentos CPF/CNPJ para somente dígitos.
+Se conectado a Postgres via DATABASE_URL, aplica a normalização lá.
+Caso SQLite (DB_PATH disponível), normaliza a tabela local.
 """
+
 from __future__ import annotations
-import sqlite3, re, os
+import os, re, sys
+from urllib.parse import urlparse
+
 try:
-    from database import DB_PATH  # type: ignore
+    from database import SQLALCHEMY_DATABASE_URL, DB_PATH  # type: ignore
 except Exception:
+    SQLALCHEMY_DATABASE_URL = None
     DB_PATH = None
 
-CPF_RE = re.compile(r'^\d{11}$')
-CNPJ_RE = re.compile(r'^\d{14}$')
+CPF_RE = re.compile(r"^\d{11}$")
+CNPJ_RE = re.compile(r"^\d{14}$")
 
 
-def fmt(value: str) -> str:
-    if CPF_RE.match(value):
-        return f"{value[0:3]}.{value[3:6]}.{value[6:9]}-{value[9:11]}"
-    if CNPJ_RE.match(value):
-        return f"{value[0:2]}.{value[2:5]}.{value[5:8]}/{value[8:12]}-{value[12:14]}"
-    return value
+def only_digits(v: str) -> str:
+    return re.sub(r"\D+", "", v or "")
 
 
-def main():
-    if not DB_PATH:
-        print('DB_PATH indisponível (não SQLite).')
-        return
-    if not os.path.exists(DB_PATH):
-        print('Arquivo não encontrado:', DB_PATH)
-        return
-    conn = sqlite3.connect(DB_PATH)
+def is_doc(v: str) -> bool:
+    d = only_digits(v)
+    return len(d) in (11, 14)
+
+
+def normalize(v: str) -> str:
+    d = only_digits(v)
+    return d if len(d) in (11, 14) else v
+
+
+def process_sqlite(db_path: str):
+    import sqlite3
+    conn = sqlite3.connect(db_path)
     try:
         cur = conn.cursor()
-        cur.execute('SELECT id, cnpj FROM clientes')
+        cur.execute("SELECT id, cnpj FROM clientes")
         rows = cur.fetchall()
         changed = 0
         for cid, doc in rows:
             if not doc:
                 continue
-            if any(ch in doc for ch in '.-/' ):
-                continue  # já formatado
-            new_val = fmt(doc)
-            if new_val != doc:
-                cur.execute('UPDATE clientes SET cnpj=? WHERE id=?', (new_val, cid))
+            nd = normalize(doc)
+            if nd != doc:
+                cur.execute("UPDATE clientes SET cnpj=? WHERE id=?", (nd, cid))
                 changed += 1
         conn.commit()
-        print(f'Reformatados {changed} registros. Total verificado: {len(rows)}. DB: {DB_PATH}')
+        print(f"[sqlite] Normalizados {changed} registros de {len(rows)}. DB={db_path}")
     finally:
         conn.close()
 
-if __name__ == '__main__':
+
+def process_postgres(url: str):
+    from sqlalchemy import create_engine, text
+    eng = create_engine(url)
+    with eng.begin() as conn:
+        res = conn.execute(text("SELECT id, cnpj FROM clientes"))
+        rows = res.fetchall()
+        changed = 0
+        for row in rows:
+            cid, doc = row
+            if not doc:
+                continue
+            nd = normalize(doc)
+            if nd != doc:
+                conn.execute(text("UPDATE clientes SET cnpj=:v WHERE id=:i"), {"v": nd, "i": cid})
+                changed += 1
+        print(f"[postgres] Normalizados {changed} registros de {len(rows)}.")
+
+
+def main():
+    url = SQLALCHEMY_DATABASE_URL
+    if url and url.startswith("postgres"):
+        process_postgres(url)
+        return
+    if DB_PATH and os.path.exists(DB_PATH):
+        process_sqlite(DB_PATH)
+        return
+    print("Nenhum backend suportado encontrado (sem DB_PATH e sem DATABASE_URL postgres).")
+
+if __name__ == "__main__":
     main()

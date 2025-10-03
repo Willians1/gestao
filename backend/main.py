@@ -948,17 +948,30 @@ ACTION_OFFSETS = {
     "create": 3,  # xx04
 }
 
-# Utilitário para formatar CPF/CNPJ.
-#  - 11 dígitos: CPF ###.###.###-##
-#  - 14 dígitos: CNPJ ##.###.###/####-##
-# Retorna None se vazio; se tamanho não bate (11/14) mantém original.
-def _format_cpf_cnpj(raw: str | None) -> str | None:
+# ================= CPF / CNPJ =================
+# Estratégia revisada:
+#  - Persistir sempre APENAS dígitos (normalizado) para garantir unicidade estável
+#  - Formatar apenas na resposta (GET / POST / PUT) para exibição
+#  - Aceitar entrada já formatada ou só dígitos
+CPF_LEN = 11
+CNPJ_LEN = 14
+
+def _normalize_cpf_cnpj(raw: str | None) -> str | None:
     if not raw:
         return None
     digits = re.sub(r"\D+", "", raw)
-    if len(digits) == 11:  # CPF
+    if len(digits) in (CPF_LEN, CNPJ_LEN):
+        return digits
+    # Retorna original (sem alteração) se tamanho inválido para manter comportamento anterior
+    return raw
+
+def _format_cpf_cnpj_display(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    digits = re.sub(r"\D+", "", raw)
+    if len(digits) == CPF_LEN:
         return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
-    if len(digits) == 14:  # CNPJ
+    if len(digits) == CNPJ_LEN:
         return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
     return raw
 
@@ -2212,17 +2225,26 @@ def listar_clientes(db: Session = Depends(get_db), current_user: Usuario = Depen
         q = q.filter(Cliente.id.in_(allowed))
     elif allowed is not None and len(allowed) == 0:
         return []
-    return q.all()
+    rows = q.all()
+    # Formatar campo cnpj (CPF ou CNPJ) somente para exibição
+    for r in rows:
+        if r.cnpj:
+            r.cnpj = _format_cpf_cnpj_display(r.cnpj)
+    return rows
 
 @app.post("/clientes/", response_model=ClienteSchema)
 def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "create"))):
     # Admin/Willians podem criar qualquer cliente; demais, apenas se pertencente ao seu escopo (após criação, será necessário associar no grupo via UI)
     data = cliente.dict()
-    data["cnpj"] = _format_cpf_cnpj(data.get("cnpj"))
+    data_original = data.get("cnpj")
+    data["cnpj"] = _normalize_cpf_cnpj(data_original)
     novo = Cliente(**data)
     db.add(novo)
     db.commit()
     db.refresh(novo)
+    # Formatar para exibição
+    if novo.cnpj:
+        novo.cnpj = _format_cpf_cnpj_display(novo.cnpj)
     return novo
 
 @app.put("/clientes/{cliente_id}", response_model=ClienteSchema)
@@ -2233,12 +2255,14 @@ def atualizar_cliente(cliente_id: int, cliente: ClienteSchema, db: Session = Dep
     # Atualiza apenas campos fornecidos (exceto id)
     payload = cliente.dict(exclude_unset=True)
     if "cnpj" in payload:
-        payload["cnpj"] = _format_cpf_cnpj(payload.get("cnpj"))
+        payload["cnpj"] = _normalize_cpf_cnpj(payload.get("cnpj"))
     for key, value in payload.items():
         if key != "id" and hasattr(db_cliente, key):
             setattr(db_cliente, key, value)
     db.commit()
     db.refresh(db_cliente)
+    if db_cliente.cnpj:
+        db_cliente.cnpj = _format_cpf_cnpj_display(db_cliente.cnpj)
     return db_cliente
 
 @app.delete("/clientes/{cliente_id}")
