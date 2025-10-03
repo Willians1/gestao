@@ -91,12 +91,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasPermission = (page, action = 'read') => {
-    // Se for admin pelo nível, libera tudo
+    // Se for admin pelo nível, libera tudo (case-insensitive e variações)
+    const role = (user?.nivel_acesso || '').toString().toLowerCase();
     if (
-      user?.nivel_acesso &&
-      (user.nivel_acesso === USER_ROLES.ADMIN || user.nivel_acesso === USER_ROLES.WILLIANS)
-    )
+      role === 'admin' ||
+      role === 'willians' ||
+      role === USER_ROLES.ADMIN.toLowerCase() ||
+      role === USER_ROLES.WILLIANS.toLowerCase()
+    ) {
       return true;
+    }
     // Mapear páginas para IDs de permissão base
     const pageToPermId = {
       '/cadastro-usuarios': 1101,
@@ -139,7 +143,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user?.nivel_acesso === USER_ROLES.ADMIN || user?.nivel_acesso === USER_ROLES.WILLIANS;
+    const role = (user?.nivel_acesso || '').toString().toLowerCase();
+    return (
+      role === 'admin' ||
+      role === 'willians' ||
+      role === USER_ROLES.ADMIN.toLowerCase() ||
+      role === USER_ROLES.WILLIANS.toLowerCase()
+    );
   };
 
   const canAccessTests = () => {

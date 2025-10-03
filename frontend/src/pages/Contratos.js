@@ -278,7 +278,7 @@ export default function Contratos() {
   return (
     <Box
       sx={{
-        backgroundColor: theme.palette.background.default,
+        background: theme.palette.background.default,
         minHeight: '100vh',
         p: { xs: 1, sm: 2, md: 4 },
       }}
@@ -323,7 +323,22 @@ export default function Contratos() {
             {canCreate && (
               <Button
                 variant="contained"
-                onClick={() => setOpenModal(true)}
+                onClick={() => {
+                  setForm({
+                    numero: '',
+                    cliente_id: '',
+                    cliente: '',
+                    valor: '',
+                    dataInicio: '',
+                    dataFim: '',
+                    tipo: '',
+                    situacao: '',
+                    prazoPagamento: '',
+                    quantidadeParcelas: '',
+                  });
+                  setSelectedFile(null);
+                  setOpenModal(true);
+                }}
                 size={isMobile ? 'small' : 'medium'}
                 sx={{ fontWeight: 600 }}
               >
@@ -704,7 +719,27 @@ export default function Contratos() {
         </Dialog>
 
         {/* Modal de cadastro */}
-        <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="sm" fullWidth>
+        <Dialog
+          open={openModal}
+          onClose={() => {
+            setOpenModal(false);
+            setForm({
+              numero: '',
+              cliente_id: '',
+              cliente: '',
+              valor: '',
+              dataInicio: '',
+              dataFim: '',
+              tipo: '',
+              situacao: '',
+              prazoPagamento: '',
+              quantidadeParcelas: '',
+            });
+            setSelectedFile(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
           <DialogTitle>Novo Contrato</DialogTitle>
           <DialogContent>
             <TextField
@@ -833,7 +868,26 @@ export default function Contratos() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenModal(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                setOpenModal(false);
+                setForm({
+                  numero: '',
+                  cliente_id: '',
+                  cliente: '',
+                  valor: '',
+                  dataInicio: '',
+                  dataFim: '',
+                  tipo: '',
+                  situacao: '',
+                  prazoPagamento: '',
+                  quantidadeParcelas: '',
+                });
+                setSelectedFile(null);
+              }}
+            >
+              Cancelar
+            </Button>
             <Button
               variant="contained"
               onClick={async () => {

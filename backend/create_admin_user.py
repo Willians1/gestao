@@ -1,6 +1,13 @@
+import os
 import sqlite3
 import hashlib
 from datetime import datetime
+
+try:
+    # Garante que usamos o mesmo DB da API
+    from database import DB_PATH  # type: ignore
+except Exception:
+    DB_PATH = None
 
 def hash_password(password):
     """Criar hash da senha usando SHA-256"""
@@ -9,8 +16,11 @@ def hash_password(password):
 def create_admin_user():
     """Criar usuário admin com senha admin"""
     try:
-        # Conectar ao banco de dados
-        conn = sqlite3.connect('gestao_obras.db')
+        # Conectar ao banco de dados correto
+        db_path = DB_PATH or os.path.join(os.getcwd(), 'gestao_obras.db')
+        # Se o diretório não existir, cria
+        os.makedirs(os.path.dirname(db_path) or '.', exist_ok=True)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Verificar se a tabela usuarios existe
@@ -73,7 +83,7 @@ def create_admin_user():
             print(f"Email: {user[4]}")
             print(f"Nível de Acesso: {user[5]}")
             print(f"Ativo: {user[6]}")
-            print(f"Criado em: {user[7]}")
+            # Campo de data pode não existir dependendo do schema atual
         else:
             print("❌ Erro ao criar usuário admin")
         

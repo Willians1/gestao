@@ -26,6 +26,7 @@ import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useAuth } from '../contexts/AuthContext';
+import { formatCpfCnpj, isValidCpfCnpj, digitsOnly, maskCnpjForDisplay } from '../utils/masks';
 
 export default function Clientes() {
   const theme = useTheme();
@@ -175,6 +176,11 @@ export default function Clientes() {
       return;
     }
 
+    if (!isValidCpfCnpj(form.cnpj)) {
+      alert('CPF/CNPJ inválido. Use 11 dígitos (CPF) ou 14 dígitos (CNPJ).');
+      return;
+    }
+
     setSaving(true);
     try {
       const resp = await fetch(`${API}/clientes/`, {
@@ -183,7 +189,7 @@ export default function Clientes() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, cnpj: digitsOnly(form.cnpj) }),
       });
       if (!resp.ok) {
         const error = await resp.text();
@@ -207,6 +213,11 @@ export default function Clientes() {
       return;
     }
 
+    if (!isValidCpfCnpj(editForm.cnpj)) {
+      alert('CPF/CNPJ inválido. Use 11 dígitos (CPF) ou 14 dígitos (CNPJ).');
+      return;
+    }
+
     setSaving(true);
     try {
       const resp = await fetch(`${API}/clientes/${selectedCliente.id}`, {
@@ -215,7 +226,7 @@ export default function Clientes() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, cnpj: digitsOnly(editForm.cnpj) }),
       });
       if (!resp.ok) {
         const error = await resp.text();
@@ -375,7 +386,11 @@ export default function Clientes() {
               <Button
                 variant="contained"
                 color="primary"
-                onClick={() => setOpenModal(true)}
+                onClick={() => {
+                  // Reset form ao abrir "Novo Cliente"
+                  setForm({ nome: '', cnpj: '', email: '', contato: '', endereco: '' });
+                  setOpenModal(true);
+                }}
                 size={window.innerWidth < 600 ? 'small' : 'medium'}
                 sx={{
                   fontSize: { xs: '0.75rem', sm: '0.875rem' },
@@ -577,7 +592,7 @@ export default function Clientes() {
                           variant="body2"
                           sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                         >
-                          {row.cnpj || ''}
+                          {row.cnpj ? maskCnpjForDisplay(row.cnpj) : ''}
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
@@ -639,7 +654,16 @@ export default function Clientes() {
         </TableContainer>
 
         {/* Modal de cadastro */}
-        <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="sm" fullWidth>
+        <Dialog
+          open={openModal}
+          onClose={() => {
+            setOpenModal(false);
+            // Limpa ao cancelar
+            setForm({ nome: '', cnpj: '', email: '', contato: '', endereco: '' });
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
           <DialogTitle>Novo Cliente</DialogTitle>
           <DialogContent>
             <TextField
@@ -651,11 +675,11 @@ export default function Clientes() {
               required
             />
             <TextField
-              label="CNPJ"
+              label="CPF/CNPJ"
               fullWidth
               margin="normal"
               value={form.cnpj}
-              onChange={(e) => setForm((f) => ({ ...f, cnpj: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, cnpj: formatCpfCnpj(e.target.value) }))}
               required
             />
             <TextField
@@ -682,7 +706,13 @@ export default function Clientes() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenModal(false)} disabled={saving}>
+            <Button
+              onClick={() => {
+                setOpenModal(false);
+                setForm({ nome: '', cnpj: '', email: '', contato: '', endereco: '' });
+              }}
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button
@@ -757,7 +787,11 @@ export default function Clientes() {
         {/* Modal de edição */}
         <Dialog
           open={openEditModal}
-          onClose={() => setOpenEditModal(false)}
+          onClose={() => {
+            setOpenEditModal(false);
+            // Limpa edição ao cancelar
+            setEditForm({ nome: '', cnpj: '', email: '', contato: '', endereco: '' });
+          }}
           maxWidth="sm"
           fullWidth
         >
@@ -772,11 +806,11 @@ export default function Clientes() {
               required
             />
             <TextField
-              label="CNPJ"
+              label="CPF/CNPJ"
               fullWidth
               margin="normal"
               value={editForm.cnpj}
-              onChange={(e) => setEditForm((f) => ({ ...f, cnpj: e.target.value }))}
+              onChange={(e) => setEditForm((f) => ({ ...f, cnpj: formatCpfCnpj(e.target.value) }))}
               required
             />
             <TextField
@@ -803,7 +837,13 @@ export default function Clientes() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenEditModal(false)} disabled={saving}>
+            <Button
+              onClick={() => {
+                setOpenEditModal(false);
+                setEditForm({ nome: '', cnpj: '', email: '', contato: '', endereco: '' });
+              }}
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button

@@ -96,7 +96,9 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <DashboardHomeSimple />
+                    <Layout>
+                      <DashboardHomeSimple />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -120,7 +122,9 @@ function App() {
                 path="/financeiro"
                 element={
                   <ProtectedRoute page="/financeiro">
-                    <FinanceiroPage />
+                    <Layout>
+                      <FinanceiroPage />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -138,7 +142,9 @@ function App() {
                 path="/clientes"
                 element={
                   <ProtectedRoute page="/clientes">
-                    <Clientes />
+                    <Layout>
+                      <Clientes />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -146,7 +152,9 @@ function App() {
                 path="/contratos"
                 element={
                   <ProtectedRoute page="/contratos">
-                    <Contratos />
+                    <Layout>
+                      <Contratos />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -174,7 +182,9 @@ function App() {
                 path="/despesas"
                 element={
                   <ProtectedRoute page="/despesas">
-                    <Despesas />
+                    <Layout>
+                      <Despesas />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -182,7 +192,9 @@ function App() {
                 path="/fornecedores"
                 element={
                   <ProtectedRoute page="/fornecedores">
-                    <Fornecedores />
+                    <Layout>
+                      <Fornecedores />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -190,7 +202,9 @@ function App() {
                 path="/orcamento-obra"
                 element={
                   <ProtectedRoute page="/orcamento-obra">
-                    <OrcamentoObra />
+                    <Layout>
+                      <OrcamentoObra />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -198,7 +212,9 @@ function App() {
                 path="/resumo-mensal"
                 element={
                   <ProtectedRoute page="/resumo-mensal">
-                    <ResumoMensal />
+                    <Layout>
+                      <ResumoMensal />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -206,7 +222,9 @@ function App() {
                 path="/valor-materiais"
                 element={
                   <ProtectedRoute page="/valor-materiais">
-                    <ValorMateriais />
+                    <Layout>
+                      <ValorMateriais />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />

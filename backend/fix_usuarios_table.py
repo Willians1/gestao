@@ -1,9 +1,20 @@
+import os
 import sqlite3
 from datetime import datetime
 import hashlib
 
+try:
+    # Usa o mesmo caminho do DB que a API utiliza
+    from database import DB_PATH  # type: ignore
+except Exception:
+    DB_PATH = None
+
+
 def fix_usuarios_table():
-    conn = sqlite3.connect('gestao_obras.db')
+    # Resolve o caminho do banco alvo: prioriza DB_PATH, senão usa arquivo local
+    db_path = DB_PATH or os.path.join(os.getcwd(), 'gestao_obras.db')
+    os.makedirs(os.path.dirname(db_path) or '.', exist_ok=True)
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     try:
@@ -12,6 +23,7 @@ def fix_usuarios_table():
         # 1. Verificar colunas existentes
         cursor.execute("PRAGMA table_info(usuarios)")
         columns = [column[1] for column in cursor.fetchall()]
+        print(f"Banco: {db_path}")
         print(f"Colunas existentes: {columns}")
 
         # 2. Adicionar colunas faltantes
@@ -23,7 +35,7 @@ def fix_usuarios_table():
             ('criado_em', 'DATETIME'),
             ('criado_por', 'INTEGER'),
             ('atualizado_em', 'DATETIME'),
-            ('atualizado_por', 'INTEGER')
+            ('atualizado_por', 'INTEGER'),
         ]
 
         for col_name, col_def in columns_to_add:
@@ -50,12 +62,15 @@ def fix_usuarios_table():
             nivel_acesso = 'admin' if username == 'admin' else 'manutencao'
             criado_em = datetime.now().isoformat()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE usuarios
                 SET nome = ?, email = ?, nivel_acesso = ?, ativo = 1,
                     criado_em = ?, atualizado_em = ?
                 WHERE id = ?
-            """, (nome, email, nivel_acesso, criado_em, criado_em, user_id))
+                """,
+                (nome, email, nivel_acesso, criado_em, criado_em, user_id),
+            )
 
             print(f"✓ Atualizado usuário: {username} (nível: {nivel_acesso})")
 
@@ -70,18 +85,24 @@ def fix_usuarios_table():
         # 5. Garantir que temos os usuários padrão
         if not any(u[0] == 'admin' for u in active_users):
             admin_hash = hashlib.sha256('admin'.encode()).hexdigest()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO usuarios (username, hashed_password, nome, email, nivel_acesso, ativo, criado_em, atualizado_em)
                 VALUES (?, ?, 'Administrador', 'admin@empresa.com', 'admin', 1, ?, ?)
-            """, ('admin', admin_hash, datetime.now().isoformat(), datetime.now().isoformat()))
+                """,
+                ('admin', admin_hash, datetime.now().isoformat(), datetime.now().isoformat()),
+            )
             print("✓ Criado usuário admin")
 
         if not any(u[0] == 'manutencao' for u in active_users):
             manutencao_hash = hashlib.sha256('123456'.encode()).hexdigest()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO usuarios (username, hashed_password, nome, email, nivel_acesso, ativo, criado_em, atualizado_em)
                 VALUES (?, ?, 'Manutenção', 'manutencao@empresa.com', 'manutencao', 1, ?, ?)
-            """, ('manutencao', manutencao_hash, datetime.now().isoformat(), datetime.now().isoformat()))
+                """,
+                ('manutencao', manutencao_hash, datetime.now().isoformat(), datetime.now().isoformat()),
+            )
             print("✓ Criado usuário manutencao")
 
         conn.commit()
@@ -100,6 +121,7 @@ def fix_usuarios_table():
         conn.rollback()
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     fix_usuarios_table()

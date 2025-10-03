@@ -2,6 +2,7 @@ from fastapi import File, UploadFile, FastAPI, Depends, HTTPException, status, F
 import io
 from typing import Optional, List
 import datetime
+import re
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -16,6 +17,11 @@ import uuid
 import sys
 sys.path.append(os.path.dirname(__file__))
 from database import SessionLocal, engine
+try:
+    # Caminho do arquivo SQLite quando em uso
+    from database import DB_PATH  # type: ignore
+except Exception:
+    DB_PATH = None
 from models import (
     Base,
     Usuario,
@@ -439,6 +445,18 @@ def debug_stats(db: Session = Depends(get_db)):
         generated_at=datetime.datetime.utcnow().isoformat() + "Z",
     )
 
+# Debug: caminho do DB ativo
+@app.get("/debug/dbpath")
+def debug_db_path():
+    try:
+        from database import SQLALCHEMY_DATABASE_URL as _URL  # type: ignore
+    except Exception:
+        _URL = None
+    return {
+        "db_path": DB_PATH,
+        "engine_url": _URL,
+    }
+
 # Health check super-rápido (sem tocar no banco)
 @app.get("/healthz")
 def healthz():
@@ -459,6 +477,8 @@ def healthz():
         "uptime_seconds": int(uptime_seconds),
         "cors": cors_info,
     }
+
+## admin seed endpoint movido para depois da definição de autenticação
 
 # CORS
 # Inclui automaticamente domínios do Netlify/Vercel informados por env e também aceita subdomínios via regex.
@@ -928,6 +948,20 @@ ACTION_OFFSETS = {
     "create": 3,  # xx04
 }
 
+# Utilitário para formatar CPF/CNPJ.
+#  - 11 dígitos: CPF ###.###.###-##
+#  - 14 dígitos: CNPJ ##.###.###/####-##
+# Retorna None se vazio; se tamanho não bate (11/14) mantém original.
+def _format_cpf_cnpj(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    digits = re.sub(r"\D+", "", raw)
+    if len(digits) == 11:  # CPF
+        return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
+    if len(digits) == 14:  # CNPJ
+        return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
+    return raw
+
 def _collect_permission_ids_for_user(db: Session, user: Usuario) -> set[int]:
     # Admin e Willians têm acesso total
     if str(user.nivel_acesso or '').lower() in {"admin", "willians"}:
@@ -1341,11 +1375,87 @@ class MyClientesResponse(BaseModel):
 @app.get("/me/clientes", response_model=MyClientesResponse)
 def get_my_clientes(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     ids = _get_allowed_client_ids(db, current_user)
+    # None significa acesso total; por compatibilidade retornamos todos IDs
     if ids is None:
-        # None significa acesso total; por compatibilidade retornamos todos IDs
         all_ids = [c.id for c in db.query(Cliente.id).all()]
         return {"grupo_id": current_user.grupo_id, "clientes": all_ids}
     return {"grupo_id": current_user.grupo_id, "clientes": ids}
+
+# --- DEBUG / DIAGNOSTICS AUXILIARES ---
+@app.get("/debug/clientes/count")
+def debug_clientes_count(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    total = db.query(Cliente).count()
+    sample = db.query(Cliente).order_by(Cliente.id).limit(5).all()
+    return {
+        "total": total,
+        "sample": [
+            {"id": c.id, "nome": c.nome, "cnpj": c.cnpj, "email": c.email, "contato": c.contato}
+            for c in sample
+        ],
+        "nivel": current_user.nivel_acesso,
+        "grupo_id": current_user.grupo_id,
+    }
+
+@app.get("/debug/permissoes/ids")
+def debug_permissoes_ids(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    ids = _collect_permission_ids_for_user(db, current_user)
+    return {"user": current_user.username, "nivel": current_user.nivel_acesso, "perm_ids": sorted(list(ids))}
+
+# --- Admin: Download de dados (SQLite e uploads) ---
+@app.get("/admin/download/sqlite")
+def admin_download_sqlite(current_user: Usuario = Depends(require_admin)):
+    """Baixa o arquivo SQLite atual (somente quando o backend usa SQLite)."""
+    if not DB_PATH:
+        raise HTTPException(status_code=400, detail="Backend não está usando SQLite")
+    if not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=404, detail="Arquivo SQLite não encontrado")
+
+    safe_name = os.path.basename(DB_PATH)
+
+    def iterfile():
+        with open(DB_PATH, "rb") as f:  # type: ignore[arg-type]
+            while True:
+                chunk = f.read(1024 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(
+        iterfile(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename={safe_name}"},
+    )
+
+@app.get("/admin/download/uploads.zip")
+def admin_download_uploads(current_user: Usuario = Depends(require_admin)):
+    """Gera e baixa um ZIP com o conteúdo de DATA_DIR/uploads."""
+    if not os.path.isdir(UPLOAD_DIR):
+        raise HTTPException(status_code=404, detail="Diretório de uploads não encontrado")
+
+    # Gera ZIP em memória (pode ser pesado para uploads muito grandes)
+    # Para cenários grandes, migrar para arquivo temporário em BACKUP_DIR
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        for root, _, files in os.walk(UPLOAD_DIR):
+            for fn in files:
+                abs_fp = os.path.join(root, fn)
+                # Segurança: garantir que está dentro do UPLOAD_DIR
+                if not os.path.abspath(abs_fp).startswith(os.path.abspath(UPLOAD_DIR)):
+                    continue
+                arcname = os.path.relpath(abs_fp, UPLOAD_DIR)
+                try:
+                    zf.write(abs_fp, arcname=arcname)
+                except Exception:
+                    # ignora arquivo problemático
+                    continue
+    buf.seek(0)
+    stamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    filename = f"uploads_{stamp}.zip"
+    return Response(
+        content=buf.read(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 @app.get("/usuarios/", response_model=List[UsuarioSchema])
 def listar_usuarios(db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1101, "read"))):
@@ -2107,11 +2217,38 @@ def listar_clientes(db: Session = Depends(get_db), current_user: Usuario = Depen
 @app.post("/clientes/", response_model=ClienteSchema)
 def criar_cliente(cliente: ClienteCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "create"))):
     # Admin/Willians podem criar qualquer cliente; demais, apenas se pertencente ao seu escopo (após criação, será necessário associar no grupo via UI)
-    novo = Cliente(**cliente.dict())
+    data = cliente.dict()
+    data["cnpj"] = _format_cpf_cnpj(data.get("cnpj"))
+    novo = Cliente(**data)
     db.add(novo)
     db.commit()
     db.refresh(novo)
     return novo
+
+@app.put("/clientes/{cliente_id}", response_model=ClienteSchema)
+def atualizar_cliente(cliente_id: int, cliente: ClienteSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "update"))):
+    db_cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not db_cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    # Atualiza apenas campos fornecidos (exceto id)
+    payload = cliente.dict(exclude_unset=True)
+    if "cnpj" in payload:
+        payload["cnpj"] = _format_cpf_cnpj(payload.get("cnpj"))
+    for key, value in payload.items():
+        if key != "id" and hasattr(db_cliente, key):
+            setattr(db_cliente, key, value)
+    db.commit()
+    db.refresh(db_cliente)
+    return db_cliente
+
+@app.delete("/clientes/{cliente_id}")
+def deletar_cliente(cliente_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(_permission_required(1201, "delete"))):
+    db_cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if not db_cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    db.delete(db_cliente)
+    db.commit()
+    return {"ok": True}
 
 # Despesas
 @app.get("/despesas/", response_model=List[DespesaSchema])

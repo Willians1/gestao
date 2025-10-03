@@ -10,8 +10,42 @@
 		{
 			"label": "Backend: uvicorn (venv)",
 			"type": "shell",
-			"command": ".venv\\Scripts\\Activate.ps1; python -m uvicorn backend.main:app --reload",
+			"command": ".venv\\Scripts\\Activate.ps1; $EnvFile='.env.local'; if (Test-Path $EnvFile) { Get-Content $EnvFile | ForEach-Object { if ($_ -match '^[^#].+=') { $pair = $_ -split '=',2; $name=$pair[0]; $val=$pair[1]; [System.Environment]::SetEnvironmentVariable($name,$val,'Process') } } }; python -m uvicorn backend.main:app --reload --port 8000",
 			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Retroformatar CPF/CNPJ (clientes)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python backend/scripts/retroformat_cpf_cnpj.py",
+			"group": "build"
+		},
+		{
+			"label": "Backend: criar admin local",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python backend/create_admin_user.py",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Backend: corrigir admin local",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python backend/fix_admin_user.py",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Teste: auth local (/me*, testes, backup)",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_auth_local.ps1 -BaseUrl http://localhost:8000",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Seed: clientes e usuarios (prod)",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/seed_clients_and_users.ps1",
+			"isBackground": false,
 			"group": "build"
 		},
 		{
@@ -39,13 +73,13 @@
 		{
 			"label": "Teste: upload contratos (produção)",
 			"type": "shell",
-			"command": "$ErrorActionPreference = 'Stop'; $base='https://gestao-backend-lbab.onrender.com'; $token = (Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}').access_token; $tmp = New-Item -ItemType Directory -Path \"$env:TEMP/ctimport\" -Force; $xlsx = \"$env:TEMP/ctimport/template_contratos.xlsx\"; Invoke-WebRequest -Headers @{ Authorization = \"Bearer $token\" } -Uri \"$base/templates/contratos\" -OutFile $xlsx; $form = @{}; $fileBytes = [System.IO.File]::ReadAllBytes($xlsx); $fileContent = New-Object System.Byte[] $fileBytes.Length; [Array]::Copy($fileBytes, $fileContent, $fileBytes.Length); $filePart = @{ file = New-Object System.IO.MemoryStream(,$fileContent) }; $filePart.file.Position = 0; $filePart.fileName = 'template_contratos.xlsx'; $filePart.ContentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; $resp = Invoke-RestMethod -Method Post -Uri \"$base/uploads/contratos\" -Headers @{ Authorization = \"Bearer $token\" } -Form $filePart; Write-Host (\"Upload result: entidade=\" + $resp.entidade + \", imported=\" + $resp.records_imported)",
+			"command": "$ErrorActionPreference = 'Stop'; $base='https://gestao-backend-lbab.onrender.com'; $token = (Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}').access_token; $tmp = New-Item -ItemType Directory -Path \"$env:TEMP/ctimport\" -Force; $xlsx = \"$env:TEMP/ctimport/template_contratos.xlsx\"; Invoke-WebRequest -Headers @{ Authorization = \"Bearer $token\" } -Uri \"$base/templates/contratos\" -OutFile $xlsx; $form = @{}; $fileBytes = [System.IO.File]::ReadAllBytes($xlsx); $fileContent = New-Object System.Byte[] $fileBytes.Length; [Array]::Copy($fileBytes, $fileContent, $fileBytes.Length); $filePart = @{ file = New-Object System.IO.MemoryStream(,$fileContent) }; $filePart.file.Position = 0; $filePart.fileName = 'template_contratos.xlsx'; $filePart.ContentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; $resp = Invoke-RestMethod -Method Post -Uri \"$base/uploads/contratos\" -Headers @{ Authorization = \"Bearer $token\" } -Form $filePart; Write-Host (\"Upload result: entidade=\" + $resp.entidade + ' imported=' + $resp.records_imported)",
 			"group": "build"
 		},
 		{
 			"label": "Teste: upload contratos (produção, robusto)",
 			"type": "shell",
-			"command": "$ErrorActionPreference = 'Stop';\n$base='https://gestao-backend-lbab.onrender.com';\n# Login\n$login = Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}';\n$token = $login.access_token;\nif (-not $token) { throw 'Falha ao obter token'; }\n$headers = @{ Authorization = \"Bearer $token\" };\n\n# Baixar template para TEMP seguro\n$tmpDir = Join-Path $env:TEMP 'ctimport'; New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null;\n$xlsx = Join-Path $tmpDir 'template_contratos.xlsx';\nInvoke-WebRequest -Headers $headers -Uri \"$base/templates/contratos\" -OutFile $xlsx;\nif (-not (Test-Path $xlsx)) { throw 'Falha ao baixar template'; }\n\n# Preparar multipart\n$fileBytes = [System.IO.File]::ReadAllBytes($xlsx);\n$ms = New-Object System.IO.MemoryStream(,$fileBytes);\n$form = @{ file = $ms };\n\n# Helper: tenta rota e retorna resposta\nfunction Invoke-Upload($url){\n  try { return Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Form $form -ErrorAction Stop }\n  catch { return $_.Exception.Response }\n}\n\n# Tenta /api/uploads/contratos -> /import/contratos -> /uploads/contratos\n$urls = @(\n  \"$base/api/uploads/contratos\",\n  \"$base/import/contratos\",\n  \"$base/uploads/contratos\"\n)\n$response = $null\n$status = 0\nforeach ($u in $urls) {\n  Write-Host (\"Tentando: \" + $u)\n  $r = Invoke-Upload $u\n  if ($r -is [System.Net.HttpWebResponse]) { $status = [int]$r.StatusCode; Write-Host (\"HTTP \" + $status) }\n  else { $response = $r; break }\n}\n\nif ($null -eq $response) {\n  throw (\"Falha nas rotas de upload. Último status: \" + $status)\n}\n\nWrite-Host (\"Upload result: entidade=\" + $response.entidade + \", imported=\" + $response.records_imported)\n",
+			"command": "$ErrorActionPreference = 'Stop';\n$base='https://gestao-backend-lbab.onrender.com';\n# Login\n$login = Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body '{\"username\":\"admin\",\"password\":\"admin\"}';\n$token = $login.access_token;\nif (-not $token) { throw 'Falha ao obter token'; }\n$headers = @{ Authorization = \"Bearer $token\" };\n\n# Baixar template para TEMP seguro\n$tmpDir = Join-Path $env:TEMP 'ctimport'; New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null;\n$xlsx = Join-Path $tmpDir 'template_contratos.xlsx';\nInvoke-WebRequest -Headers $headers -Uri \"$base/templates/contratos\" -OutFile $xlsx;\nif (-not (Test-Path $xlsx)) { throw 'Falha ao baixar template'; }\n\n# Preparar multipart\n$fileBytes = [System.IO.File]::ReadAllBytes($xlsx);\n$ms = New-Object System.IO.MemoryStream(,$fileBytes);\n$form = @{ file = $ms };\n\n# Helper: tenta rota e retorna resposta\nfunction Invoke-Upload($url){\n  try { return Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Form $form -ErrorAction Stop }\n  catch { return $_.Exception.Response }\n}\n\n# Tenta /api/uploads/contratos -> /import/contratos -> /uploads/contratos\n$urls = @(\n  \"$base/api/uploads/contratos\",\n  \"$base/import/contratos\",\n  \"$base/uploads/contratos\"\n)\n$response = $null\n$status = 0\nforeach ($u in $urls) {\n  Write-Host (\"Tentando: \" + $u)\n  $r = Invoke-Upload $u\n  if ($r -is [System.Net.HttpWebResponse]) { $status = [int]$r.StatusCode; Write-Host (\"HTTP \" + $status) }\n  else { $response = $r; break }\n}\n\nif ($null -eq $response) {\n  throw (\"Falha nas rotas de upload. Último status: \" + $status)\n}\n\nWrite-Host (\"Upload result: entidade=\" + $response.entidade + ' imported=' + $response.records_imported)\n",
 			"isBackground": false,
 			"group": "build"
 		},
@@ -62,32 +96,28 @@
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_upload_prod.ps1",
 			"isBackground": false,
 			"group": "build"
-		}
-		,
+		},
 		{
 			"label": "Monitorar deploy e testar upload (prod)",
 			"type": "shell",
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/monitor_deploy_and_test.ps1",
 			"isBackground": true,
 			"group": "build"
-		}
-		,
+		},
 		{
 			"label": "Render: disparar deploy (hooks/API)",
 			"type": "shell",
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/render_trigger_deploy.ps1",
 			"isBackground": false,
 			"group": "build"
-		}
-		,
+		},
 		{
 			"label": "Render: esperar rotas backend",
 			"type": "shell",
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/render_wait_backend.ps1",
 			"isBackground": false,
 			"group": "build"
-		}
-		,
+		},
 		{
 			"label": "Deploy Render + Teste Upload",
 			"dependsOn": [
@@ -103,68 +133,51 @@
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/check_healthz.ps1 -BaseUrl https://gestao-backend-lbab.onrender.com -NetlifyUrl https://seusite.netlify.app",
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Sync: dados do Render -> local",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/sync_from_render.ps1",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Sync: clientes do Render -> local",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; $EnvFile='.env.local'; if (Test-Path $EnvFile) { Get-Content $EnvFile | ForEach-Object { if ($_ -match '^[^#].+=') { $pair = $_ -split '=',2; $name=$pair[0]; $val=$pair[1]; [System.Environment]::SetEnvironmentVariable($name,$val,'Process') } } }; $tmp = (pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/export_clients_render.ps1 | Select-String 'Exportado JSON:' | ForEach-Object { ($_ -split ':',2)[1].Trim() } | Select-Object -Last 1); if (-not $tmp) { throw 'Falha ao exportar clientes do Render' }; python backend/sync_clients_from_render.py --json $tmp",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Sync: contratos do Render -> local",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; $EnvFile='.env.local'; if (Test-Path $EnvFile) { Get-Content $EnvFile | ForEach-Object { if ($_ -match '^[^#].+=') { $pair = $_ -split '=',2; $name=$pair[0]; $val=$pair[1]; [System.Environment]::SetEnvironmentVariable($name,$val,'Process') } } }; $tmp = (pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/export_contracts_render.ps1 | Select-String 'Exportado JSON:' | ForEach-Object { ($_ -split ':',2)[1].Trim() } | Select-Object -Last 1); if (-not $tmp) { throw 'Falha ao exportar contratos do Render' }; python backend/sync_contracts_from_render.py --json $tmp",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Importar Clientes/Usuários (PG→destino)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; $ErrorActionPreference='Stop'; $pg='${input:pgurl}'; $tr='${input:truncate}'; if (-not $pg) { throw 'Informe a URL do Postgres de origem.' }; $args = @('--pgurl', $pg); if ($tr -eq 'Sim') { $args += '--truncate' }; python backend/import_clients_users_from_postgres.py @args",
+			"group": "build"
+		}
+	],
+	"inputs": [
+		{
+			"id": "pgurl",
+			"type": "promptString",
+			"description": "Informe a URL do Postgres de origem (ex: postgresql+psycopg://user:pass@host:5432/db)",
+			"default": "postgresql+psycopg://user:pass@host:5432/db"
+		},
+		{
+			"id": "truncate",
+			"type": "pickString",
+			"description": "Limpar destino antes de inserir?",
+			"options": [
+				"Não",
+				"Sim"
+			],
+			"default": "Não"
 		}
 	]
 }
-name: Build and Publish Fullstack Image (GHCR)
-
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-    paths:
-      - 'Dockerfile'
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/docker-publish-ghcr.yml'
-
-permissions:
-  contents: read
-  packages: write
-
-jobs:
-  build-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Define image name (ghcr.io/willians1/gestao)
-        id: img
-        run: |
-          echo "image=ghcr.io/willians1/gestao" >> $GITHUB_OUTPUT
-
-      - name: Compose tags (sha, latest, and tag if present)
-        id: tags
-        run: |
-          SHORT_SHA=${GITHUB_SHA::7}
-          TAGS="${{ steps.img.outputs.image }}:sha-${SHORT_SHA}"
-          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-            TAGS="$TAGS,${{ steps.img.outputs.image }}:latest"
-          fi
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            TAGS="$TAGS,${{ steps.img.outputs.image }}:${TAG}"
-          fi
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-
-      - name: Build and push (Dockerfile na raiz)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

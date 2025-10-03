@@ -1,10 +1,19 @@
+import os
 import sqlite3
 import hashlib
+
+try:
+    # Garante que usamos o mesmo DB da API
+    from database import DB_PATH  # type: ignore
+except Exception:
+    DB_PATH = None
 
 def fix_admin_user():
     """Corrigir dados do usuário admin"""
     try:
-        conn = sqlite3.connect('gestao_obras.db')
+        db_path = DB_PATH or os.path.join(os.getcwd(), 'gestao_obras.db')
+        os.makedirs(os.path.dirname(db_path) or '.', exist_ok=True)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
         # Verificar dados atuais
@@ -21,10 +30,9 @@ def fix_admin_user():
                 nome = ?,
                 email = ?,
                 nivel_acesso = ?,
-                ativo = ?,
-                is_admin = ?
+                ativo = ?
             WHERE username = ?
-        """, (password_hash, "Administrador", "admin@thors.com", "Admin", 1, 1, "admin"))
+        """, (password_hash, "Administrador", "admin@thors.com", "Admin", 1, "admin"))
         
         conn.commit()
         

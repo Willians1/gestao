@@ -8,11 +8,24 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "Base: $Base"
 
-# Login
+# Login (tenta /login e /login/)
 $loginBody = @{ username = $Username; password = $Password } | ConvertTo-Json
 $baseUrl = $Base.TrimEnd('/')
-$login = Invoke-RestMethod -Method Post -Uri ($baseUrl + '/login/') -ContentType 'application/json' -Body $loginBody
-if (-not $login.access_token) { throw 'Falha ao obter token' }
+$login = $null
+$loginUrls = @(
+  ($baseUrl + '/login'),
+  ($baseUrl + '/login/')
+)
+foreach ($lu in $loginUrls) {
+  try {
+    $login = Invoke-RestMethod -Method Post -Uri $lu -ContentType 'application/json' -Body $loginBody -ErrorAction Stop
+    if ($login -and $login.access_token) { break }
+  } catch {
+    # Continua para próxima variação
+    continue
+  }
+}
+if (-not $login -or -not $login.access_token) { throw 'Falha ao obter token (tentativas: /login e /login/)' }
 $headers = @{ Authorization = ('Bearer ' + $login.access_token) }
 Write-Host "Login OK"
 
