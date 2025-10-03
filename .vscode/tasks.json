@@ -186,6 +186,13 @@
 			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/test_bootstrap_render.ps1 -BaseUrl https://gestao-backend-lbab.onrender.com",
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "Upload: template seed → Render",
+			"type": "shell",
+			"command": "pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/upload_template_to_render.ps1 -BaseUrl https://gestao-backend-lbab.onrender.com",
+			"isBackground": false,
+			"group": "build"
 		}
 	],
 	"inputs": [
