@@ -160,6 +160,12 @@
 			"type": "shell",
 			"command": ".venv\\Scripts\\Activate.ps1; $ErrorActionPreference='Stop'; $pg='${input:pgurl}'; $tr='${input:truncate}'; if (-not $pg) { throw 'Informe a URL do Postgres de origem.' }; $args = @('--pgurl', $pg); if ($tr -eq 'Sim') { $args += '--truncate' }; python backend/import_clients_users_from_postgres.py @args",
 			"group": "build"
+		},
+		{
+			"label": "Listar backups (admin)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; $ErrorActionPreference='Stop'; $base='http://localhost:8000'; $u='admin'; $p='admin'; $body=('{\"username\":\"'+$u+'\",\"password\":\"'+$p+'\"}'); $token=(Invoke-RestMethod -Method Post -Uri \"$base/login/\" -ContentType 'application/json' -Body $body).access_token; if (-not $token) { throw 'Falha login'; }; Write-Host '--- LISTA DE BACKUPS ---'; Invoke-RestMethod -Headers @{ Authorization = \"Bearer $token\" } -Uri \"$base/admin/backup/sqlite/list\" | ConvertTo-Json -Depth 5",
+			"group": "build"
 		}
 		,
 		{
