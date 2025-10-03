@@ -1319,6 +1319,14 @@ def admin_backup_sqlite(current_user: Usuario = Depends(get_current_user)):
         'Content-Disposition': f'attachment; filename="' + filename + '"'
     })
 
+@app.get("/debug/dbinfo")
+def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
+    try:
+        from database import DB_PATH as LOCAL_DB_PATH  # type: ignore
+    except Exception:
+        LOCAL_DB_PATH = None
+    return {"db_path": LOCAL_DB_PATH, "exists": bool(LOCAL_DB_PATH and os.path.exists(LOCAL_DB_PATH))}
+
 @app.get("/admin/backup/sqlite/list", summary="Lista os arquivos de backup existentes")
 def admin_list_backups(current_user: Usuario = Depends(get_current_user)):
     if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:

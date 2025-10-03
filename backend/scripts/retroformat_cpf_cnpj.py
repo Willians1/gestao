@@ -3,9 +3,15 @@ Uso: python backend/scripts/retroformat_cpf_cnpj.py
 """
 import re, os, sqlite3
 try:
-    from database import DB_PATH  # type: ignore
+    from backend.database import DB_PATH  # type: ignore
 except Exception:
-    DB_PATH = None
+    try:
+        import sys
+        from pathlib import Path as _P
+        sys.path.append(str(_P(__file__).resolve().parents[1]))
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        DB_PATH = None
 
 CPF_RE = re.compile(r"^\d{11}$")
 CNPJ_RE = re.compile(r"^\d{14}$")

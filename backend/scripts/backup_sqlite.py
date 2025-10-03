@@ -16,9 +16,16 @@ import zipfile
 from pathlib import Path
 
 try:
-    from database import DB_PATH  # type: ignore
+    from backend.database import DB_PATH  # type: ignore
 except Exception:
-    DB_PATH = None
+    try:
+        # Fallback: adicionar pasta backend ao sys.path
+        import sys
+        from pathlib import Path as _P
+        sys.path.append(str(_P(__file__).resolve().parents[1]))
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        DB_PATH = None
 
 
 def backup(sqlite_path: str, do_zip: bool = False) -> tuple[str, str | None]:
