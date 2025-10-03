@@ -161,6 +161,13 @@
 			"command": ".venv\\Scripts\\Activate.ps1; $ErrorActionPreference='Stop'; $pg='${input:pgurl}'; $tr='${input:truncate}'; if (-not $pg) { throw 'Informe a URL do Postgres de origem.' }; $args = @('--pgurl', $pg); if ($tr -eq 'Sim') { $args += '--truncate' }; python backend/import_clients_users_from_postgres.py @args",
 			"group": "build"
 		}
+		,
+		{
+			"label": "Backup: SQLite (cópia + zip)",
+			"type": "shell",
+			"command": ".venv\\Scripts\\Activate.ps1; python backend/scripts/backup_sqlite.py --zip",
+			"group": "build"
+		}
 	],
 	"inputs": [
 		{
