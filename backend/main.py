@@ -949,10 +949,6 @@ ACTION_OFFSETS = {
 }
 
 # ================= CPF / CNPJ =================
-# Estratégia revisada:
-#  - Persistir sempre APENAS dígitos (normalizado) para garantir unicidade estável
-#  - Formatar apenas na resposta (GET / POST / PUT) para exibição
-#  - Aceitar entrada já formatada ou só dígitos
 CPF_LEN = 11
 CNPJ_LEN = 14
 
@@ -1277,6 +1273,51 @@ def backup_cancel(current_user: Usuario = Depends(require_admin)):
         set_cancel()
         return {"message": "Cancelamento solicitado"}
     return {"message": "Nenhum backup em andamento"}
+
+# ================= CPF / CNPJ =================
+# Estratégia revisada:
+#  - Persistir sempre APENAS dígitos (normalizado) para garantir unicidade estável
+#  - Formatar apenas na resposta (GET / POST / PUT) para exibição
+#  - Aceitar entrada já formatada ou só dígitos
+CPF_LEN = 11
+CNPJ_LEN = 14
+
+def _normalize_cpf_cnpj(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    digits = re.sub(r"\D+", "", raw)
+    if len(digits) in (CPF_LEN, CNPJ_LEN):
+        return digits
+    # Retorna original (sem alteração) se tamanho inválido para manter comportamento anterior
+    return raw
+
+def _format_cpf_cnpj_display(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    digits = re.sub(r"\D+", "", raw)
+    if len(digits) == CPF_LEN:
+        return f"{digits[0:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:11]}"
+    if len(digits) == CNPJ_LEN:
+        return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
+    return raw
+
+# ================= Backup SQLite =================
+@app.get("/admin/backup/sqlite", summary="Download do arquivo SQLite atual")
+def admin_backup_sqlite(current_user: Usuario = Depends(get_current_user)):
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode gerar backup")
+    try:
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        DB_PATH = None
+    if not DB_PATH or not os.path.exists(DB_PATH):
+        raise HTTPException(status_code=500, detail="DB_PATH indisponível")
+    with open(DB_PATH, 'rb') as f:
+        data = f.read()
+    filename = os.path.basename(DB_PATH)
+    return StreamingResponse(io.BytesIO(data), media_type='application/octet-stream', headers={
+        'Content-Disposition': f'attachment; filename="' + filename + '"'
+    })
 
 # --- CRUD Endpoints ---
 # Usuários
