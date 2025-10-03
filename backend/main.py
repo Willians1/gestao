@@ -1319,6 +1319,29 @@ def admin_backup_sqlite(current_user: Usuario = Depends(get_current_user)):
         'Content-Disposition': f'attachment; filename="' + filename + '"'
     })
 
+@app.get("/admin/backup/sqlite/list", summary="Lista os arquivos de backup existentes")
+def admin_list_backups(current_user: Usuario = Depends(get_current_user)):
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode listar backups")
+    root = Path(__file__).resolve().parent.parent
+    backups_dir = root / "backups"
+    if not backups_dir.exists():
+        return {"count": 0, "files": []}
+    files = []
+    for p in backups_dir.iterdir():
+        if not p.is_file():
+            continue
+        if not (p.name.endswith('.db') or p.name.endswith('.zip')):
+            continue
+        stat = p.stat()
+        files.append({
+            "name": p.name,
+            "size": stat.st_size,
+            "modified": datetime.datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        })
+    files.sort(key=lambda x: x["modified"], reverse=True)
+    return {"count": len(files), "files": files}
+
 # --- CRUD Endpoints ---
 # Usuários
 class UsuarioSchema(BaseModel):
