@@ -1362,6 +1362,82 @@ def admin_backup_sqlite(current_user: Usuario = Depends(get_current_user)):
         'Content-Disposition': f'attachment; filename="' + filename + '"'
     })
 
+@app.post("/admin/backup/sqlite/restore", summary="Restaura DB a partir de arquivo upload (admin only)")
+def admin_restore_sqlite(
+    file: UploadFile = File(...),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Restaura o arquivo SQLite principal a partir de um upload.
+    
+    Faz backup automático do DB atual antes de substituir.
+    Apenas usuários admin podem executar esta operação.
+    
+    Uso típico:
+      1. Baixar template/backup via GET /admin/backup/sqlite
+      2. (Opcional) Editar/popular dados localmente
+      3. Upload via POST /admin/backup/sqlite/restore
+      4. DB em produção é substituído (com backup do anterior)
+    """
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode restaurar backup")
+    
+    try:
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        DB_PATH = None
+    
+    if not DB_PATH:
+        raise HTTPException(status_code=500, detail="DB_PATH indisponível")
+    
+    # Valida que arquivo parece ser SQLite
+    content = file.file.read()
+    if len(content) < 100:
+        raise HTTPException(status_code=400, detail="Arquivo muito pequeno para ser SQLite")
+    
+    # Valida assinatura SQLite (primeiros 16 bytes: "SQLite format 3\x00")
+    if not content.startswith(b"SQLite format 3\x00"):
+        raise HTTPException(status_code=400, detail="Arquivo não parece ser SQLite válido")
+    
+    # Backup do DB atual (se existir)
+    backup_path = None
+    if os.path.exists(DB_PATH):
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_dir = os.path.join(os.path.dirname(DB_PATH), "..", "backups")
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+            backup_filename = f"gestao_obras_pre_restore_{timestamp}.db"
+            backup_path = os.path.join(backup_dir, backup_filename)
+            shutil.copy2(DB_PATH, backup_path)
+        except Exception as e:
+            # Se falhar backup, aborta restore
+            raise HTTPException(status_code=500, detail=f"Falha ao gerar backup: {e}")
+    
+    # Substitui DB
+    try:
+        with open(DB_PATH, 'wb') as f:
+            f.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Falha ao escrever DB: {e}")
+    
+    return {
+        "status": "ok",
+        "message": "DB restaurado com sucesso",
+        "db_path": DB_PATH,
+        "backup_path": backup_path,
+        "size_bytes": len(content),
+    }
+
+@app.get("/debug/dbinfo")
+def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
+    try:
+        from database import DB_PATH as LOCAL_DB_PATH  # type: ignore
+    except Exception:
+        LOCAL_DB_PATH = None
+    filename = os.path.basename(LOCAL_DB_PATH) if LOCAL_DB_PATH else None
+    return StreamingResponse(io.BytesIO(data), media_type='application/octet-stream', headers={
+        'Content-Disposition': f'attachment; filename="' + filename + '"'
+    })
+
 @app.get("/debug/dbinfo")
 def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
     try:
