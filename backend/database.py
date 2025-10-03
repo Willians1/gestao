@@ -2,17 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 
+"""Módulo de conexão restrito a SQLite.
+
+Removido suporte a Postgres conforme decisão do projeto:
+ - Sempre usará SQLite em um diretório gravável.
+ - Variáveis aceitas: DB_DIR ou DATA_DIR para definir onde salvar.
+ - DB_FILE (opcional) permite trocar o nome do arquivo (default gestao_obras.db).
+"""
+
 
 def _pick_writable_dir() -> str:
-	"""Seleciona um diretório gravável para armazenar o banco SQLite.
-
-	Ordem de preferência:
-	1) Variáveis de ambiente DB_DIR ou DATA_DIR
-	2) /var/data (padrão comum em PaaS com disco)
-	3) /data
-	4) Diretório local backend/data
-	5) /tmp (ephemeral)
-	"""
 	base_dir = os.path.dirname(os.path.abspath(__file__))
 	candidates = [
 		os.getenv("DB_DIR"),
@@ -34,39 +33,25 @@ def _pick_writable_dir() -> str:
 			return d
 		except Exception:
 			continue
-	# Fallback bruto: diretório do backend
 	return base_dir
 
 
-def _build_engine_url():
-	# Preferir DATABASE_URL (Postgres no formato postgresql+psycopg://user:pass@host:port/db)
-	db_url = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
-	if db_url:
-		# Render costuma fornecer DATABASE_URL com prefixo postgres://, converter para postgresql+psycopg://
-		if db_url.startswith("postgres://"):
-			db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
-		elif db_url.startswith("postgresql://") and "+" not in db_url:
-			db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
-		return db_url, None
-
-	# Fallback: SQLite em arquivo gravável
+def _build_sqlite_url():
 	data_dir = _pick_writable_dir()
-	db_path = os.path.join(data_dir, "gestao_obras.db")
-	return f"sqlite:///{db_path}", {"check_same_thread": False}
+	file_name = os.getenv("DB_FILE", "gestao_obras.db")
+	db_path = os.path.join(data_dir, file_name)
+	return f"sqlite:///{db_path}", {"check_same_thread": False}, db_path
 
 
-SQLALCHEMY_DATABASE_URL, CONNECT_ARGS = _build_engine_url()
+SQLALCHEMY_DATABASE_URL, CONNECT_ARGS, _REAL_DB_PATH = _build_sqlite_url()
 
 engine = create_engine(
 	SQLALCHEMY_DATABASE_URL,
-	connect_args=(CONNECT_ARGS or {}),
+	connect_args=CONNECT_ARGS,
 	echo=True,
 	future=True,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Expor caminhos úteis (para backups SQLite, se aplicável)
-try:
-	DB_PATH = SQLALCHEMY_DATABASE_URL.replace("sqlite:///", "") if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None
-except Exception:
-	DB_PATH = None
+# Expor o caminho real do arquivo SQLite
+DB_PATH = _REAL_DB_PATH

@@ -4,13 +4,13 @@ Aplicação full-stack para gestão (Cadastros, Clientes, Contratos, Despesas, F
 
 ## Stack
 
-- Backend: FastAPI, SQLAlchemy, SQLite, Uvicorn
+- Backend: FastAPI, SQLAlchemy, SQLite (apenas), Uvicorn
 - Frontend: React 18, MUI, AG Grid (planilha), React Router
 - Import Excel: SheetJS (frontend) e Pandas (backend opcional)
 
 ## Estrutura
 
-- `backend/` — API FastAPI + modelo SQLAlchemy (SQLite `gestao_obras.db`)
+- `backend/` — API FastAPI + modelo SQLAlchemy (SQLite `gestao_obras.db`) — suporte a Postgres removido por decisão de simplificação.
 - `frontend/` — SPA React com MUI e AG Grid
 
 ## Requisitos
@@ -175,63 +175,39 @@ No backend, endpoints GET exigem ao menos o ID base (leitura). Endpoints POST/PU
 
 ---
 
-## PostgreSQL (produção e sync local)
+## Banco de Dados
 
-O backend também funciona com `DATABASE_URL` (PostgreSQL), com fallback automático para SQLite quando a variável não está definida. No Render, o `render.yaml` já injeta `DATABASE_URL` via serviço de banco `gestao-postgres`.
+O projeto agora utiliza exclusivamente SQLite para simplificar deploy e manutenção.
 
-Dump/restore usando Docker (sem instalar psql):
+Diretório/persistência:
+- Por padrão o arquivo é criado em um diretório gravável detectado automaticamente (`DB_DIR`, `DATA_DIR`, `/var/data`, `/data`, `backend/data`, ou `/tmp`).
+- Variável `DB_FILE` (opcional) permite trocar o nome do arquivo (default `gestao_obras.db`).
+- Para persistência no Render, monte um Disk e exporte `DATA_DIR` apontando para o mount.
 
+Scripts/migrações que mencionavam Postgres foram mantidos apenas para referência histórica, mas não fazem mais parte do fluxo suportado. Se não precisa deles, podem ser removidos futuramente.
+
+Benefícios da decisão:
+- Reduz complexidade operacional (sem service de Postgres, backups simples por cópia do arquivo).
+- Facilita ambiente de desenvolvimento idêntico ao de produção.
+- Elimina diferenças de dialeto SQL.
+
+Limitações:
+- Concorrência de escrita simultânea pesada não é foco (SQLite atende bem cargas moderadas / apps internos).
+- Caso surja necessidade futura de Postgres, será criada uma branch específica reintroduzindo suporte.
+
+Ferramentas úteis:
 ```powershell
-# 1) Dump de produção para arquivo prod.dump
-$env:PGHOST = 'SEU_HOST'
-$env:PGUSER = 'SEU_USER'
-$env:PGPASSWORD = 'SEU_PASS'
-$env:PGDATABASE = 'SEU_DB'
-
-docker run --rm -v ${PWD}:/backup -e PGPASSWORD=$env:PGPASSWORD postgres:16 `
-  pg_dump -h $env:PGHOST -U $env:PGUSER -d $env:PGDATABASE -Fc -f /backup/prod.dump
-
-# 2) Restore no Postgres local
-$env:LOCAL_DB = 'gestao_local'
-$env:LOCAL_USER = 'postgres'
-$env:LOCAL_PASS = 'postgres'
-
-docker run --rm -v ${PWD}:/backup -e PGPASSWORD=$env:LOCAL_PASS postgres:16 `
-  sh -c "dropdb -h host.docker.internal -U $env:LOCAL_USER --if-exists $env:LOCAL_DB && `
-         createdb -h host.docker.internal -U $env:LOCAL_USER $env:LOCAL_DB && `
-         pg_restore -h host.docker.internal -U $env:LOCAL_USER -d $env:LOCAL_DB --clean --no-owner /backup/prod.dump"
+# Inspecionar tabelas rapidamente
+python -c "import sqlite3,os;db='backend/gestao_obras.db';\
+print('Existe?',os.path.exists(db));\
+conn=sqlite3.connect(db);\
+print(conn.execute('SELECT name FROM sqlite_master WHERE type=\'table\'').fetchall())"
 ```
 
-Para desenvolver localmente com Postgres, defina `DATABASE_URL` (por exemplo):
-
-```text
-postgresql+psycopg://postgres:postgres@localhost:5432/gestao_local
-```
-
-Sem `DATABASE_URL`, o app usa SQLite automaticamente.
-
-### Migração de dados: SQLite → PostgreSQL
-
-O repositório inclui um script para migrar dados do SQLite para o Postgres preservando IDs e ajustando sequences:
-
-1) Garanta que o Postgres de destino esteja acessível e que `DATABASE_URL` aponte para ele.
-2) Rode a migração informando o arquivo SQLite de origem (se não informar, o script tenta descobrir automaticamente):
-
+Para backup:
 ```powershell
-$env:DATABASE_URL = "postgresql+psycopg://<user>:<pass>@<host>:<port>/<db>"
-python backend/migrate_sqlite_to_postgres.py --sqlite backend/gestao_obras.db --truncate
+Copy-Item backend/gestao_obras.db backups/gestao_obras_$(Get-Date -Format 'yyyyMMdd_HHmmss').db
 ```
-
-Notas:
-
-- Use `--truncate` quando quiser limpar o destino antes de inserir (recomendado em bancos vazios ou recém-criados).
-- Após a migração, valide no backend (em produção/local) se os usuários padrão existem e conseguem logar:
-  - admin/admin
-  - willians/willians
-  - loja01/loja01 … loja16/loja16
-- Se necessário, execute também: `python backend/seed_initial_users_and_clients.py` para garantir 16 clientes e os usuários de manutenção.
-
----
 
 ## Deploy do Frontend no Netlify (Opção B)
 
