@@ -1460,7 +1460,7 @@ def admin_restore_sqlite(
     }
 
 @app.post("/admin/shutdown", summary="Força reinício da aplicação (admin only)")
-def admin_shutdown(current_user: Usuario = Depends(get_current_user)):
+async def admin_shutdown(current_user: Usuario = Depends(get_current_user)):
     """Endpoint para desligar o servidor de forma segura, forçando reinício.
     
     Útil para garantir reconexão limpa com o DB após restore ou outras operações críticas.
