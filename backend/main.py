@@ -3,6 +3,7 @@ import io
 from typing import Optional, List
 import datetime
 import re
+import logging
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -54,6 +55,9 @@ import hashlib
 import zipfile
 from pathlib import Path
 from fastapi.responses import Response
+
+
+logger = logging.getLogger(__name__)
 
 
 # App e DB
@@ -463,9 +467,11 @@ class StatsResponse(BaseModel):
     valor_materiais: int
     resumo_mensal: int
     generated_at: str
+    error: str | None = None
 
 @app.get("/debug/stats", response_model=StatsResponse)
 def debug_stats(db: Session = Depends(get_db)):
+    error_message: str | None = None
     try:
         usuarios = db.query(Usuario).count()
         clientes = db.query(Cliente).count()
@@ -474,9 +480,11 @@ def debug_stats(db: Session = Depends(get_db)):
         contratos = db.query(Contrato).count()
         valor_materiais = db.query(ValorMaterial).count()
         resumo_mensal = db.query(ResumoMensal).count()
-    except Exception:
+    except Exception as exc:
+        logger.exception("Falha ao coletar estatísticas do banco")
         # Em caso de erro de schema, retorna -1
         usuarios = clientes = testes_loja = testes_ar = contratos = valor_materiais = resumo_mensal = -1
+        error_message = str(exc)
     return StatsResponse(
         usuarios=usuarios,
         clientes=clientes,
@@ -486,6 +494,7 @@ def debug_stats(db: Session = Depends(get_db)):
         valor_materiais=valor_materiais,
         resumo_mensal=resumo_mensal,
         generated_at=datetime.datetime.utcnow().isoformat() + "Z",
+        error=error_message,
     )
 
 # Debug: caminho do DB ativo
@@ -1390,6 +1399,10 @@ def admin_restore_sqlite(
         raise HTTPException(status_code=500, detail="DB_PATH indisponível")
     
     # Valida que arquivo parece ser SQLite
+    try:
+        file.file.seek(0)
+    except Exception:
+        pass
     content = file.file.read()
     if len(content) < 100:
         raise HTTPException(status_code=400, detail="Arquivo muito pequeno para ser SQLite")
@@ -1418,6 +1431,22 @@ def admin_restore_sqlite(
             f.write(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Falha ao escrever DB: {e}")
+
+    # Reinicializa conexões do SQLAlchemy para refletir novo arquivo
+    try:
+        engine.dispose()
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        logger.exception("Falha ao reabrir conexão após restore do SQLite")
+        # Tenta restaurar backup anterior para não deixar instância inconsistente
+        if backup_path and os.path.exists(backup_path):
+            try:
+                shutil.copy2(backup_path, DB_PATH)
+                engine.dispose()
+            except Exception as rollback_exc:
+                logger.exception("Falha ao restaurar backup após erro no restore: %s", rollback_exc)
+        raise HTTPException(status_code=500, detail=f"Falha ao reabrir base restaurada: {e}")
     
     return {
         "status": "ok",
