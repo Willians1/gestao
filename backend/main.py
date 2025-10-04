@@ -532,6 +532,9 @@ def healthz():
 
 ## admin seed endpoint movido para depois da definição de autenticação
 
+# Endpoint de shutdown para forçar reinício limpo (só admin)
+# Será chamado após restore do DB para garantir que todas as conexões sejam renovadas
+
 # CORS
 # Inclui automaticamente domínios do Netlify/Vercel informados por env e também aceita subdomínios via regex.
 NETLIFY_ORIGIN = os.getenv("FRONTEND_NETLIFY_URL") or os.getenv("NETLIFY_URL") or os.getenv("NETLIFY_SITE_URL")
@@ -1454,6 +1457,33 @@ def admin_restore_sqlite(
         "db_path": DB_PATH,
         "backup_path": backup_path,
         "size_bytes": len(content),
+    }
+
+@app.post("/admin/shutdown", summary="Força reinício da aplicação (admin only)")
+def admin_shutdown(current_user: Usuario = Depends(get_current_user)):
+    """Endpoint para desligar o servidor de forma segura, forçando reinício.
+    
+    Útil para garantir reconexão limpa com o DB após restore ou outras operações críticas.
+    O host (Render, etc.) deve reiniciar o serviço automaticamente.
+    
+    Apenas usuários admin podem executar esta operação.
+    """
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode desligar o servidor")
+    
+    logger.warning(f"Comando de desligamento recebido por {current_user.username}. O servidor será encerrado.")
+    
+    # Agenda desligamento após 1 segundo para permitir que a resposta seja enviada
+    async def delayed_shutdown():
+        await asyncio.sleep(1)
+        logger.info("Executando desligamento programado...")
+        os._exit(0)
+    
+    asyncio.create_task(delayed_shutdown())
+    
+    return {
+        "status": "ok",
+        "message": "O servidor está sendo desligado. O host deve reiniciá-lo automaticamente."
     }
 
 @app.get("/debug/dbinfo")

@@ -129,9 +129,26 @@ try {
     if ($httpClient) { $httpClient.Dispose() }
 }
 
-# 4. Validar resultado
-Write-Host "`n[4/4] Validando resultado..." -ForegroundColor Yellow
-Start-Sleep -Seconds 2  # Aguarda um pouco para garantir que DB foi atualizado
+# 4. Forçar reinício do servidor para renovar conexões
+Write-Host "`n[4/5] Forçando reinício do servidor..." -ForegroundColor Yellow
+try {
+    $shutdownResponse = Invoke-RestMethod -Uri "$BaseUrl/admin/shutdown" -Method Post -Headers $headers -TimeoutSec 3 -ErrorAction SilentlyContinue
+    Write-Host "  ✓ Comando de desligamento enviado" -ForegroundColor Green
+    Write-Host "  ✓ O Render reiniciará o serviço automaticamente" -ForegroundColor Green
+} catch {
+    # Esperado: a conexão pode ser encerrada antes da resposta completa
+    if ($_.Exception.Message -match "timeout|closed|aborted") {
+        Write-Host "  ✓ Servidor está reiniciando (timeout esperado)" -ForegroundColor Green
+    } else {
+        Write-Host "  ⚠ Aviso: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+Write-Host "`n  Aguardando 15 segundos para o serviço reiniciar..." -ForegroundColor Gray
+Start-Sleep -Seconds 15
+
+# 5. Validar resultado
+Write-Host "`n[5/5] Validando resultado..." -ForegroundColor Yellow
 
 try {
     $statsAfter = Invoke-RestMethod -Uri "$BaseUrl/debug/stats" -Method Get -Headers $headers
