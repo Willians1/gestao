@@ -1433,17 +1433,6 @@ def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
         from database import DB_PATH as LOCAL_DB_PATH  # type: ignore
     except Exception:
         LOCAL_DB_PATH = None
-    filename = os.path.basename(LOCAL_DB_PATH) if LOCAL_DB_PATH else None
-    return StreamingResponse(io.BytesIO(data), media_type='application/octet-stream', headers={
-        'Content-Disposition': f'attachment; filename="' + filename + '"'
-    })
-
-@app.get("/debug/dbinfo")
-def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
-    try:
-        from database import DB_PATH as LOCAL_DB_PATH  # type: ignore
-    except Exception:
-        LOCAL_DB_PATH = None
     return {"db_path": LOCAL_DB_PATH, "exists": bool(LOCAL_DB_PATH and os.path.exists(LOCAL_DB_PATH))}
 
 @app.get("/debug/dbbootstrap")
