@@ -1567,6 +1567,123 @@ async def admin_shutdown(current_user: Usuario = Depends(get_current_user)):
         "message": "O servidor está sendo desligado. O host deve reiniciá-lo automaticamente."
     }
 
+@app.post("/admin/db-reset", summary="Apaga e recria banco do zero (admin only)")
+def admin_db_reset(current_user: Usuario = Depends(get_current_user)):
+    """Apaga completamente o banco de dados atual e recria do zero com o template seed.
+    
+    ATENÇÃO: Esta operação é DESTRUTIVA e irá:
+    1. Fazer backup do banco atual
+    2. Deletar o arquivo de banco
+    3. Copiar o template seed para o local do banco
+    4. Recriar todas as conexões
+    
+    Apenas usuários admin podem executar esta operação.
+    """
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode resetar o banco")
+    
+    try:
+        from database import DB_PATH  # type: ignore
+    except Exception:
+        DB_PATH = None
+    
+    if not DB_PATH:
+        raise HTTPException(status_code=500, detail="DB_PATH indisponível")
+    
+    logger.warning(f"Reset do banco solicitado por {current_user.username}")
+    
+    # 1. Fazer backup do banco atual
+    backup_path = None
+    if os.path.exists(DB_PATH):
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_dir = os.path.join(os.path.dirname(DB_PATH), "..", "backups")
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+            backup_filename = f"gestao_obras_pre_reset_{timestamp}.db"
+            backup_path = os.path.join(backup_dir, backup_filename)
+            shutil.copy2(DB_PATH, backup_path)
+            logger.info(f"Backup criado: {backup_path}")
+        except Exception as e:
+            logger.exception("Falha ao criar backup antes do reset")
+            raise HTTPException(status_code=500, detail=f"Falha ao gerar backup: {e}")
+    
+    # 2. Fechar todas as conexões existentes
+    try:
+        engine.dispose()
+        logger.info("Conexões descartadas")
+    except Exception as e:
+        logger.warning(f"Erro ao descartar conexões: {e}")
+    
+    # 3. Deletar arquivo de banco atual
+    try:
+        if os.path.exists(DB_PATH):
+            os.remove(DB_PATH)
+            logger.info(f"Banco deletado: {DB_PATH}")
+    except Exception as e:
+        logger.exception("Falha ao deletar banco antigo")
+        raise HTTPException(status_code=500, detail=f"Falha ao deletar banco: {e}")
+    
+    # 4. Copiar template seed
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    seed_path = os.path.join(base_dir, "seed_template", "gestao_obras_seed.db")
+    
+    if not os.path.exists(seed_path):
+        raise HTTPException(status_code=500, detail=f"Template seed não encontrado: {seed_path}")
+    
+    try:
+        shutil.copy2(seed_path, DB_PATH)
+        logger.info(f"Template seed copiado para: {DB_PATH}")
+    except Exception as e:
+        logger.exception("Falha ao copiar template seed")
+        # Tentar restaurar backup
+        if backup_path and os.path.exists(backup_path):
+            try:
+                shutil.copy2(backup_path, DB_PATH)
+                logger.warning("Backup restaurado após falha")
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=f"Falha ao copiar template: {e}")
+    
+    # 5. Forçar reconexão e validar
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            engine.dispose()
+            
+            if attempt > 0:
+                import time
+                time.sleep(0.3)
+            
+            # Validar com queries reais
+            db_test = SessionLocal()
+            try:
+                user_count = db_test.query(Usuario).count()
+                client_count = db_test.query(Cliente).count()
+                
+                logger.info(f"Reset completo! {user_count} usuários, {client_count} clientes")
+                
+                return {
+                    "status": "ok",
+                    "message": "Banco resetado com sucesso",
+                    "backup_path": backup_path,
+                    "db_path": DB_PATH,
+                    "validation": {
+                        "usuarios": user_count,
+                        "clientes": client_count,
+                        "attempts": attempt + 1
+                    }
+                }
+            finally:
+                db_test.close()
+                
+        except Exception as e:
+            logger.warning(f"Tentativa {attempt + 1}/{max_attempts} de validação falhou: {e}")
+            if attempt == max_attempts - 1:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Banco resetado mas validação falhou após {max_attempts} tentativas: {e}"
+                )
+
 @app.get("/debug/dbinfo")
 def debug_dbinfo(current_user: Usuario = Depends(get_current_user)):
     try:
