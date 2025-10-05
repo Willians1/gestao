@@ -1595,6 +1595,34 @@ def debug_dbbootstrap(current_user: Usuario = Depends(get_current_user)):
         "SQLITE_SEED_FILE": os.getenv("SQLITE_SEED_FILE"),
     }
 
+@app.get("/debug/table-schema/{table_name}")
+def debug_table_schema(table_name: str, current_user: Usuario = Depends(get_current_user)):
+    """Retorna o schema de uma tabela do banco de dados.
+    
+    Útil para diagnosticar problemas de schema.
+    """
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+            columns = []
+            for row in result.fetchall():
+                columns.append({
+                    "cid": row[0],
+                    "name": row[1],
+                    "type": row[2],
+                    "notnull": row[3],
+                    "dflt_value": row[4],
+                    "pk": row[5]
+                })
+            return {
+                "table": table_name,
+                "columns": columns,
+                "column_count": len(columns)
+            }
+    except Exception as e:
+        logger.exception(f"Falha ao obter schema da tabela {table_name}")
+        raise HTTPException(status_code=500, detail=f"Falha ao obter schema: {e}")
+
 @app.post("/admin/migrate/add-cliente-id-valor-materiais")
 def admin_migrate_add_cliente_id(current_user: Usuario = Depends(get_current_user)):
     """Adiciona coluna cliente_id à tabela valor_materiais se não existir.
