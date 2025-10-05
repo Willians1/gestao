@@ -1595,6 +1595,50 @@ def debug_dbbootstrap(current_user: Usuario = Depends(get_current_user)):
         "SQLITE_SEED_FILE": os.getenv("SQLITE_SEED_FILE"),
     }
 
+@app.post("/admin/migrate/add-cliente-id-valor-materiais")
+def admin_migrate_add_cliente_id(current_user: Usuario = Depends(get_current_user)):
+    """Adiciona coluna cliente_id à tabela valor_materiais se não existir.
+    
+    Esta migração permite associar materiais a clientes específicos.
+    Apenas usuários admin podem executar esta operação.
+    """
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode executar migrações")
+    
+    try:
+        with engine.connect() as conn:
+            # Verifica se coluna já existe
+            result = conn.execute(text("PRAGMA table_info(valor_materiais)"))
+            columns = [row[1] for row in result.fetchall()]
+            
+            if 'cliente_id' in columns:
+                return {
+                    "status": "ok",
+                    "message": "Coluna cliente_id já existe",
+                    "action": "none"
+                }
+            
+            # Adiciona coluna
+            conn.execute(text("""
+                ALTER TABLE valor_materiais 
+                ADD COLUMN cliente_id INTEGER NULL
+            """))
+            conn.commit()
+            
+            # Força reconexão
+            engine.dispose()
+            
+            return {
+                "status": "ok",
+                "message": "Coluna cliente_id adicionada com sucesso",
+                "action": "added",
+                "note": "Valores NULL indicam material compartilhado entre todos os clientes"
+            }
+            
+    except Exception as e:
+        logger.exception("Falha ao executar migração add-cliente-id-valor-materiais")
+        raise HTTPException(status_code=500, detail=f"Falha na migração: {e}")
+
 # --- CRUD Endpoints ---
 # Usuários
 class UsuarioSchema(BaseModel):
