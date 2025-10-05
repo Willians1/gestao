@@ -1623,6 +1623,58 @@ def debug_table_schema(table_name: str, current_user: Usuario = Depends(get_curr
         logger.exception(f"Falha ao obter schema da tabela {table_name}")
         raise HTTPException(status_code=500, detail=f"Falha ao obter schema: {e}")
 
+@app.post("/admin/recreate-tables")
+def admin_recreate_tables(current_user: Usuario = Depends(get_current_user)):
+    """Recria todas as tabelas do banco de dados com o schema correto.
+    
+    ATENÇÃO: Esta operação deleta todas as tabelas existentes e recria
+    com o schema definido nos modelos. Todos os dados serão perdidos.
+    
+    Use apenas quando o schema do banco está completamente desatualizado.
+    Apenas usuários admin podem executar esta operação.
+    """
+    if str(current_user.nivel_acesso or '').lower() not in {"admin", "willians"}:
+        raise HTTPException(status_code=403, detail="Apenas admin pode recriar tabelas")
+    
+    try:
+        # Backup automático antes de destruir
+        try:
+            from database import DB_PATH  # type: ignore
+            if DB_PATH and os.path.exists(DB_PATH):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_dir = os.path.join(os.path.dirname(DB_PATH), "..", "backups")
+                os.makedirs(backup_dir, exist_ok=True)
+                backup_path = os.path.join(backup_dir, f"gestao_obras_pre_recreate_{timestamp}.db")
+                shutil.copy2(DB_PATH, backup_path)
+                logger.info(f"Backup criado: {backup_path}")
+        except Exception as e:
+            logger.warning(f"Falha ao criar backup: {e}")
+        
+        # Deleta todas as tabelas
+        Base.metadata.drop_all(bind=engine)
+        logger.info("Todas as tabelas foram deletadas")
+        
+        # Recria com schema atual
+        Base.metadata.create_all(bind=engine)
+        logger.info("Todas as tabelas foram recriadas com schema atual")
+        
+        # Força reconexão
+        engine.dispose()
+        
+        # Recria usuários padrão
+        ensure_admin_user()
+        ensure_willians_user()
+        
+        return {
+            "status": "ok",
+            "message": "Tabelas recriadas com sucesso",
+            "note": "Todos os dados anteriores foram perdidos. Usuários admin e willians foram recriados."
+        }
+        
+    except Exception as e:
+        logger.exception("Falha ao recriar tabelas")
+        raise HTTPException(status_code=500, detail=f"Falha ao recriar tabelas: {e}")
+
 @app.post("/admin/migrate/add-cliente-id-valor-materiais")
 def admin_migrate_add_cliente_id(current_user: Usuario = Depends(get_current_user)):
     """Adiciona coluna cliente_id à tabela valor_materiais se não existir.
