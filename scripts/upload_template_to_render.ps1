@@ -129,23 +129,28 @@ try {
     if ($httpClient) { $httpClient.Dispose() }
 }
 
-# 4. Forçar reinício do servidor para renovar conexões
-Write-Host "`n[4/5] Forçando reinício do servidor..." -ForegroundColor Yellow
+# 4. Forçar reconexão ao banco de dados
+Write-Host "`n[4/5] Forçando reconexão ao banco de dados..." -ForegroundColor Yellow
+Write-Host "  (Isso garante que as conexões sejam renovadas)" -ForegroundColor Gray
+
 try {
-    $shutdownResponse = Invoke-RestMethod -Uri "$BaseUrl/admin/shutdown" -Method Post -Headers $headers -TimeoutSec 3 -ErrorAction SilentlyContinue
-    Write-Host "  ✓ Comando de desligamento enviado" -ForegroundColor Green
-    Write-Host "  ✓ O Render reiniciará o serviço automaticamente" -ForegroundColor Green
-} catch {
-    # Esperado: a conexão pode ser encerrada antes da resposta completa
-    if ($_.Exception.Message -match "timeout|closed|aborted") {
-        Write-Host "  ✓ Servidor está reiniciando (timeout esperado)" -ForegroundColor Green
+    $reconnectResponse = Invoke-RestMethod -Uri "$BaseUrl/debug/db-reconnect" -Method Post -Headers $headers -TimeoutSec 10
+    
+    if ($reconnectResponse.status -eq "ok") {
+        Write-Host "  ✓ Reconexão bem-sucedida!" -ForegroundColor Green
+        Write-Host "  ✓ Usuários: $($reconnectResponse.validation.usuarios)" -ForegroundColor Green
+        Write-Host "  ✓ Clientes: $($reconnectResponse.validation.clientes)" -ForegroundColor Green
     } else {
-        Write-Host "  ⚠ Aviso: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "  ⚠ Reconexão falhou: $($reconnectResponse.message)" -ForegroundColor Yellow
+        Write-Host "  Tentando validação manual..." -ForegroundColor Gray
     }
+} catch {
+    Write-Host "  ⚠ Erro ao forçar reconexão: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  Prosseguindo com validação..." -ForegroundColor Gray
 }
 
-Write-Host "`n  Aguardando 15 segundos para o serviço reiniciar..." -ForegroundColor Gray
-Start-Sleep -Seconds 15
+Write-Host "`n  Aguardando 2 segundos..." -ForegroundColor Gray
+Start-Sleep -Seconds 2
 
 # 5. Validar resultado
 Write-Host "`n[5/5] Validando resultado..." -ForegroundColor Yellow

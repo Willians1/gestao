@@ -509,6 +509,50 @@ def debug_db_path():
         "engine_url": _URL,
     }
 
+# Debug: força reconexão e valida banco
+@app.post("/debug/db-reconnect")
+def debug_db_reconnect():
+    """Força descarte do pool de conexões e reconexão ao banco.
+    
+    Útil para forçar a renovação de conexões após operações críticas
+    como restore do banco de dados.
+    """
+    try:
+        # Descarta todas as conexões existentes
+        engine.dispose()
+        
+        # Tenta reconectar e validar
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        
+        # Valida com queries reais
+        db = SessionLocal()
+        try:
+            user_count = db.query(Usuario).count()
+            client_count = db.query(Cliente).count()
+            
+            return {
+                "status": "ok",
+                "message": "Reconexão bem-sucedida",
+                "validation": {
+                    "usuarios": user_count,
+                    "clientes": client_count
+                }
+            }
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.exception("Falha ao reconectar ao banco")
+        return {
+            "status": "error",
+            "message": f"Falha ao reconectar: {e}",
+            "validation": {
+                "usuarios": -1,
+                "clientes": -1
+            }
+        }
+
 # Health check super-rápido (sem tocar no banco)
 @app.get("/healthz")
 def healthz():
@@ -1436,28 +1480,65 @@ def admin_restore_sqlite(
         raise HTTPException(status_code=500, detail=f"Falha ao escrever DB: {e}")
 
     # Reinicializa conexões do SQLAlchemy para refletir novo arquivo
-    try:
-        engine.dispose()
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-    except Exception as e:
-        logger.exception("Falha ao reabrir conexão após restore do SQLite")
-        # Tenta restaurar backup anterior para não deixar instância inconsistente
-        if backup_path and os.path.exists(backup_path):
-            try:
-                shutil.copy2(backup_path, DB_PATH)
-                engine.dispose()
-            except Exception as rollback_exc:
-                logger.exception("Falha ao restaurar backup após erro no restore: %s", rollback_exc)
-        raise HTTPException(status_code=500, detail=f"Falha ao reabrir base restaurada: {e}")
+    # Múltiplas tentativas com delays progressivos para garantir estabilidade
+    max_attempts = 5
+    last_error = None
     
-    return {
-        "status": "ok",
-        "message": "DB restaurado com sucesso",
-        "db_path": DB_PATH,
-        "backup_path": backup_path,
-        "size_bytes": len(content),
-    }
+    for attempt in range(max_attempts):
+        try:
+            # Descarta pool de conexões
+            engine.dispose()
+            
+            # Aguarda um pouco entre tentativas (exceto na primeira)
+            if attempt > 0:
+                import time
+                time.sleep(0.5 * attempt)
+            
+            # Tenta query simples
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                
+            # Tenta query real para validar estrutura
+            db_test = SessionLocal()
+            try:
+                user_count = db_test.query(Usuario).count()
+                client_count = db_test.query(Cliente).count()
+                logger.info(f"Restore validado: {user_count} usuários, {client_count} clientes")
+                
+                return {
+                    "status": "ok",
+                    "message": "DB restaurado com sucesso",
+                    "db_path": DB_PATH,
+                    "backup_path": backup_path,
+                    "size_bytes": len(content),
+                    "validation": {
+                        "usuarios": user_count,
+                        "clientes": client_count,
+                        "attempts": attempt + 1
+                    }
+                }
+            finally:
+                db_test.close()
+                
+        except Exception as e:
+            last_error = e
+            logger.warning(f"Tentativa {attempt + 1}/{max_attempts} falhou ao validar restore: {e}")
+            continue
+    
+    # Se todas as tentativas falharam, tenta rollback
+    logger.exception("Falha em todas as tentativas de validar restore")
+    if backup_path and os.path.exists(backup_path):
+        try:
+            shutil.copy2(backup_path, DB_PATH)
+            engine.dispose()
+            logger.info("Backup anterior restaurado devido a falha de validação")
+        except Exception as rollback_exc:
+            logger.exception("Falha ao restaurar backup após erro no restore: %s", rollback_exc)
+    
+    raise HTTPException(
+        status_code=500, 
+        detail=f"Falha ao validar DB restaurado após {max_attempts} tentativas: {last_error}"
+    )
 
 @app.post("/admin/shutdown", summary="Força reinício da aplicação (admin only)")
 async def admin_shutdown(current_user: Usuario = Depends(get_current_user)):
