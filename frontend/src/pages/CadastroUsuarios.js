@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { API_BASE } from '../api';
 import {
   Box,
@@ -23,19 +22,8 @@ import {
   Stack,
   Snackbar,
   Alert,
-  Checkbox,
-  Divider,
 } from '@mui/material';
-import {
-  Add,
-  Delete,
-  Edit,
-  Save,
-  Close,
-  Security,
-  LockReset,
-  AdminPanelSettings,
-} from '@mui/icons-material';
+import { Add, Delete, Edit, Save, Close, LockReset } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -52,7 +40,6 @@ export default function CadastroUsuarios() {
   const canUpdate = hasPermission('/cadastro-usuarios', 'update');
   const canDelete = hasPermission('/cadastro-usuarios', 'delete');
   const [rows, setRows] = useState([]);
-  const [grupos, setGrupos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
@@ -71,15 +58,7 @@ export default function CadastroUsuarios() {
     confirm: '',
     nivel_acesso: 'visualizacao',
     ativo: true,
-    grupo_id: null,
   });
-
-  // Diálogo de Permissões (por página via grupo do usuário)
-  const [permOpen, setPermOpen] = useState(false);
-  const [permLoading, setPermLoading] = useState(false);
-  const [permUser, setPermUser] = useState(null);
-  const [permGroup, setPermGroup] = useState(null); // detalhes do grupo
-  const [permChecked, setPermChecked] = useState(new Set());
 
   // Diálogo de Alteração de Senha
   const [pwdOpen, setPwdOpen] = useState(false);
@@ -87,54 +66,6 @@ export default function CadastroUsuarios() {
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
-
-  // Mapa das páginas x IDs de permissões (base/ler, criar, editar, excluir)
-  // Padrão: base (xx01), editar (xx02), excluir (xx03), criar (xx04)
-  const PAGE_PERMS = [
-    {
-      base: 1101,
-      label: 'Usuários',
-      route: '/cadastro-usuarios',
-      create: 1104,
-      update: 1102,
-      del: 1103,
-    },
-    { base: 1201, label: 'Clientes', route: '/clientes', create: 1204, update: 1202, del: 1203 },
-    {
-      base: 1301,
-      label: 'Fornecedores',
-      route: '/fornecedores',
-      create: 1304,
-      update: 1302,
-      del: 1303,
-    },
-    { base: 1401, label: 'Contratos', route: '/contratos', create: 1404, update: 1402, del: 1403 },
-    {
-      base: 1501,
-      label: 'Orçamento de Obra',
-      route: '/orcamento-obra',
-      create: 1504,
-      update: 1502,
-      del: 1503,
-    },
-    { base: 1601, label: 'Despesas', route: '/despesas', create: 1604, update: 1602, del: 1603 },
-    {
-      base: 1701,
-      label: 'Valor Materiais',
-      route: '/valor-materiais',
-      create: 1704,
-      update: 1702,
-      del: 1703,
-    },
-    {
-      base: 1801,
-      label: 'Resumo Mensal',
-      route: '/resumo-mensal',
-      create: 1804,
-      update: 1802,
-      del: 1803,
-    },
-  ];
 
   const headers = useMemo(
     () =>
@@ -148,21 +79,12 @@ export default function CadastroUsuarios() {
     setLoading(true);
     setError('');
     try {
-      const [res, resGrupos] = await Promise.all([
-        fetch(`${API_BASE}/usuarios/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
-        fetch(`${API_BASE}/grupos/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
-      ]);
+      const res = await fetch(`${API_BASE}/usuarios/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setRows(Array.isArray(data) ? data : []);
-      if (resGrupos.ok) {
-        const gs = await resGrupos.json();
-        setGrupos(Array.isArray(gs) ? gs : []);
-      }
     } catch (e) {
       setError(e.message || 'Falha ao carregar usuários');
     } finally {
@@ -196,67 +118,6 @@ export default function CadastroUsuarios() {
       fetchUsers();
     }
   }, [token, fetchUsers]);
-
-  const openPermissionsDialog = async (user) => {
-    if (!user.grupo_id) {
-      setSnack({
-        open: true,
-        message: 'Defina um Grupo para o usuário antes de ajustar permissões.',
-        severity: 'warning',
-      });
-      return;
-    }
-    setPermUser(user);
-    setPermOpen(true);
-    setPermLoading(true);
-    try {
-      // Buscar detalhes do grupo e suas permissões atuais
-      const [resGroup, resPerms] = await Promise.all([
-        fetch(`${API_BASE}/grupos/${user.grupo_id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
-        fetch(`${API_BASE}/grupos/${user.grupo_id}/permissoes/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
-      ]);
-      let g = null;
-      if (resGroup.ok) g = await resGroup.json();
-      setPermGroup(g);
-      let currentIds = new Set();
-      if (resPerms.ok) {
-        const data = await resPerms.json();
-        const ids = (data?.permissoes || []).map((p) => p.id);
-        currentIds = new Set(ids);
-      }
-      // Se nível admin, tudo marcado
-      const isAdminLevel =
-        String(user.nivel_acesso || '').toLowerCase() === 'admin' ||
-        String(user.nivel_acesso || '').toLowerCase() === 'willians';
-      if (isAdminLevel) {
-        const allIds = new Set();
-        PAGE_PERMS.forEach((p) => {
-          allIds.add(p.base);
-          allIds.add(p.create);
-          allIds.add(p.update);
-          allIds.add(p.del);
-        });
-        setPermChecked(allIds);
-      } else {
-        const checked = new Set();
-        PAGE_PERMS.forEach((p) => {
-          if (currentIds.has(p.base)) checked.add(p.base);
-          if (currentIds.has(p.create)) checked.add(p.create);
-          if (currentIds.has(p.update)) checked.add(p.update);
-          if (currentIds.has(p.del)) checked.add(p.del);
-        });
-        setPermChecked(checked);
-      }
-    } catch (e) {
-      setSnack({ open: true, message: 'Falha ao carregar permissões', severity: 'error' });
-    } finally {
-      setPermLoading(false);
-    }
-  };
 
   const openPasswordDialog = (user) => {
     setPwdUser(user);
@@ -315,70 +176,6 @@ export default function CadastroUsuarios() {
     }
   };
 
-  const toggleFlag = (permId) => {
-    setPermChecked((prev) => {
-      const n = new Set(prev);
-      if (n.has(permId)) n.delete(permId);
-      else n.add(permId);
-      return n;
-    });
-  };
-
-  const savePermissions = async () => {
-    if (!permUser || !permGroup) {
-      setPermOpen(false);
-      return;
-    }
-    const isAdminLevel =
-      String(permUser.nivel_acesso || '').toLowerCase() === 'admin' ||
-      String(permUser.nivel_acesso || '').toLowerCase() === 'willians';
-    if (isAdminLevel) {
-      setPermOpen(false);
-      return;
-    }
-    setPermLoading(true);
-    try {
-      // Montar payload preservando campos do grupo; atualizar apenas permissoes
-      const payload = {
-        nome: permGroup.nome,
-        descricao: permGroup.descricao ?? null,
-        status: permGroup.status ?? 'Aprovado',
-        motivo: permGroup.motivo ?? null,
-        valor_maximo_diario_financeiro: permGroup.valor_maximo_diario_financeiro ?? 0,
-        preco_venda: permGroup.preco_venda ?? 0,
-        plano_contas: permGroup.plano_contas ?? 0,
-        valor_maximo_movimentacao: permGroup.valor_maximo_movimentacao ?? 0,
-        valor_maximo_solicitacao_compra: permGroup.valor_maximo_solicitacao_compra ?? 0,
-        valor_maximo_diario_solicitacao_compra:
-          permGroup.valor_maximo_diario_solicitacao_compra ?? 0,
-        permissoes: Array.from(permChecked),
-      };
-      const res = await fetch(`${API_BASE}/grupos/${permUser.grupo_id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        let msg = `Falha ao salvar permissões (HTTP ${res.status})`;
-        try {
-          const j = await res.json();
-          if (j?.detail) msg = j.detail;
-        } catch {}
-        throw new Error(msg);
-      }
-      setSnack({ open: true, message: 'Permissões atualizadas', severity: 'success' });
-      setPermOpen(false);
-    } catch (e) {
-      setSnack({
-        open: true,
-        message: e.message || 'Erro ao atualizar permissões',
-        severity: 'error',
-      });
-    } finally {
-      setPermLoading(false);
-    }
-  };
-
   const startEdit = (row) => {
     setEditRowId(row.id);
     setEditDraft({ ...row, password: '' });
@@ -398,7 +195,6 @@ export default function CadastroUsuarios() {
       email: editDraft.email || null,
       nivel_acesso: editDraft.nivel_acesso || 'visualizacao',
       ativo: !!editDraft.ativo,
-      grupo_id: editDraft.grupo_id ?? null,
       ...(editDraft.password ? { password: editDraft.password } : {}),
     };
     try {
@@ -433,13 +229,12 @@ export default function CadastroUsuarios() {
       confirm: '',
       nivel_acesso: 'visualizacao',
       ativo: true,
-      grupo_id: null,
     });
     setOpenNew(true);
   };
 
   const createUser = async () => {
-    const { username, nome, email, password, confirm, nivel_acesso, ativo, grupo_id } = newData;
+    const { username, nome, email, password, confirm, nivel_acesso, ativo } = newData;
     if (!username || !nome || !password || !confirm) {
       setSnack({ open: true, message: 'Preencha os campos obrigatórios', severity: 'warning' });
       return;
@@ -455,7 +250,6 @@ export default function CadastroUsuarios() {
       email: email || null,
       nivel_acesso,
       ativo: !!ativo,
-      grupo_id: grupo_id ?? null,
     };
     try {
       const res = await fetch(`${API_BASE}/usuarios/`, {
@@ -499,7 +293,6 @@ export default function CadastroUsuarios() {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
       // Espera colunas: username, nome, email, nivel_acesso, password, ativo
-      // Opcionalmente: grupo_id ou grupo (nome)
       let created = 0,
         failed = 0;
       for (const row of json) {
@@ -515,26 +308,6 @@ export default function CadastroUsuarios() {
               .trim()
               .toLowerCase() !== '0',
         };
-        // Mapear grupo opcional
-        let gid = null;
-        if (row.grupo_id !== undefined && row.grupo_id !== null && row.grupo_id !== '') {
-          const parsed = Number(row.grupo_id);
-          if (!Number.isNaN(parsed)) gid = parsed;
-        } else if (row.grupo || row.grupo_nome) {
-          const nomeGrupo = String(row.grupo || row.grupo_nome || '')
-            .trim()
-            .toLowerCase();
-          const g = grupos.find(
-            (x) =>
-              String(x.nome || '')
-                .trim()
-                .toLowerCase() === nomeGrupo
-          );
-          if (g) gid = g.id;
-        }
-        if (gid !== null) {
-          payload.grupo_id = gid;
-        }
         if (!payload.username || !payload.nome || !payload.password) {
           failed++;
           continue;
@@ -605,16 +378,6 @@ export default function CadastroUsuarios() {
           <Button variant="text" onClick={fetchUsers}>
             Recarregar
           </Button>
-          {hasPermission('/grupos-usuarios', 'read') && (
-            <Button
-              variant="outlined"
-              startIcon={<AdminPanelSettings />}
-              component={Link}
-              to="/grupos-usuarios"
-            >
-              Grupos de Usuários
-            </Button>
-          )}
         </Stack>
       </Stack>
 
@@ -632,7 +395,6 @@ export default function CadastroUsuarios() {
               <TableCell>Usuário</TableCell>
               <TableCell>Nome</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Grupo</TableCell>
               <TableCell>Nível</TableCell>
               <TableCell>Ativo</TableCell>
               <TableCell align="right">Ações</TableCell>
@@ -673,35 +435,6 @@ export default function CadastroUsuarios() {
                     />
                   ) : (
                     r.email || ''
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editRowId === r.id ? (
-                    <TextField
-                      size="small"
-                      select
-                      value={editDraft.grupo_id ?? ''}
-                      onChange={(e) =>
-                        setEditDraft((d) => ({
-                          ...d,
-                          grupo_id: e.target.value ? Number(e.target.value) : null,
-                        }))
-                      }
-                    >
-                      <MenuItem value="">
-                        <em>Sem grupo</em>
-                      </MenuItem>
-                      {grupos.map((g) => (
-                        <MenuItem key={g.id} value={g.id}>
-                          {g.nome}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  ) : (
-                    (() => {
-                      const g = grupos.find((x) => x.id === r.grupo_id);
-                      return g ? g.nome : '-';
-                    })()
                   )}
                 </TableCell>
                 <TableCell>
@@ -751,9 +484,6 @@ export default function CadastroUsuarios() {
                     </Stack>
                   ) : (
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <IconButton onClick={() => openPermissionsDialog(r)} title="Permissões">
-                        <Security />
-                      </IconButton>
                       {canUpdate && (
                         <IconButton onClick={() => openPasswordDialog(r)} title="Alterar senha">
                           <LockReset />
@@ -834,26 +564,6 @@ export default function CadastroUsuarios() {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField
-              select
-              label="Grupo"
-              value={newData.grupo_id ?? ''}
-              onChange={(e) =>
-                setNewData((d) => ({
-                  ...d,
-                  grupo_id: e.target.value ? Number(e.target.value) : null,
-                }))
-              }
-            >
-              <MenuItem value="">
-                <em>Sem grupo</em>
-              </MenuItem>
-              {grupos.map((g) => (
-                <MenuItem key={g.id} value={g.id}>
-                  {g.nome}
-                </MenuItem>
-              ))}
-            </TextField>
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -889,103 +599,6 @@ export default function CadastroUsuarios() {
           <Button onClick={() => setPwdOpen(false)}>Cancelar</Button>
           <Button variant="contained" onClick={submitPasswordChange} disabled={pwdLoading}>
             {pwdLoading ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog Permissões por Página */}
-      <Dialog open={permOpen} onClose={() => setPermOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Permissões de Acesso por Página</DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            As permissões são aplicadas ao Grupo do usuário selecionado. Ajustes aqui afetam todos
-            os usuários deste grupo.
-          </Typography>
-          {permUser &&
-            (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' ||
-              String(permUser.nivel_acesso || '').toLowerCase() === 'willians') && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Nível de acesso Admin: todas as páginas estão habilitadas por padrão.
-              </Alert>
-            )}
-          {permLoading ? (
-            <Typography>Carregando permissões…</Typography>
-          ) : (
-            <Box>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Página</TableCell>
-                    <TableCell align="center">Ver</TableCell>
-                    <TableCell align="center">Criar</TableCell>
-                    <TableCell align="center">Editar</TableCell>
-                    <TableCell align="center">Excluir</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {PAGE_PERMS.map((p) => {
-                    const isAdminLevel =
-                      permUser &&
-                      (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' ||
-                        String(permUser.nivel_acesso || '').toLowerCase() === 'willians');
-                    return (
-                      <TableRow key={p.base} hover>
-                        <TableCell>{p.label}</TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={permChecked.has(p.base)}
-                            onChange={() => toggleFlag(p.base)}
-                            disabled={isAdminLevel}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={permChecked.has(p.create)}
-                            onChange={() => toggleFlag(p.create)}
-                            disabled={isAdminLevel}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={permChecked.has(p.update)}
-                            onChange={() => toggleFlag(p.update)}
-                            disabled={isAdminLevel}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={permChecked.has(p.del)}
-                            onChange={() => toggleFlag(p.del)}
-                            disabled={isAdminLevel}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </Box>
-          )}
-          <Divider sx={{ mt: 1 }} />
-          {permGroup && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              Grupo: {permGroup?.nome} (ID {permGroup?.id})
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPermOpen(false)}>Fechar</Button>
-          <Button
-            onClick={savePermissions}
-            disabled={
-              permLoading ||
-              (permUser &&
-                (String(permUser.nivel_acesso || '').toLowerCase() === 'admin' ||
-                  String(permUser.nivel_acesso || '').toLowerCase() === 'willians'))
-            }
-            variant="contained"
-          >
-            Salvar
           </Button>
         </DialogActions>
       </Dialog>

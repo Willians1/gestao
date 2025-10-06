@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE } from '../api';
 
 // Tipos de usuário e suas permissões
 export const USER_ROLES = {
@@ -43,7 +42,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [permissions, setPermissions] = useState({ grupo_id: null, ids: new Set(), list: [] });
 
   // Verificar se há token salvo ao carregar a página
   useEffect(() => {
@@ -54,14 +52,6 @@ export const AuthProvider = ({ children }) => {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
       setIsAuthenticated(true);
-      // carregar permissões do usuário logado
-      fetch(`${API_BASE}/me/permissoes`, { headers: { Authorization: `Bearer ${savedToken}` } })
-        .then((r) => (r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] })))
-        .then((data) => {
-          const ids = new Set((data?.permissoes || []).map((p) => p.id));
-          setPermissions({ grupo_id: data?.grupo_id ?? null, ids, list: data?.permissoes || [] });
-        })
-        .catch(() => setPermissions({ grupo_id: null, ids: new Set(), list: [] }));
     }
     setLoading(false);
   }, []);
@@ -72,14 +62,6 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
-    // carregar permissões imediatamente após login
-    fetch(`${API_BASE}/me/permissoes`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : Promise.resolve({ grupo_id: null, permissoes: [] })))
-      .then((data) => {
-        const ids = new Set((data?.permissoes || []).map((p) => p.id));
-        setPermissions({ grupo_id: data?.grupo_id ?? null, ids, list: data?.permissoes || [] });
-      })
-      .catch(() => setPermissions({ grupo_id: null, ids: new Set(), list: [] }));
   };
 
   const logout = () => {
@@ -91,8 +73,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasPermission = (page, action = 'read') => {
-    // Se for admin pelo nível, libera tudo (case-insensitive e variações)
+    // Sistema simplificado baseado apenas em nivel_acesso
     const role = (user?.nivel_acesso || '').toString().toLowerCase();
+    
+    // Admin e Willians: acesso total
     if (
       role === 'admin' ||
       role === 'willians' ||
@@ -101,30 +85,25 @@ export const AuthProvider = ({ children }) => {
     ) {
       return true;
     }
-    // Mapear páginas para IDs de permissão base
-    const pageToPermId = {
-      '/cadastro-usuarios': 1101,
-      '/grupos-usuarios': 1004, // Administração do Sistema
-      '/clientes': 1201,
-      '/fornecedores': 1301,
-      '/contratos': 1401,
-      '/orcamento-obra': 1501,
-      '/despesas': 1601,
-      '/valor-materiais': 1701,
-      '/resumo-mensal': 1801,
-    };
-    const baseId = pageToPermId[page];
-    if (!baseId) return true; // se não mapeado, liberar por ora
-    const ids = permissions.ids || new Set();
-    // Ajuste para convenção do arquivo de grupos (base, +2 editar, +3 excluir, +4 criar)
-    const actionMap = {
-      read: baseId,
-      update: Math.floor(baseId / 100) * 100 + 2,
-      delete: Math.floor(baseId / 100) * 100 + 3,
-      create: Math.floor(baseId / 100) * 100 + 4,
-    };
-    const required = actionMap[action] || baseId;
-    return ids.has(required) || ids.has(baseId);
+    
+    // Manutenção: acesso apenas a /testes-loja e própria loja
+    if (role === 'manutencao' || role === USER_ROLES.MANUTENCAO.toLowerCase()) {
+      // Permitir leitura em /testes-loja
+      if (page === '/testes-loja' || page === '/testes-loja-menu') {
+        return true;
+      }
+      // Negar acesso a outras páginas administrativas
+      return false;
+    }
+    
+    // Visualização: apenas leitura em todas as páginas
+    if (role === 'visualizacao' || role === USER_ROLES.VISUALIZACAO.toLowerCase()) {
+      // Permitir apenas ação 'read'
+      return action === 'read';
+    }
+    
+    // Caso não reconhecido: negar acesso
+    return false;
   };
 
   const getUserRoleLabel = (role) => {
@@ -161,7 +140,6 @@ export const AuthProvider = ({ children }) => {
     token,
     isAuthenticated,
     loading,
-    permissions,
     login,
     logout,
     hasPermission,

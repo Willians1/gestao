@@ -31,7 +31,6 @@ import Fornecedores from './pages/Fornecedores';
 import ResumoMensal from './pages/ResumoMensal';
 import ValorMateriais from './pages/ValorMateriais';
 import CadastroUsuarios from './pages/CadastroUsuarios';
-import GruposUsuarios from './pages/GruposUsuariosNovo';
 
 // Componente Login inline para evitar problemas de import
 function Login() {
@@ -241,14 +240,6 @@ function App() {
                 element={
                   <ProtectedRoute page="/cadastro-usuarios">
                     <CadastroUsuarios />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/grupos-usuarios"
-                element={
-                  <ProtectedRoute page="/grupos-usuarios">
-                    <GruposUsuarios />
                   </ProtectedRoute>
                 }
               />

@@ -129,7 +129,6 @@ export default function Layout({ children }) {
 
   const dataMenuItems = [
     { text: 'Cadastro de Usuários', icon: <People />, route: '/cadastro-usuarios' },
-    { text: 'Grupos de Usuários', icon: <AdminPanelSettings />, route: '/grupos-usuarios' },
     { text: 'Clientes', icon: <Business />, route: '/clientes' },
     { text: 'Contratos', icon: <Assignment />, route: '/contratos' },
     // Despesas: ocultar para Manutenção/Visualização
