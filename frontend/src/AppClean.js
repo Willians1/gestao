@@ -31,6 +31,7 @@ import Fornecedores from './pages/Fornecedores';
 import ResumoMensal from './pages/ResumoMensal';
 import ValorMateriais from './pages/ValorMateriais';
 import CadastroUsuarios from './pages/CadastroUsuarios';
+import RelatorioObras from './pages/RelatorioObras';
 
 // Componente Login inline para evitar problemas de import
 function Login() {
@@ -240,6 +241,14 @@ function App() {
                 element={
                   <ProtectedRoute page="/cadastro-usuarios">
                     <CadastroUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/relatorio-obras"
+                element={
+                  <ProtectedRoute page="/relatorio-obras">
+                    <RelatorioObras />
                   </ProtectedRoute>
                 }
               />

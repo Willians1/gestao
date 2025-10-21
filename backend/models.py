@@ -240,3 +240,20 @@ class AuditoriaOcorrencia(Base):
     
     # Relacionamento com usuário
     usuario = relationship("Usuario", foreign_keys=[usuario_id])
+
+class RelatorioObras(Base):
+    __tablename__ = "relatorios_obras"
+    id = Column(Integer, primary_key=True, index=True)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
+    data_relatorio = Column(DateTime, default=datetime.utcnow, nullable=False)
+    tempo = Column(String, nullable=True)  # 'manha', 'tarde', 'noite'
+    condicao = Column(String, nullable=True)  # 'manha', 'tarde', 'noite' (condição climática)
+    indice_pluviometrico = Column(Float, nullable=True)  # Quantidade em mm
+    mao_de_obra = Column(Text, nullable=True)  # JSON string array
+    equipamentos = Column(Text, nullable=True)  # JSON string array
+    atividades = Column(Text, nullable=True)  # JSON string array
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    
+    # Relacionamento com cliente
+    cliente = relationship("Cliente")

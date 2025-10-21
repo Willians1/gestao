@@ -22,7 +22,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import TestesModal from '../components/TestesModal';
-import { Construction, People, AttachMoney, ExitToApp, Storefront } from '@mui/icons-material';
+import { Construction, People, AttachMoney, ExitToApp, Storefront, Assessment } from '@mui/icons-material';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -273,6 +273,14 @@ export default function DashboardHome() {
       color: theme.palette.primary.main,
       path: '/contratos',
       permission: '/contratos',
+    },
+    {
+      title: 'Relatório de Obras',
+      description: 'Inspeção e relatórios de obras',
+      icon: Assessment,
+      color: theme.palette.info.main,
+      path: '/relatorio-obras',
+      permission: '/relatorio-obras',
     },
     {
       title: 'Clientes',

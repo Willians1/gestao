@@ -43,6 +43,7 @@ from models import (
     Loja,
     LojaGrupo,
     ClienteGrupo,
+    RelatorioObras,
 )
 from pydantic import BaseModel, ConfigDict
 import asyncio
@@ -1266,6 +1267,32 @@ class BackupStatus(BaseModel):
 
 class DeleteBackupsRequest(BaseModel):
     files: List[str]
+
+# --- Schemas de Relatório de Obras ---
+class RelatorioObrasCreateSchema(BaseModel):
+    cliente_id: int
+    data_relatorio: Optional[datetime.datetime] = None
+    tempo: Optional[str] = None
+    condicao: Optional[str] = None
+    indice_pluviometrico: Optional[float] = None
+    mao_de_obra: Optional[List[str]] = None
+    equipamentos: Optional[List[str]] = None
+    atividades: Optional[List[str]] = None
+
+class RelatorioObrasSchema(BaseModel):
+    id: int
+    cliente_id: int
+    data_relatorio: datetime.datetime
+    tempo: Optional[str]
+    condicao: Optional[str]
+    indice_pluviometrico: Optional[float]
+    mao_de_obra: Optional[List[str]]
+    equipamentos: Optional[List[str]]
+    atividades: Optional[List[str]]
+    criado_em: datetime.datetime
+    criado_por: Optional[int]
+    
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Endpoints de Backup ---
 @app.get("/backup/status", response_model=BackupStatus)
@@ -2949,6 +2976,122 @@ def criar_contrato(contrato: ContratoSchema, db: Session = Depends(get_db), curr
     db.commit()
     db.refresh(novo)
     return novo
+
+# Relatório de Obras
+@app.get("/relatorios-obras/", response_model=List[RelatorioObrasSchema])
+def listar_relatorios_obras(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    import json
+    
+    relatorios = db.query(RelatorioObras).order_by(RelatorioObras.data_relatorio.desc()).all()
+    
+    # Converter JSON strings para listas
+    for r in relatorios:
+        if r.mao_de_obra:
+            r.mao_de_obra = json.loads(r.mao_de_obra) if isinstance(r.mao_de_obra, str) else r.mao_de_obra
+        if r.equipamentos:
+            r.equipamentos = json.loads(r.equipamentos) if isinstance(r.equipamentos, str) else r.equipamentos
+        if r.atividades:
+            r.atividades = json.loads(r.atividades) if isinstance(r.atividades, str) else r.atividades
+    
+    return relatorios
+
+@app.get("/relatorios-obras/{relatorio_id}", response_model=RelatorioObrasSchema)
+def obter_relatorio_obras(relatorio_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    import json
+    
+    relatorio = db.query(RelatorioObras).filter(RelatorioObras.id == relatorio_id).first()
+    if not relatorio:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    
+    # Converter JSON strings para listas
+    if relatorio.mao_de_obra:
+        relatorio.mao_de_obra = json.loads(relatorio.mao_de_obra) if isinstance(relatorio.mao_de_obra, str) else relatorio.mao_de_obra
+    if relatorio.equipamentos:
+        relatorio.equipamentos = json.loads(relatorio.equipamentos) if isinstance(relatorio.equipamentos, str) else relatorio.equipamentos
+    if relatorio.atividades:
+        relatorio.atividades = json.loads(relatorio.atividades) if isinstance(relatorio.atividades, str) else relatorio.atividades
+    
+    return relatorio
+
+@app.post("/relatorios-obras/", response_model=RelatorioObrasSchema)
+def criar_relatorio_obras(relatorio: RelatorioObrasCreateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    import json
+    
+    # Converter listas para JSON strings
+    mao_de_obra_json = json.dumps(relatorio.mao_de_obra) if relatorio.mao_de_obra else None
+    equipamentos_json = json.dumps(relatorio.equipamentos) if relatorio.equipamentos else None
+    atividades_json = json.dumps(relatorio.atividades) if relatorio.atividades else None
+    
+    novo = RelatorioObras(
+        cliente_id=relatorio.cliente_id,
+        data_relatorio=relatorio.data_relatorio or datetime.datetime.utcnow(),
+        tempo=relatorio.tempo,
+        condicao=relatorio.condicao,
+        indice_pluviometrico=relatorio.indice_pluviometrico,
+        mao_de_obra=mao_de_obra_json,
+        equipamentos=equipamentos_json,
+        atividades=atividades_json,
+        criado_por=current_user.id
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    
+    # Converter de volta para listas no response
+    if novo.mao_de_obra:
+        novo.mao_de_obra = json.loads(novo.mao_de_obra)
+    if novo.equipamentos:
+        novo.equipamentos = json.loads(novo.equipamentos)
+    if novo.atividades:
+        novo.atividades = json.loads(novo.atividades)
+    
+    return novo
+
+@app.put("/relatorios-obras/{relatorio_id}", response_model=RelatorioObrasSchema)
+def atualizar_relatorio_obras(
+    relatorio_id: int,
+    relatorio: RelatorioObrasCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    import json
+    
+    db_relatorio = db.query(RelatorioObras).filter(RelatorioObras.id == relatorio_id).first()
+    if not db_relatorio:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    
+    # Atualizar campos
+    db_relatorio.cliente_id = relatorio.cliente_id
+    if relatorio.data_relatorio:
+        db_relatorio.data_relatorio = relatorio.data_relatorio
+    db_relatorio.tempo = relatorio.tempo
+    db_relatorio.condicao = relatorio.condicao
+    db_relatorio.indice_pluviometrico = relatorio.indice_pluviometrico
+    db_relatorio.mao_de_obra = json.dumps(relatorio.mao_de_obra) if relatorio.mao_de_obra else None
+    db_relatorio.equipamentos = json.dumps(relatorio.equipamentos) if relatorio.equipamentos else None
+    db_relatorio.atividades = json.dumps(relatorio.atividades) if relatorio.atividades else None
+    
+    db.commit()
+    db.refresh(db_relatorio)
+    
+    # Converter de volta para listas no response
+    if db_relatorio.mao_de_obra:
+        db_relatorio.mao_de_obra = json.loads(db_relatorio.mao_de_obra)
+    if db_relatorio.equipamentos:
+        db_relatorio.equipamentos = json.loads(db_relatorio.equipamentos)
+    if db_relatorio.atividades:
+        db_relatorio.atividades = json.loads(db_relatorio.atividades)
+    
+    return db_relatorio
+
+@app.delete("/relatorios-obras/{relatorio_id}")
+def deletar_relatorio_obras(relatorio_id: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    db_relatorio = db.query(RelatorioObras).filter(RelatorioObras.id == relatorio_id).first()
+    if not db_relatorio:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado")
+    db.delete(db_relatorio)
+    db.commit()
+    return {"message": "Relatório deletado com sucesso"}
 
 # Valor de Materiais
 @app.get("/valor_materiais/", response_model=List[ValorMaterialSchema])

@@ -131,6 +131,7 @@ export default function Layout({ children }) {
     { text: 'Cadastro de Usuários', icon: <People />, route: '/cadastro-usuarios' },
     { text: 'Clientes', icon: <Business />, route: '/clientes' },
     { text: 'Contratos', icon: <Assignment />, route: '/contratos' },
+    { text: 'Relatório de Obras', icon: <Assessment />, route: '/relatorio-obras' },
     // Despesas: ocultar para Manutenção/Visualização
     ...(!isRestricted ? [{ text: 'Despesas', icon: <AttachMoney />, route: '/despesas' }] : []),
     { text: 'Fornecedores', icon: <Store />, route: '/fornecedores' },
