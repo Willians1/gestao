@@ -257,3 +257,57 @@ class RelatorioObras(Base):
     
     # Relacionamento com cliente
     cliente = relationship("Cliente")
+
+# Tabelas de histórico/templates para autocompletar
+
+class MaoDeObraHistorico(Base):
+    __tablename__ = "mao_de_obra_historico"
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    cargo = Column(String, nullable=True)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)  # Opcional: vincular a cliente
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    
+    # Relacionamentos
+    cliente = relationship("Cliente")
+
+class EquipamentoHistorico(Base):
+    __tablename__ = "equipamentos_historico"
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    descricao = Column(Text, nullable=True)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)  # Opcional: vincular a cliente
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    
+    # Relacionamentos
+    cliente = relationship("Cliente")
+
+class AtividadeHistorico(Base):
+    __tablename__ = "atividades_historico"
+    id = Column(Integer, primary_key=True, index=True)
+    descricao = Column(String, nullable=False)
+    categoria = Column(String, nullable=True)  # Ex: "Estrutura", "Acabamento", "Instalações"
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)  # Opcional: vincular a cliente
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    
+    # Relacionamentos
+    cliente = relationship("Cliente")
+
+class CondicaoClimaticaHistorico(Base):
+    __tablename__ = "condicoes_climaticas_historico"
+    id = Column(Integer, primary_key=True, index=True)
+    data_registro = Column(DateTime, default=datetime.utcnow, nullable=False)
+    horario_dia = Column(String, nullable=True)  # 'manha', 'tarde', 'noite'
+    tempo = Column(String, nullable=True)  # 'ensolarado', 'nublado', 'chuvoso'
+    condicao = Column(String, nullable=True)  # 'seco', 'umido', 'molhado'
+    indice_pluviometrico = Column(Float, nullable=True)  # mm
+    temperatura = Column(Float, nullable=True)  # °C (opcional)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
+    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    
+    # Relacionamentos
+    cliente = relationship("Cliente")

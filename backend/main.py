@@ -44,6 +44,10 @@ from models import (
     LojaGrupo,
     ClienteGrupo,
     RelatorioObras,
+    MaoDeObraHistorico,
+    EquipamentoHistorico,
+    AtividadeHistorico,
+    CondicaoClimaticaHistorico,
 )
 from pydantic import BaseModel, ConfigDict
 import asyncio
@@ -1289,6 +1293,76 @@ class RelatorioObrasSchema(BaseModel):
     mao_de_obra: Optional[List[str]]
     equipamentos: Optional[List[str]]
     atividades: Optional[List[str]]
+    criado_em: datetime.datetime
+    criado_por: Optional[int]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# Schemas para históricos (autocompletar)
+
+class MaoDeObraHistoricoCreate(BaseModel):
+    nome: str
+    cargo: Optional[str] = None
+    cliente_id: Optional[int] = None
+
+class MaoDeObraHistoricoSchema(BaseModel):
+    id: int
+    nome: str
+    cargo: Optional[str]
+    cliente_id: Optional[int]
+    criado_em: datetime.datetime
+    criado_por: Optional[int]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class EquipamentoHistoricoCreate(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    cliente_id: Optional[int] = None
+
+class EquipamentoHistoricoSchema(BaseModel):
+    id: int
+    nome: str
+    descricao: Optional[str]
+    cliente_id: Optional[int]
+    criado_em: datetime.datetime
+    criado_por: Optional[int]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class AtividadeHistoricoCreate(BaseModel):
+    descricao: str
+    categoria: Optional[str] = None
+    cliente_id: Optional[int] = None
+
+class AtividadeHistoricoSchema(BaseModel):
+    id: int
+    descricao: str
+    categoria: Optional[str]
+    cliente_id: Optional[int]
+    criado_em: datetime.datetime
+    criado_por: Optional[int]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class CondicaoClimaticaHistoricoCreate(BaseModel):
+    data_registro: Optional[datetime.datetime] = None
+    horario_dia: Optional[str] = None  # 'manha', 'tarde', 'noite'
+    tempo: Optional[str] = None  # 'ensolarado', 'nublado', 'chuvoso'
+    condicao: Optional[str] = None  # 'seco', 'umido', 'molhado'
+    indice_pluviometrico: Optional[float] = None
+    temperatura: Optional[float] = None
+    cliente_id: Optional[int] = None
+
+class CondicaoClimaticaHistoricoSchema(BaseModel):
+    id: int
+    data_registro: datetime.datetime
+    horario_dia: Optional[str]
+    tempo: Optional[str]
+    condicao: Optional[str]
+    indice_pluviometrico: Optional[float]
+    temperatura: Optional[float]
+    cliente_id: Optional[int]
     criado_em: datetime.datetime
     criado_por: Optional[int]
     
@@ -3092,6 +3166,211 @@ def deletar_relatorio_obras(relatorio_id: int, db: Session = Depends(get_db), cu
     db.delete(db_relatorio)
     db.commit()
     return {"message": "Relatório deletado com sucesso"}
+
+# ========== Históricos para Autocompletar ==========
+
+# Mão de Obra Histórico
+@app.get("/mao-de-obra-historico/", response_model=List[MaoDeObraHistoricoSchema])
+def listar_mao_de_obra_historico(
+    cliente_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    query = db.query(MaoDeObraHistorico)
+    if cliente_id:
+        query = query.filter(MaoDeObraHistorico.cliente_id == cliente_id)
+    return query.order_by(MaoDeObraHistorico.nome).all()
+
+@app.post("/mao-de-obra-historico/", response_model=MaoDeObraHistoricoSchema)
+def criar_mao_de_obra_historico(
+    item: MaoDeObraHistoricoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verifica se já existe
+    existe = db.query(MaoDeObraHistorico).filter(
+        MaoDeObraHistorico.nome == item.nome,
+        MaoDeObraHistorico.cargo == item.cargo
+    ).first()
+    if existe:
+        return existe  # Retorna o existente
+    
+    novo = MaoDeObraHistorico(
+        nome=item.nome,
+        cargo=item.cargo,
+        cliente_id=item.cliente_id,
+        criado_por=current_user.id
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+@app.delete("/mao-de-obra-historico/{item_id}")
+def deletar_mao_de_obra_historico(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    item = db.query(MaoDeObraHistorico).filter(MaoDeObraHistorico.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    db.delete(item)
+    db.commit()
+    return {"message": "Item deletado com sucesso"}
+
+# Equipamentos Histórico
+@app.get("/equipamentos-historico/", response_model=List[EquipamentoHistoricoSchema])
+def listar_equipamentos_historico(
+    cliente_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    query = db.query(EquipamentoHistorico)
+    if cliente_id:
+        query = query.filter(EquipamentoHistorico.cliente_id == cliente_id)
+    return query.order_by(EquipamentoHistorico.nome).all()
+
+@app.post("/equipamentos-historico/", response_model=EquipamentoHistoricoSchema)
+def criar_equipamento_historico(
+    item: EquipamentoHistoricoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verifica se já existe
+    existe = db.query(EquipamentoHistorico).filter(
+        EquipamentoHistorico.nome == item.nome
+    ).first()
+    if existe:
+        return existe
+    
+    novo = EquipamentoHistorico(
+        nome=item.nome,
+        descricao=item.descricao,
+        cliente_id=item.cliente_id,
+        criado_por=current_user.id
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+@app.delete("/equipamentos-historico/{item_id}")
+def deletar_equipamento_historico(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    item = db.query(EquipamentoHistorico).filter(EquipamentoHistorico.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    db.delete(item)
+    db.commit()
+    return {"message": "Item deletado com sucesso"}
+
+# Atividades Histórico
+@app.get("/atividades-historico/", response_model=List[AtividadeHistoricoSchema])
+def listar_atividades_historico(
+    cliente_id: Optional[int] = None,
+    categoria: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    query = db.query(AtividadeHistorico)
+    if cliente_id:
+        query = query.filter(AtividadeHistorico.cliente_id == cliente_id)
+    if categoria:
+        query = query.filter(AtividadeHistorico.categoria == categoria)
+    return query.order_by(AtividadeHistorico.descricao).all()
+
+@app.post("/atividades-historico/", response_model=AtividadeHistoricoSchema)
+def criar_atividade_historico(
+    item: AtividadeHistoricoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Verifica se já existe
+    existe = db.query(AtividadeHistorico).filter(
+        AtividadeHistorico.descricao == item.descricao
+    ).first()
+    if existe:
+        return existe
+    
+    novo = AtividadeHistorico(
+        descricao=item.descricao,
+        categoria=item.categoria,
+        cliente_id=item.cliente_id,
+        criado_por=current_user.id
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+@app.delete("/atividades-historico/{item_id}")
+def deletar_atividade_historico(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    item = db.query(AtividadeHistorico).filter(AtividadeHistorico.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    db.delete(item)
+    db.commit()
+    return {"message": "Item deletado com sucesso"}
+
+# Condições Climáticas Histórico
+@app.get("/condicoes-climaticas-historico/", response_model=List[CondicaoClimaticaHistoricoSchema])
+def listar_condicoes_climaticas_historico(
+    cliente_id: Optional[int] = None,
+    data_inicio: Optional[datetime.date] = None,
+    data_fim: Optional[datetime.date] = None,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    query = db.query(CondicaoClimaticaHistorico)
+    if cliente_id:
+        query = query.filter(CondicaoClimaticaHistorico.cliente_id == cliente_id)
+    if data_inicio:
+        query = query.filter(CondicaoClimaticaHistorico.data_registro >= data_inicio)
+    if data_fim:
+        query = query.filter(CondicaoClimaticaHistorico.data_registro <= data_fim)
+    return query.order_by(CondicaoClimaticaHistorico.data_registro.desc()).all()
+
+@app.post("/condicoes-climaticas-historico/", response_model=CondicaoClimaticaHistoricoSchema)
+def criar_condicao_climatica_historico(
+    item: CondicaoClimaticaHistoricoCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    novo = CondicaoClimaticaHistorico(
+        data_registro=item.data_registro or datetime.datetime.now(),
+        horario_dia=item.horario_dia,
+        tempo=item.tempo,
+        condicao=item.condicao,
+        indice_pluviometrico=item.indice_pluviometrico,
+        temperatura=item.temperatura,
+        cliente_id=item.cliente_id,
+        criado_por=current_user.id
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return novo
+
+@app.delete("/condicoes-climaticas-historico/{item_id}")
+def deletar_condicao_climatica_historico(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    item = db.query(CondicaoClimaticaHistorico).filter(CondicaoClimaticaHistorico.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+    db.delete(item)
+    db.commit()
+    return {"message": "Item deletado com sucesso"}
 
 # Valor de Materiais
 @app.get("/valor_materiais/", response_model=List[ValorMaterialSchema])

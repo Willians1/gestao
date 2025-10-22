@@ -48,7 +48,7 @@ export default function RelatorioObras() {
   const [tempo, setTempo] = useState('');
   const [condicao, setCondicao] = useState('');
   const [indicePluviometrico, setIndicePluviometrico] = useState('');
-  
+
   // Listas dinâmicas
   const [maoDeObra, setMaoDeObra] = useState([]);
   const [equipamentos, setEquipamentos] = useState([]);
@@ -158,7 +158,7 @@ export default function RelatorioObras() {
       }
 
       setSnack({ open: true, message: 'Relatório salvo com sucesso!', severity: 'success' });
-      
+
       // Limpar formulário
       setClienteId('');
       setTempo('');
